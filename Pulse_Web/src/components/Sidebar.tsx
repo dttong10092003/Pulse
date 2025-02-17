@@ -1,7 +1,9 @@
 import type React from "react";
 import { Home, Bell, MessageSquare, Bookmark, User, LayoutDashboard } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Sidebar = ({ isDark, setIsDark }: { isDark: boolean; setIsDark: React.Dispatch<React.SetStateAction<boolean>> }) => {
+    const navigate = useNavigate();
     return (
         <aside className={`w-72 p-6 flex flex-col ${isDark ? "border-zinc-800" : "border-black"}`}>
             <a href="/" className={`${isDark ? "text-[#00FF7F]" : "text-black"} text-2xl font-bold`}>
@@ -27,6 +29,13 @@ const Sidebar = ({ isDark, setIsDark }: { isDark: boolean; setIsDark: React.Disp
                     <div
                         className={`w-5 h-5 rounded-full shadow-md transform transition ${isDark ? "translate-x-6 bg-black" : "translate-x-0 bg-white"}`}
                     ></div>
+                </button>
+
+                <button
+                    onClick={() => navigate("/")}
+                    className="mt-4 px-6 py-3 bg-red-500 text-white rounded-lg shadow-lg hover:bg-red-600"
+                >
+                    Logout
                 </button>
             </div>
         </aside>
