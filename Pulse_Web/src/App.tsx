@@ -1,13 +1,18 @@
-import React from 'react'
+import Sidebar from "./components/Sidebar";
+import MainContent from "./components/MainContent";
+import RightSidebar from "./components/RightSidebar";
+import { useState } from "react";
 
-const App = () => {
+function App() {
+  const [isDark, setIsDark] = useState(true);
+
   return (
-    <div>
-      <div className="bg-blue-500 text-white p-4 text-center">
-        Setup Tailwindcss
-      </div>  
+    <div className={`${isDark ? "bg-[#1F1F1F] text-white" : "bg-white text-black"} min-h-screen flex`}>
+      <Sidebar isDark={isDark} setIsDark={setIsDark} />
+      <MainContent isDark={isDark} />
+      <RightSidebar isDark={isDark} />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
