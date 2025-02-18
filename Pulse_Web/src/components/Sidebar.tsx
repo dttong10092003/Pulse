@@ -1,21 +1,24 @@
 import type React from "react";
 import { Home, Bell, MessageSquare, Bookmark, User, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 const Sidebar = ({ isDark, setIsDark }: { isDark: boolean; setIsDark: React.Dispatch<React.SetStateAction<boolean>> }) => {
     const navigate = useNavigate();
+    const [activeItem, setActiveItem] = useState("Home");
+
     return (
         <aside className={`w-72 p-6 flex flex-col ${isDark ? "border-zinc-800" : "border-black"}`}>
             <a href="/" className={`${isDark ? "text-[#00FF7F]" : "text-black"} text-2xl font-bold`}>
                 PULSE
             </a>
             <nav className="mt-8 flex flex-col space-y-1">
-                <SidebarItem icon={<Home size={24} />} label="Home" active isDark={isDark} />
-                <SidebarItem icon={<Bell size={24} />} label="Notifications" isDark={isDark} />
-                <SidebarItem icon={<MessageSquare size={24} />} label="Messages" isDark={isDark} />
-                <SidebarItem icon={<Bookmark size={24} />} label="Bookmarks" isDark={isDark} />
-                <SidebarItem icon={<User size={24} />} label="My Profile" isDark={isDark} />
-                <SidebarItem icon={<LayoutDashboard size={24} />} label="Explore" isDark={isDark} />
+                <SidebarItem icon={<Home size={24} />} label="Home" active={activeItem === "Home"} isDark={isDark} navigate={() => { setActiveItem("Home"); navigate("/home"); }} />
+                <SidebarItem icon={<Bell size={24} />} label="Notifications" active={activeItem === "Notifications"} isDark={isDark} navigate={() => { setActiveItem("Notifications"); navigate("/notifications"); }} />
+                <SidebarItem icon={<MessageSquare size={24} />} label="Messages" active={activeItem === "Messages"} isDark={isDark} navigate={() => { setActiveItem("Messages"); navigate("/messages"); }} />
+                <SidebarItem icon={<Bookmark size={24} />} label="Bookmarks" active={activeItem === "Bookmarks"} isDark={isDark} navigate={() => { setActiveItem("Bookmarks"); navigate("/bookmarks"); }} />
+                <SidebarItem icon={<User size={24} />} label="My Profile" active={activeItem === "My Profile"} isDark={isDark} navigate={() => { setActiveItem("My Profile"); navigate("/home/my-profile"); }} />
+                <SidebarItem icon={<LayoutDashboard size={24} />} label="Explore" active={activeItem === "Explore"} isDark={isDark} navigate={() => { setActiveItem("Explore"); navigate("/explore"); }} />
             </nav>
             <button className="mt-4 bg-[#00FF7F] text-black font-semibold rounded-full py-3 px-6">Post</button>
 
@@ -46,21 +49,24 @@ const SidebarItem = ({
     icon,
     label,
     active,
-    isDark
+    isDark,
+    navigate
 }: {
     icon: React.ReactNode;
     label: string;
     active?: boolean;
     isDark: boolean;
+    navigate: () => void;
 }) => {
     return (
         <button
-        className={`flex items-center space-x-4 p-3 rounded-lg w-full transition
-    ${active ? "font-semibold" : isDark ? "text-zinc-400 hover:bg-zinc-800" : "text-black hover:bg-gray-300"}`}
-    >
-        {icon}
-        <span className="text-lg">{label}</span>
-    </button>
+            className={`flex items-center space-x-4 p-3 rounded-lg w-full transition 
+                ${active ? "font-semibold" : isDark ? "text-zinc-400 hover:bg-zinc-800" : "text-black hover:bg-gray-300"}`}
+            onClick={navigate}
+        >
+            {icon}
+            <span className="text-lg">{label}</span>
+        </button>
     );
 };
 
