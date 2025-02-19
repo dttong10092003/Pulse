@@ -3,36 +3,38 @@ import { Home, Bell, MessageSquare, Bookmark, User, LayoutDashboard } from "luci
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
-const Sidebar = ({ isDark, setIsDark }: { isDark: boolean; setIsDark: React.Dispatch<React.SetStateAction<boolean>> }) => {
+const Sidebar = () => {
     const navigate = useNavigate();
     const [activeItem, setActiveItem] = useState("Home");
 
+
+
     return (
-        <aside className={`w-72 p-6 flex flex-col ${isDark ? "border-zinc-800" : "border-black"}`}>
-            <a href="/" className={`${isDark ? "text-[#00FF7F]" : "text-black"} text-2xl font-bold`}>
+        <aside className={`w-72 p-6 flex flex-col border-zinc-800`}>
+            <a href="/" className={`text-[#00FF7F] text-2xl font-bold`}>
                 PULSE
             </a>
             <nav className="mt-8 flex flex-col space-y-1">
-                <SidebarItem icon={<Home size={24} />} label="Home" active={activeItem === "Home"} isDark={isDark} navigate={() => { setActiveItem("Home"); navigate("/home"); }} />
-                <SidebarItem icon={<Bell size={24} />} label="Notifications" active={activeItem === "Notifications"} isDark={isDark} navigate={() => { setActiveItem("Notifications"); navigate("/notifications"); }} />
-                <SidebarItem icon={<MessageSquare size={24} />} label="Messages" active={activeItem === "Messages"} isDark={isDark} navigate={() => { setActiveItem("Messages"); navigate("/messages"); }} />
-                <SidebarItem icon={<Bookmark size={24} />} label="Bookmarks" active={activeItem === "Bookmarks"} isDark={isDark} navigate={() => { setActiveItem("Bookmarks"); navigate("/bookmarks"); }} />
-                <SidebarItem icon={<User size={24} />} label="My Profile" active={activeItem === "My Profile"} isDark={isDark} navigate={() => { setActiveItem("My Profile"); navigate("/home/my-profile"); }} />
-                <SidebarItem icon={<LayoutDashboard size={24} />} label="Explore" active={activeItem === "Explore"} isDark={isDark} navigate={() => { setActiveItem("Explore"); navigate("/explore"); }} />
+                <SidebarItem icon={<Home size={24} />} label="Home" active={activeItem === "Home"} navigate={() => { setActiveItem("Home"); navigate("/home"); }} />
+                <SidebarItem icon={<Bell size={24} />} label="Notifications" active={activeItem === "Notifications"} navigate={() => { setActiveItem("Notifications"); navigate("/notifications"); }} />
+                <SidebarItem icon={<MessageSquare size={24} />} label="Messages" active={activeItem === "Messages"} navigate={() => { setActiveItem("Messages"); navigate("/messages"); }} />
+                <SidebarItem icon={<Bookmark size={24} />} label="Bookmarks" active={activeItem === "Bookmarks"} navigate={() => { setActiveItem("Bookmarks"); navigate("/bookmarks"); }} />
+                <SidebarItem icon={<User size={24} />} label="My Profile" active={activeItem === "My Profile"} navigate={() => { setActiveItem("My Profile"); navigate("/home/my-profile"); }} />
+                <SidebarItem icon={<LayoutDashboard size={24} />} label="Explore" active={activeItem === "Explore"} navigate={() => { setActiveItem("Explore"); navigate("/explore"); }} />
             </nav>
             <button className="mt-4 bg-[#00FF7F] text-black font-semibold rounded-full py-3 px-6">Post</button>
 
             {/* Toggle Button */}
             <div className="mt-4 flex items-center gap-2">
-                <span className={`${isDark ? "text-white" : "text-black"}`}>Dark Mode</span>
-                <button
-                    onClick={() => setIsDark(!isDark)}
+                {/* <span className={`${isDark ? "text-white" : "text-black"}`}>Dark Mode</span> */}
+                {/* <button
+                    // onClick={() => setIsDark(!isDark)}
                     className={`relative w-12 h-6 flex items-center rounded-full p-1 transition ${isDark ? "bg-gray-700" : "bg-gray-300"}`}
                 >
                     <div
                         className={`w-5 h-5 rounded-full shadow-md transform transition ${isDark ? "translate-x-6 bg-black" : "translate-x-0 bg-white"}`}
                     ></div>
-                </button>
+                </button> */}
 
                 <button
                     onClick={() => navigate("/")}
@@ -49,19 +51,17 @@ const SidebarItem = ({
     icon,
     label,
     active,
-    isDark,
     navigate
 }: {
     icon: React.ReactNode;
     label: string;
     active?: boolean;
-    isDark: boolean;
     navigate: () => void;
 }) => {
     return (
         <button
             className={`flex items-center space-x-4 p-3 rounded-lg w-full transition 
-                ${active ? "font-semibold" : isDark ? "text-zinc-400 hover:bg-zinc-800" : "text-black hover:bg-gray-300"}`}
+                ${active ? "font-semibold" : "text-zinc-400 hover:bg-zinc-800"}`}
             onClick={navigate}
         >
             {icon}

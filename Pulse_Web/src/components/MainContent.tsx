@@ -1,6 +1,8 @@
 import { Heart, MessageCircle, Bookmark, MoreHorizontal } from "lucide-react";
 
-const MainContent = ({ isDark }: { isDark: boolean }) => {
+const MainContent = () => {
+
+
     const posts = [
         {
             user: "200Lab Guest",
@@ -37,21 +39,21 @@ const MainContent = ({ isDark }: { isDark: boolean }) => {
     ];
 
     return (
-        <main className="flex-1">
-        <div className="flex items-center gap-4 p-4">
-            <img src="https://picsum.photos/200" alt="User avatar" className="w-10 h-10 rounded-full object-cover" />
-            <input
-                type="text"
-                placeholder="Start a post..."
-                className={`w-full bg-transparent text-lg placeholder:text-zinc-500 focus:outline-none ${isDark ? "text-zinc-200" : "text-black"}`}
-            />
-        </div>
-        <div>
-            {posts.map((post, index) => (
-                <PostCard key={index} {...post} isDark={isDark} />
-            ))}
-        </div>
-    </main>
+        <main className="flex-1 ">
+            <div className="flex items-center gap-4 p-4">
+                <img src="https://picsum.photos/200" alt="User avatar" className="w-10 h-10 rounded-full object-cover" />
+                <input
+                    type="text"
+                    placeholder="Start a post..."
+                    className={`w-full bg-transparent text-lg placeholder:text-zinc-500 focus:outline-none text-zinc-200`}
+                />
+            </div>
+            <div>
+                {posts.map((post, index) => (
+                    <PostCard key={index} {...post} />
+                ))}
+            </div>
+        </main>
     );
 };
 
@@ -62,7 +64,6 @@ const PostCard = ({
     time,
     likes,
     comments,
-    isDark,
 }: {
     user: string;
     avatar: string;
@@ -70,34 +71,33 @@ const PostCard = ({
     time: string;
     likes: number;
     comments: number;
-    isDark: boolean;
 }) => {
     return (
-        <div className={`p-4 hover:${isDark ? "bg-zinc-900/50" : "bg-gray-200/50"}`}>
+        <div className={`p-4 hover:bg-zinc-900/50`}>
             <div className="flex items-start gap-3">
                 <img src={avatar || "/placeholder.svg"} alt={user} className="w-10 h-10 rounded-full object-cover" />
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <h3 className="font-semibold">{user}</h3>
-                            <span className={isDark ? "text-zinc-500" : "text-gray-600"}>·</span>
-                            <p className={isDark ? "text-zinc-500" : "text-gray-600"}>{time}</p>
+                            <span className={"text-zinc-500"}>·</span>
+                            <p className={"text-zinc-500"}>{time}</p>
                         </div>
-                        <button className={isDark ? "text-zinc-500 hover:text-zinc-300" : "text-gray-600 hover:text-gray-800"}>
+                        <button className={"text-zinc-500 hover:text-zinc-300"}>
                             <MoreHorizontal size={20} />
                         </button>
                     </div>
-                    <p className={`mt-2 ${isDark ? "text-zinc-200" : "text-black"}`}>{content}</p>
+                    <p className={`mt-2 text-zinc-200`}>{content}</p>
                     <div className="flex items-center gap-6 mt-3">
-                        <button className={isDark ? "text-zinc-500 hover:text-red-500" : "text-gray-600 hover:text-red-500"}>
+                        <button className={"text-zinc-500 hover:text-red-500"}>
                             <Heart size={20} />
                             <span>{likes}</span>
                         </button>
-                        <button className={isDark ? "text-zinc-500 hover:text-zinc-300" : "text-gray-600 hover:text-gray-800"}>
+                        <button className={"text-zinc-500 hover:text-zinc-300"}>
                             <MessageCircle size={20} />
                             <span>{comments}</span>
                         </button>
-                        <button className={isDark ? "text-zinc-500 hover:text-zinc-300" : "text-gray-600 hover:text-gray-800"}>
+                        <button className={"text-zinc-500 hover:text-zinc-300"}>
                             <Bookmark size={20} />
                         </button>
                     </div>

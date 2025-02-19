@@ -1,6 +1,7 @@
-import {Heart, MessageCircle, Bookmark, MoreHorizontal, Share2, MessageSquare, Users, UserRoundPen, CircleArrowLeft } from "lucide-react";
+import { Heart, MessageCircle, Bookmark, MoreHorizontal, Share2, MessageSquare, Users, UserRoundPen, CircleArrowLeft } from "lucide-react";
 
-const MyProfile = ({ isDark }: { isDark: boolean }) => {
+const MyProfile = () => {
+
     const profileData = {
         username: "200Lab Guest",
         handle: "@guest",
@@ -29,11 +30,11 @@ const MyProfile = ({ isDark }: { isDark: boolean }) => {
     ];
 
     return (
-        <main className={`flex-1 ${isDark ? "bg-[#1F1F1F] text-white" : "bg-white text-black"}`}>
+        <main className={`flex-1 bg-[#1F1F1F] text-white`}>
             {/* Header */}
             <div className="relative w-full h-48 bg-cover bg-center" style={{ backgroundImage: "url('https://picsum.photos/200')" }}>
                 <div className="absolute inset-0 bg-black/50" />
-                <button className={`absolute top-4 left-4 p-3 rounded-full transition ${isDark ? " text-white " : "text-white"}`} onClick={() => window.history.back()}>
+                <button className={`absolute top-4 left-4 p-3 rounded-full transition text-white"}`} onClick={() => window.history.back()}>
                     <CircleArrowLeft size={28} />
                 </button>
             </div>
@@ -46,7 +47,7 @@ const MyProfile = ({ isDark }: { isDark: boolean }) => {
                     <p className="text-zinc-500">{profileData.handle}</p>
                 </div>
                 <p className="text-zinc-400 mt-2">{profileData.bio}</p>
-                <div className={`mt-4 flex items-center justify-between w-full ${isDark ? "text-zinc-400" : "text-black font-semibold"}`}>
+                <div className={`mt-4 flex items-center justify-between w-full text-zinc-400"`}>
                     <div className="flex items-center gap-6">
                         <span className="flex items-center gap-1"><MessageSquare size={18} /> {profileData.stats.posts} posts</span>
                         <span className="flex items-center gap-1"><Users size={18} /> {profileData.stats.followers} followers</span>
@@ -68,7 +69,7 @@ const MyProfile = ({ isDark }: { isDark: boolean }) => {
             {/* Posts */}
             <div className="divide-zinc-800">
                 {posts.map((post, index) => (
-                    <PostCard key={index} {...post} user={profileData.username} isDark={isDark} />
+                    <PostCard key={index} {...post} user={profileData.username} />
                 ))}
             </div>
         </main>
@@ -81,17 +82,16 @@ const PostCard = ({
     time,
     likes,
     comments,
-    isDark
+
 }: {
     user: string;
     content: string;
     time: string;
     likes: number;
     comments: number;
-    isDark: boolean;
 }) => {
     return (
-        <div className={`p-4 ${isDark ? "hover:bg-zinc-900/50" : "hover:bg-gray-100/50 text-black"}`}>
+        <div className={`p-4 hover:bg-zinc-900/50" `}>
             <div className="flex items-start gap-3">
                 <img src="https://i.pravatar.cc/300" alt="Avatar" className="w-10 h-10 rounded-full" />
                 <div className="flex-1 min-w-0">
