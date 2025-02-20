@@ -1,7 +1,8 @@
 import Sidebar from "../components/Sidebar";
 import MainContent from "../components/MainContent";
-import MyProfile from "../pages/MyProfile";
+import MyProfile from "./profile/MyProfile";
 import RightSidebar from "../components/RightSidebar";
+import EditProfile from "./profile/EditProfile";
 import { Routes, Route } from "react-router-dom";
 
 const Home = () => {
@@ -14,6 +15,7 @@ const Home = () => {
       <Routes>
         <Route path="/" element={<MainContent/>} />
         <Route path="/my-profile" element={<MyProfile  />} />
+        <Route path="/edit-profile" element={<EditProfile />} />
       </Routes>
 
       <RightSidebar />

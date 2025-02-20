@@ -1,26 +1,44 @@
 import type React from "react";
 import { Home, Bell, MessageSquare, Bookmark, User, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Sidebar = () => {
     const navigate = useNavigate();
-    const [activeItem, setActiveItem] = useState("Home");
+    const [activeItem, setActiveItem] = useState(localStorage.getItem("activeItem") || "Home");
+    // Theo dõi sự thay đổi của localStorage để cập nhật Sidebar
+    useEffect(() => {
+        const handleStorageChange = () => {
+            setActiveItem(localStorage.getItem("activeItem") || "Home");
+        };
+
+        window.addEventListener("storage", handleStorageChange);
+        return () => {
+            window.removeEventListener("storage", handleStorageChange);
+        };
+    }, []);
+
+    // Hàm cập nhật trạng thái sidebar và lưu vào localStorage
+    const handleNavigation = (label: string, path: string) => {
+        setActiveItem(label);
+        localStorage.setItem("activeItem", label); // Lưu trạng thái vào localStorage
+        navigate(path);
+    };
 
 
 
     return (
         <aside className={`w-72 p-6 flex flex-col border-zinc-800`}>
-            <a href="/" className={`text-[#00FF7F] text-2xl font-bold`}>
+            <a href="/home" className={`text-[#00FF7F] text-2xl font-bold`}>
                 PULSE
             </a>
             <nav className="mt-8 flex flex-col space-y-1">
-                <SidebarItem icon={<Home size={24} />} label="Home" active={activeItem === "Home"} navigate={() => { setActiveItem("Home"); navigate("/home"); }} />
-                <SidebarItem icon={<Bell size={24} />} label="Notifications" active={activeItem === "Notifications"} navigate={() => { setActiveItem("Notifications"); navigate("/notifications"); }} />
-                <SidebarItem icon={<MessageSquare size={24} />} label="Messages" active={activeItem === "Messages"} navigate={() => { setActiveItem("Messages"); navigate("/messages"); }} />
-                <SidebarItem icon={<Bookmark size={24} />} label="Bookmarks" active={activeItem === "Bookmarks"} navigate={() => { setActiveItem("Bookmarks"); navigate("/bookmarks"); }} />
-                <SidebarItem icon={<User size={24} />} label="My Profile" active={activeItem === "My Profile"} navigate={() => { setActiveItem("My Profile"); navigate("/home/my-profile"); }} />
-                <SidebarItem icon={<LayoutDashboard size={24} />} label="Explore" active={activeItem === "Explore"} navigate={() => { setActiveItem("Explore"); navigate("/explore"); }} />
+                <SidebarItem icon={<Home size={24} />} label="Home" active={activeItem === "Home"} navigate={() => handleNavigation("Home", "/home")} />
+                <SidebarItem icon={<Bell size={24} />} label="Notifications" active={activeItem === "Notifications"} navigate={() => handleNavigation("Notifications", "/notifications")} />
+                <SidebarItem icon={<MessageSquare size={24} />} label="Messages" active={activeItem === "Messages"} navigate={() => handleNavigation("Messages", "/messages")} />
+                <SidebarItem icon={<Bookmark size={24} />} label="Bookmarks" active={activeItem === "Bookmarks"} navigate={() => handleNavigation("Bookmarks", "/bookmarks")} />
+                <SidebarItem icon={<User size={24} />} label="My Profile" active={activeItem === "My Profile"} navigate={() => handleNavigation("My Profile", "/home/my-profile")} />
+                <SidebarItem icon={<LayoutDashboard size={24} />} label="Explore" active={activeItem === "Explore"} navigate={() => handleNavigation("Explore", "/explore")} />
             </nav>
             <button className="mt-4 bg-[#00FF7F] text-black font-semibold rounded-full py-3 px-6">Post</button>
 
