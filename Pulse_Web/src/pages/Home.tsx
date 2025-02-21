@@ -17,7 +17,7 @@ const Home = () => {
       <Sidebar />
 
       {/* Nội dung chính, tránh bị che bằng `ml-72` */}
-      <div className="flex-1 ml-72 overflow-auto p-6">
+      <div className="flex-1 ml-72 overflow-auto">
         <Routes>
           <Route path="/" element={<MainContent />} />
           <Route path="/my-profile" element={<MyProfile />} />
