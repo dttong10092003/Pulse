@@ -14,7 +14,7 @@ const users = [
 
 const Login = () => {
     const navigate = useNavigate();
-    const [form, setForm] = useState({ username: "", password: "" });
+    const [form, setForm] = useState({ username: "admin", password: "admin123" }); // gán chạy cho lẹ
     const [error, setError] = useState("");
     const [isBtnEnable, setIsBtnEnable] = useState(false);
     const [showPassword, setShowPassword] = useState(false);

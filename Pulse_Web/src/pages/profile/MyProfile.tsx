@@ -68,7 +68,7 @@ const MyProfile = () => {
     ];
 
     return (
-        <main className={`flex-1 bg-[#1F1F1F] text-white`}>
+        <main className={`bg-[#1F1F1F] text-white`}>
             {/* Header */}
             <div className="relative w-full h-48 bg-cover bg-center" style={{ backgroundImage: "url('https://picsum.photos/200')" }}>
                 <div className="absolute inset-0 bg-black/50 " />
