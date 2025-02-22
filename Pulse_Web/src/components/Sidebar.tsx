@@ -26,7 +26,7 @@ const Sidebar = () => {
     };
 
     return (
-        <aside className="fixed top-0 left-0 h-screen w-72 bg-[#1F1F1F] text-white p-6 flex flex-col justify-between border-r border-zinc-800">
+        <aside className="fixed top-0 left-0 h-screen w-72 bg-[#1F1F1F] text-white p-3 flex flex-col justify-between border-r border-zinc-800">
             {/* Logo + Navigation */}
             <div>
                 <a href="/home" className="text-[#00FF7F] text-2xl font-bold">
@@ -83,9 +83,10 @@ const SidebarItem = ({
 }) => {
     return (
         <button
-            className={`flex items-center space-x-4 p-3 rounded-lg w-full transition 
-                ${active ? "font-semibold" : "text-zinc-400 hover:bg-zinc-800"}`}
-            onClick={navigate}
+        className={`flex items-center space-x-4 p-3 rounded-2xl w-full transition 
+            ${active ? "font-semibold bg-zinc-700" : "text-zinc-400 hover:bg-zinc-800"}`}
+        onClick={navigate}
+
         >
             {icon}
             <span className="text-lg">{label}</span>
