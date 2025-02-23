@@ -1,5 +1,4 @@
 import React from 'react';
-import { CheckCircle } from 'lucide-react';
 
 interface ConversationItemProps {
   conversation: {
@@ -26,7 +25,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, onSel
         <h3 className="text-white">{conversation.name}</h3>
         <p className="text-gray-400 text-sm">{conversation.lastMessage}</p>
       </div>
-      {conversation.isOnline && <CheckCircle className="text-green-500" size={18} />}
+      {conversation.isOnline && 
+        <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>}
     </div>
   );
 };
