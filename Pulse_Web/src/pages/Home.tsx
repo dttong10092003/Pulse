@@ -17,7 +17,6 @@ const Home = () => {
       {/* Sidebar cố định */}
       <Sidebar />
 
-      {/* Nội dung chính, tránh bị che bằng `ml-72` */}
       <div className="flex-1 ml-72 overflow-auto">
         <Routes>
           <Route path="/" element={<MainContent />} />
