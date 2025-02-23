@@ -12,7 +12,7 @@ const ChatInput: React.FC = () => {
   };
 
   return (
-    <div className="p-3 bg-gray-900 flex items-center">
+    <div className="p-3 bg-[#282828b2] flex items-center">
       <input
         type="file"
         className="hidden"
@@ -26,7 +26,7 @@ const ChatInput: React.FC = () => {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder="Type a message..."
-        className="w-full p-2 rounded-lg bg-gray-800 text-white mx-2"
+        className="w-full p-2 rounded-xl bg-[#1212124C]/50 text-white mx-2"
       />
       <button
         onClick={handleSend}
