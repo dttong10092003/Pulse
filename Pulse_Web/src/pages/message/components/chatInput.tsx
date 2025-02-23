@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Paperclip, Send } from 'lucide-react';
+import { Upload, SendHorizonal } from 'lucide-react';
 
 const ChatInput: React.FC = () => {
   const [message, setMessage] = useState('');
@@ -19,7 +19,7 @@ const ChatInput: React.FC = () => {
         id="fileInput"
       />
       <label htmlFor="fileInput" className="cursor-pointer">
-        <Paperclip size={20} className="text-white" />
+        <Upload size={20} className="text-white" />
       </label>
       <input
         type="text"
@@ -32,7 +32,7 @@ const ChatInput: React.FC = () => {
         onClick={handleSend}
         className="ml-2 bg-green-500 px-4 py-2 rounded-lg text-white flex items-center"
       >
-        <Send size={20} />
+        <SendHorizonal size={20} />
       </button>
     </div>
   );
