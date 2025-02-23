@@ -54,7 +54,7 @@ const Sidebar = () => {
                         <MoreHorizontal size={20} />
                         {showMenu && (
                             <div className="absolute right-1/2 translate-x-1/2 bottom-[40px] w-16 flex flex-col items-center p-2 rounded-lg shadow-lg">
-                                <button className="p-2 hover:text-white text-zinc-400"><Settings size={20} /></button>
+                                <button className="p-2 hover:text-white text-zinc-400" onClick={() => navigate("/home/setting")}><Settings size={20} /></button>
                                 <button className="p-2 hover:text-white text-zinc-400" onClick={() => navigate("/")}><LogOut size={20} /></button>
                             </div>
                         )}
