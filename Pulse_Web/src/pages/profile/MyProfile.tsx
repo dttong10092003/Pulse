@@ -119,8 +119,6 @@ const MyProfile = () => {
                     Media
                 </button>
             </div>
-
-            {/* Hiển thị nội dung theo tab */}
             <div className="mt-4">
                 {activeTab === "Posts" && <Posts posts={posts} username={profileData.username} />}
                 {activeTab === "Featured" && <Featured />}
