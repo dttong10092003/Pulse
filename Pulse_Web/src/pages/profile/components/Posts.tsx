@@ -33,21 +33,21 @@ const PostCard = ({
                             <h3 className="font-semibold">{user}</h3>
                             <p className="text-xs text-zinc-500">{time}</p>
                         </div>
-                        <button className="text-zinc-500">
+                        <button className="text-zinc-500 cursor-pointer">
                             <MoreHorizontal size={20} />
                         </button>
                     </div>
                     <p className="mt-2">{content}</p>
                     <div className="flex items-center gap-6 mt-3">
-                        <button className="flex items-center gap-2 text-zinc-500">
+                        <button className="flex items-center gap-2 text-zinc-500 cursor-pointer">
                             <Heart size={20} />
                             <span>{likes}</span>
                         </button>
-                        <button className="flex items-center gap-2 text-zinc-500">
+                        <button className="flex items-center gap-2 text-zinc-500 cursor-pointer">
                             <MessageCircle size={20} />
                             <span>{comments}</span>
                         </button>
-                        <button className="text-zinc-500">
+                        <button className="text-zinc-500 cursor-pointer">
                             <Bookmark size={20} />
                         </button>
                     </div>
