@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { GoogleLogo } from "../../assets";
 import { InputField } from "./components";
+import { useGoogleLogin } from "@react-oauth/google";
 
 const users = [
   { username: "admin", password: "admin123" },
@@ -40,24 +41,24 @@ const Login = () => {
     }));
 
     const drawStars = () => {
-        // Tạo gradient dọc từ trên xuống dưới
-        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        gradient.addColorStop(0, "#0f172a"); 
-        gradient.addColorStop(1, "#1e293b"); 
-      
-        // Fill background với gradient
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-        // Vẽ các ngôi sao
-        ctx.fillStyle = "white";
-        stars.forEach((star) => {
-          ctx.beginPath();
-          ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-          ctx.fill();
-        });
-      };
-      
+      // Tạo gradient dọc từ trên xuống dưới
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, "#0f172a");
+      gradient.addColorStop(1, "#1e293b");
+
+      // Fill background với gradient
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Vẽ các ngôi sao
+      ctx.fillStyle = "white";
+      stars.forEach((star) => {
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    };
+
 
     drawStars();
   }, []);
@@ -87,6 +88,27 @@ const Login = () => {
 
     navigate("/home");
   };
+
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        const res = await fetch(
+          "https://www.googleapis.com/oauth2/v1/userinfo?alt=json",
+          {
+            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+          }
+        );
+        const userInfo = await res.json();
+        console.log("Google User Info:", userInfo);
+
+        navigate("/home");
+      } catch (error) {
+        console.error("Error fetching Google user info:", error);
+        setError("Google login failed");
+      }
+    },
+    onError: () => setError("Google login failed"),
+  });
 
   return (
     <div className="relative w-full h-screen flex items-center justify-center">
@@ -133,7 +155,9 @@ const Login = () => {
           Log in
         </button>
 
-        <button className="w-full flex items-center justify-center mt-4 py-3 bg-gray-800 text-white rounded-full hover:bg-gray-700">
+        <button 
+          onClick={() => handleGoogleLogin()}
+          className="w-full flex items-center justify-center mt-4 py-3 bg-gray-800 text-white rounded-full hover:bg-gray-700">
           <img src={GoogleLogo} alt="Google" className="w-5 h-5 mr-2" />
           Sign in with Google
         </button>
