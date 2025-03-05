@@ -120,7 +120,7 @@ const Login = () => {
         <h1 className="text-3xl font-bold text-center text-green-400">PULSE</h1>
         <p className="text-center text-xl mt-2">Log in to your account</p>
         <p className="text-center text-sm mt-2 text-gray-400">Welcome back! Please enter your details</p>
-        {error && <p className="text-red-500 text-sm text-center mt-3">{error}</p>}
+        <p className="h-4 text-red-500 text-sm text-center mt-2">{error}</p>
 
         <InputField
           type="text"
@@ -142,7 +142,7 @@ const Login = () => {
           onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
         />
 
-        <p className="text-right mt-4 text-sm text-blue-400 hover:text-gray-200 cursor-pointer">
+        <p className="mt-4 text-sm text-blue-400 hover:text-gray-200 cursor-pointer inline-block float-right">
           Forgot Password?
         </p>
 
