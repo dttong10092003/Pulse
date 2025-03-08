@@ -6,6 +6,7 @@ import Message from "./message/Message";
 import EditProfile from "./profile/EditProfile";
 import Explore from "./explore/Explore";
 import Setting from "./setting/AccountSettings";
+import Notification from "./Notification/Notification";
 import { Routes, Route, useLocation } from "react-router-dom";
 
 const Home = () => {
@@ -25,6 +26,7 @@ const Home = () => {
           <Route path="/message" element={<Message />} />
           <Route path="/explore" element={<Explore />} />
           <Route path="/setting" element={<Setting />} />
+          <Route path="/notifications" element={<Notification />} />
         </Routes>
       </div>
 
