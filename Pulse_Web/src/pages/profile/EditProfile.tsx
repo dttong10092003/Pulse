@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Camera, Save, Trash2, User, AtSign, Link, Pencil, CircleCheck } from "lucide-react";
+import { ArrowLeft, Camera, Save, Trash2, User, AtSign, Link, Pencil, CircleCheck, PhoneCallIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 interface ProfileFormData {
     firstName: string;
@@ -127,6 +127,7 @@ export default function EditProfile() {
 
                 <div className="bg-[#181818] p-6 rounded-lg shadow-md space-y-4">
                     {[
+                        { label: "Phone Number", name: "firstName", type: "text", icon: <PhoneCallIcon size={18} /> },
                         { label: "First Name", name: "firstName", type: "text", icon: <User size={18} /> },
                         { label: "Last Name", name: "lastName", type: "text", icon: <User size={18} /> },
                         { label: "Username", name: "username", type: "text", icon: <AtSign size={18} /> },

@@ -70,7 +70,7 @@ export default function AccountSettings() {
             <div className="space-y-4">
               <div className="border border-zinc-800 rounded-lg">
                 <button
-                  className="w-full flex justify-between items-center p-4 text-lg hover:bg-[#1F1F1F]"
+                  className="w-full flex justify-between items-center p-4 text-lg hover:bg-[#1F1F1F] "
                   onClick={(e) => {
                     const content = e.currentTarget.nextElementSibling;
                     if (content) {
@@ -78,8 +78,8 @@ export default function AccountSettings() {
                     }
                   }}
                 >
-                  Account Settings
-                  <ChevronRight className="h-5 w-5" />
+                  <button className="cursor-pointer">Account Settings</button>
+                  <ChevronRight className="h-5 w-5 cursor-pointer" />
                 </button>
                 <div className="p-4 space-y-4 hidden">
                   <div className="flex items-center justify-between p-4 bg-[#1F1F1F] rounded-lg">
@@ -100,7 +100,7 @@ export default function AccountSettings() {
                         <p className="text-sm text-zinc-400">••••••••</p>
                       </div>
                     </div>
-                    <button className="px-4 py-2 hover:bg-zinc-700 rounded-lg text-zinc-400">Change Password</button>
+                    <button className="px-4 py-2 hover:bg-zinc-700 rounded-lg text-zinc-400 cursor-pointer">Change Password</button>
                   </div>
                   <div className="flex items-center justify-between p-4 bg-[#1F1F1F] rounded-lg">
                     <div className="flex items-center gap-3">
@@ -115,7 +115,7 @@ export default function AccountSettings() {
                   <div className="flex items-center justify-between p-4 bg-[#1F1F1F] rounded-lg">
                     <div className="flex items-center gap-3">
                       <Trash2 className="h-5 w-5 text-red-500" />
-                      <p className="text-sm font-medium text-red-500">Delete account</p>
+                      <p className="text-sm font-medium text-red-500 cursor-pointer">Delete account</p>
                     </div>
                   </div>
                 </div>
@@ -132,8 +132,8 @@ export default function AccountSettings() {
                     }
                   }}
                 >
-                  Privacy
-                  <ChevronRight className="h-5 w-5" />
+                  <button className="cursor-pointer">Privacy</button>
+                  <ChevronRight className="h-5 w-5 cursor-pointer" />
                 </button>
                 <div className="p-4 space-y-4 hidden">
                   <div className="flex items-center justify-between p-4 bg-[#1F1F1F] rounded-lg">
@@ -152,14 +152,14 @@ export default function AccountSettings() {
                       <ShieldCheck className="h-5 w-5" />
                       <p className="text-sm font-medium">Cookie settings</p>
                     </div>
-                    <button className="px-4 py-2 hover:bg-zinc-700 rounded-lg text-zinc-400">Customize</button>
+                    <button className="px-4 py-2 hover:bg-zinc-700 rounded-lg text-zinc-400 cursor-pointer">Customize</button>
                   </div>
                   <div className="flex items-center justify-between p-4 bg-[#1F1F1F] rounded-lg">
                     <div className="flex items-center gap-3">
                       <MessageCircleQuestion className="h-5 w-5" />
                       <p className="text-sm font-medium">Direct messages</p>
                     </div>
-                    <button className="px-4 py-2 hover:bg-zinc-700 rounded-lg text-zinc-400">Everyone</button>
+                    <button className="px-4 py-2 hover:bg-zinc-700 rounded-lg text-zinc-400 cursor-pointer">Everyone</button>
                   </div>
                 </div>
               </div>
@@ -239,7 +239,7 @@ export default function AccountSettings() {
                     <button
                       key={value}
                       onClick={() => setAppearance(value)}
-                      className={`flex h-20 w-24 flex-col items-center justify-center gap-2 rounded-lg border-2 p-2 text-xs transition-all ${appearance === value
+                      className={`flex h-20 w-24 flex-col items-center justify-center gap-2 rounded-lg border-2 p-2 text-xs transition-all cursor-pointer ${appearance === value
                         ? "border-white bg-zinc-800 text-white"
                         : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-700 hover:bg-zinc-800"
                         }`}
@@ -263,7 +263,7 @@ export default function AccountSettings() {
                   {["blue", "yellow", "green", "purple", "pink"].map((color) => (
                     <button
                       key={color}
-                      className={`h-6 w-6 rounded-full transition-all ${color === "blue" ? "bg-blue-500" :
+                      className={`h-6 w-6 rounded-full transition-all cursor-pointer ${color === "blue" ? "bg-blue-500" :
                         color === "yellow" ? "bg-yellow-500" :
                           color === "green" ? "bg-green-500" :
                             color === "purple" ? "bg-purple-500" :
@@ -303,8 +303,9 @@ export default function AccountSettings() {
                     max="100"
                     value={brightness}
                     onChange={(e) => setBrightness(Number(e.target.value))}
+                    className="bg-zinc-700"
                   />
-                  <span className="w-8 text-sm text-zinc-400">{brightness}%</span>
+                  <span className="w-8 text-sm text-zinc-400 ">{brightness}%</span>
                 </div>
               </div>
 
@@ -335,14 +336,14 @@ export default function AccountSettings() {
                   </label>
                   <button
                     onClick={onChange}
-                    className={`relative h-6 w-11 rounded-full transition-colors duration-200 ease-in-out ${checked ? 'bg-blue-600' : 'bg-zinc-700'
+                    className={`relative h-6 w-11 rounded-full transition-colors duration-200 ease-in-out cursor-pointer ${checked ? 'bg-zinc-700' : 'bg-zinc-700'
                       }`}
                   >
                     <span
                       className={`absolute left-0.5 top-0.5 flex h-5 w-5 transform items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${checked ? 'translate-x-5' : 'translate-x-0'
                         }`}
                     >
-                      <span className={`h-3 w-3 rounded-full ${checked ? 'bg-blue-600' : 'bg-zinc-700'
+                      <span className={`h-3 w-3 rounded-full ${checked ? 'bg-zinc-700' : 'bg-zinc-700'
                         }`} />
                     </span>
                   </button>

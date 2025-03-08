@@ -6,7 +6,7 @@ import Message from "./message/Message";
 import EditProfile from "./profile/EditProfile";
 import Explore from "./explore/Explore";
 import Setting from "./setting/AccountSettings";
-import Notification from "./Notification/Notification";
+import Notification from "./notification/Notification";
 import { Routes, Route, useLocation } from "react-router-dom";
 
 const Home = () => {
