@@ -8,7 +8,7 @@ import Explore from "./explore/Explore";
 import Setting from "./setting/AccountSettings";
 import Notification from "./notification/Notification";
 import { Routes, Route, useLocation } from "react-router-dom";
-
+ 
 const Home = () => {
   const location = useLocation();
   const isHiddenRightSidebar = location.pathname === "/home/message" || location.pathname === "/home/setting";
