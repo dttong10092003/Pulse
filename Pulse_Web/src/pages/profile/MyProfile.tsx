@@ -1,4 +1,4 @@
-import { Share2, MessageSquare, Users, UserRoundPen, ArrowLeft, Heart, MessageCircle, Bookmark } from "lucide-react";
+import { Share2, MessageSquare, Users, UserRoundPen, ArrowLeft, } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Posts, Featured, Media } from "./components";
 import { useState } from "react";

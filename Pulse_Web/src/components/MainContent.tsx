@@ -113,6 +113,7 @@ const MainContent = () => {
                     <p className="text-center text-zinc-500 mt-4">No posts found.</p>
                 )}
             </div>
+            {isModalOpen && <CreatePostModal onClose={() => setIsModalOpen(false)} />}
         </main>
     );
 };
@@ -163,6 +164,7 @@ const CreatePostModal = ({ onClose }: { onClose: () => void }) => {
         </div>
     );
 };
+
 
 const PostCard = ({
     user,
