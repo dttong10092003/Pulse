@@ -7,7 +7,7 @@ interface Conversation {
   avatar: string;
   isOnline?: boolean;
   isGroup: boolean;
-  unreadCount: number; // ✅ Thêm unreadCount
+  unreadCount: number;
   messages: { id: number; text: string; sender: string; isSentByUser: boolean }[];
 }
 
@@ -19,12 +19,13 @@ interface ConversationSidebarProps {
 
 const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ conversations, onSelectConversation, selectedConversationId }) => {
   return (
-    <div className="w-1/4 bg-[#282828cc] h-screen p-5 text-white">
-      <div className="flex justify-between items-center">
+    <div className="w-1/4 bg-[#282828cc] h-screen p-5 text-white overflow-y-auto flex-shrink-0">
+      <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">Messages</h2>
-        <button className="bg-gray-700 px-2 py-1 rounded-full text-white">+</button>
+        <button className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded-full text-white transition-colors duration-200 flex items-center justify-center h-8 w-8">+</button>
       </div>
-      <div className="mt-5 space-y-3">
+      
+      <div className="space-y-3">
         {conversations.map((conversation) => {
           let lastMessage = "No messages yet";
 
@@ -46,7 +47,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ conversations
               conversation={{
                 ...conversation,
                 lastMessage,
-                unreadCount: conversation.unreadCount, // ✅ Truyền unreadCount xuống
+                unreadCount: conversation.unreadCount,
               }}
               onSelectConversation={onSelectConversation}
               isSelected={conversation.id === selectedConversationId}
