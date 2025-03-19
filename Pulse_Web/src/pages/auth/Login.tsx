@@ -3,22 +3,17 @@ import { useState, useEffect, useRef } from "react";
 import { GoogleLogo } from "../../assets";
 import { InputField } from "./components";
 import { useGoogleLogin } from "@react-oauth/google";
-import { loginSuccess, loginFailure } from '../../redux/slice/authSlice';
-import { useDispatch } from 'react-redux';
-// const users = [
-//   { username: "admin", password: "admin123" },
-//   { username: "user1", password: "password1" },
-//   { username: "user2", password: "password2" },
-//   { username: "test", password: "test123" },
-//   { username: "tong", password: "tong123" },
-// ];
+import { loginUser, loginWithGoogle } from '../../redux/slice/authSlice';
+import { RootState, AppDispatch } from '../../redux/store';
+import { useDispatch, useSelector } from 'react-redux';
 
 const Login = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading } = useSelector((state: RootState) => state.auth);
 
   const [form, setForm] = useState({ username: '', password: '' });
-  const [error, setError] = useState("");
+  const [errorText, setErrorText] = useState("");
   const [isBtnEnable, setIsBtnEnable] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -68,7 +63,7 @@ const Login = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setError("");
+    setErrorText("");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -77,47 +72,18 @@ const Login = () => {
     }
   };
 
-  // const handleLogin = async () => {
-  //   if (!isBtnEnable) return;
-
-  //   const userExists = users.find(
-  //     (user) => user.username === form.username && user.password === form.password
-  //   );
-
-  //   if (!userExists) {
-  //     setError("Invalid username or password. Please try again!");
-  //     return;
-  //   }
-
-  //   navigate("/home");
-  // };
-  const handleLogin = async () => {
-    try {
-      const response = await fetch('http://localhost:3000/auth/login', {
-        method: 'POST',
-        body: JSON.stringify(form),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+  const handleLogin = () => {
+    if (!isBtnEnable) return;
+    
+    dispatch(loginUser(form))
+      .unwrap() 
+      .then(() => {
+        navigate('/home');
+      })
+      .catch((err) => {
+        console.error('Login Error: ', err);
+        setErrorText('Invalid username or password. Please try again');
       });
-  
-      console.log("Response:", response);  // In ra response từ backend
-  
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Response Data:", data);  // In ra dữ liệu nhận được từ backend
-  
-        dispatch(loginSuccess({ token: data.token, user: data.user }));
-        navigate("/home");  // Chuyển hướng sang trang home nếu login thành công
-      } else {
-        const errorData = await response.json();
-        setError("Invalid username or password. Please try again!");
-        dispatch(loginFailure(errorData.message));
-      }
-    } catch (error) {
-      console.error("Login error: ", error);
-      setError("Login failed. Please try again.");
-    }
   };
   
   const handleGoogleLogin = useGoogleLogin({
@@ -132,13 +98,21 @@ const Login = () => {
         const userInfo = await res.json();
         console.log("Google User Info:", userInfo);
 
-        navigate("/home");
+        dispatch(loginWithGoogle({ email: userInfo.email, googleId: userInfo.id }))
+          .unwrap()
+          .then(() => {
+            navigate("/home");
+          })
+          .catch((err) => {
+            console.error("Google login failed: ", err);
+            setErrorText("Google login failed");
+          });
       } catch (error) {
         console.error("Error fetching Google user info:", error);
-        setError("Google login failed");
+        setErrorText("Google login failed");
       }
     },
-    onError: () => setError("Google login failed"),
+    onError: () => setErrorText("Google login failed"),
   });
 
   return (
@@ -151,7 +125,7 @@ const Login = () => {
         <h1 className="text-3xl font-bold text-center text-green-400">PULSE</h1>
         <p className="text-center text-xl mt-2">Log in to your account</p>
         <p className="text-center text-sm mt-2 text-gray-400">Welcome back! Please enter your details</p>
-        <p className="h-4 text-red-500 text-sm text-center mt-2">{error}</p>
+        <p className="h-4 text-red-500 text-sm text-center mt-2">{errorText}</p>
 
         <InputField
           type="text"
@@ -183,7 +157,7 @@ const Login = () => {
           ${isBtnEnable ? "bg-green-400 hover:bg-green-700" : "bg-gray-600 cursor-not-allowed"}`}
           disabled={!isBtnEnable}
         >
-          Log in
+          {loading ? 'Logging in...' : 'Log in'}
         </button>
 
         <button 

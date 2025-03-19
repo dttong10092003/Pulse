@@ -23,7 +23,7 @@ const InputField: React.FC<InputFieldProps> = ({
     onTogglePasswordVisibility,
 }: InputFieldProps) => {
     const renderIcon = () => {
-        if (name === "phone") return <FaPhone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        if (name === "phoneNumber") return <FaPhone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
         if (name === "username") return <FaUser className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
         return <FaLock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
     }
