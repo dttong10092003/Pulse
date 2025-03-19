@@ -3,18 +3,21 @@ import { useState, useEffect, useRef } from "react";
 import { GoogleLogo } from "../../assets";
 import { InputField } from "./components";
 import { useGoogleLogin } from "@react-oauth/google";
-
-const users = [
-  { username: "admin", password: "admin123" },
-  { username: "user1", password: "password1" },
-  { username: "user2", password: "password2" },
-  { username: "test", password: "test123" },
-  { username: "tong", password: "tong123" },
-];
+import { loginSuccess, loginFailure } from '../../redux/slice/authSlice';
+import { useDispatch } from 'react-redux';
+// const users = [
+//   { username: "admin", password: "admin123" },
+//   { username: "user1", password: "password1" },
+//   { username: "user2", password: "password2" },
+//   { username: "test", password: "test123" },
+//   { username: "tong", password: "tong123" },
+// ];
 
 const Login = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: "admin", password: "admin123" });
+  const dispatch = useDispatch();
+
+  const [form, setForm] = useState({ username: '', password: '' });
   const [error, setError] = useState("");
   const [isBtnEnable, setIsBtnEnable] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -70,25 +73,53 @@ const Login = () => {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && isBtnEnable) {
-      handleLogin();
+       handleLogin();
     }
   };
 
+  // const handleLogin = async () => {
+  //   if (!isBtnEnable) return;
+
+  //   const userExists = users.find(
+  //     (user) => user.username === form.username && user.password === form.password
+  //   );
+
+  //   if (!userExists) {
+  //     setError("Invalid username or password. Please try again!");
+  //     return;
+  //   }
+
+  //   navigate("/home");
+  // };
   const handleLogin = async () => {
-    if (!isBtnEnable) return;
-
-    const userExists = users.find(
-      (user) => user.username === form.username && user.password === form.password
-    );
-
-    if (!userExists) {
-      setError("Invalid username or password. Please try again!");
-      return;
+    try {
+      const response = await fetch('http://localhost:3000/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(form),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      console.log("Response:", response);  // In ra response từ backend
+  
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Response Data:", data);  // In ra dữ liệu nhận được từ backend
+  
+        dispatch(loginSuccess({ token: data.token, user: data.user }));
+        navigate("/home");  // Chuyển hướng sang trang home nếu login thành công
+      } else {
+        const errorData = await response.json();
+        setError("Invalid username or password. Please try again!");
+        dispatch(loginFailure(errorData.message));
+      }
+    } catch (error) {
+      console.error("Login error: ", error);
+      setError("Login failed. Please try again.");
     }
-
-    navigate("/home");
   };
-
+  
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
