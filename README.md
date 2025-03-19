@@ -11,3 +11,7 @@ npm install framer-motion
 npm install @react-oauth/google axios
 
 npm install firebase
+
+npm install @reduxjs/toolkit react-redux
+
+npm install redux-thunk
