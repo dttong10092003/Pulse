@@ -3,14 +3,20 @@ import { useState, useEffect, useRef } from "react";
 import { GoogleLogo } from "../../assets";
 import { InputField } from "./components";
 import { useGoogleLogin } from "@react-oauth/google";
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../../redux/store';
+import { registerUserWithPhone, loginWithGoogle } from '../../redux/slice/authSlice';
 
 import { auth } from "../../firebase/setup";
-import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult  } from "firebase/auth";
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
 
 const Register = () => {
     const navigate = useNavigate();
-    const [form, setForm] = useState({ phone: "", username: "", password: "", confirmPassword: "" });
-    const [error, setError] = useState("");
+    const dispatch = useDispatch<AppDispatch>();
+    // const { loading, error } = useSelector((state: RootState) => state.auth);
+
+    const [form, setForm] = useState({ phoneNumber: "", username: "", password: "", confirmPassword: "" });
+    const [errorText, setErrorText] = useState("");
     const [isBtnEnable, setIsBtnEnable] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -22,7 +28,7 @@ const Register = () => {
 
     useEffect(() => {
         setIsBtnEnable(
-            form.phone.trim() !== "" &&
+            form.phoneNumber.trim() !== "" &&
             form.username.trim() !== "" &&
             form.password.trim() !== "" &&
             form.confirmPassword.trim() !== ""
@@ -33,7 +39,7 @@ const Register = () => {
         if (isOtpModalOpen) {
             // Reset OTP về rỗng khi mở modal
             setOtp(["", "", "", "", "", ""]);
-            
+
             // Focus vào ô đầu tiên sau khi reset
             setTimeout(() => {
                 document.getElementById("otp-0")?.focus();
@@ -79,7 +85,7 @@ const Register = () => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-        setError("");
+        setErrorText("");
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -88,33 +94,30 @@ const Register = () => {
         }
     };
 
-    // const validatePhone = (phone: string) => {
-    //     return /^(0[3|5|7|8|9])+([0-9]{8})$/.test(phone);
-    // };
-
-    const validatePhone = (phone: string) => {
-        return /^(0[3-9])\d{8}$/.test(phone);
+    const validatePhone = (phoneNumber: string) => {
+        return /^(0[3|5|7|8|9])+([0-9]{8})$/.test(phoneNumber);
     };
 
+
     const handleSignUp = async () => {
-        if (!validatePhone(form.phone)) {
-            setError("Invalid phone number format!");
+        if (!validatePhone(form.phoneNumber)) {
+            setErrorText("Invalid phone number format!");
             return;
         }
-        console.log(form.phone);
+        console.log(form.phoneNumber);
         if (form.password.length < 6) {
-            setError("Invalid phone number format!");
+            setErrorText("Password must be at least 6 characters long!");
             return;
         }
 
         if (form.password !== form.confirmPassword) {
-            setError("Passwords do not match!");
+            setErrorText("Passwords do not match!");
             return;
         }
 
         try {
-            setError("");
-    
+            setErrorText("");
+
             // Kiểm tra và chỉ khởi tạo reCAPTCHA nếu chưa tồn tại
             if (!window.recaptchaVerifier) {
                 window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
@@ -124,9 +127,9 @@ const Register = () => {
                     }
                 });
             }
-    
+
             const appVerifier = window.recaptchaVerifier;
-            const result = await signInWithPhoneNumber(auth, "+84" + form.phone.slice(1), appVerifier);
+            const result = await signInWithPhoneNumber(auth, "+84" + form.phoneNumber.slice(1), appVerifier);
             setConfirmationResult(result);
             setIsOtpModalOpen(true);
 
@@ -135,7 +138,7 @@ const Register = () => {
             console.log("isOtpModalOpen set to true");
         } catch (error) {
             console.error("Error sending OTP:", error);
-            setError("Failed to send OTP. Try again!");
+            setErrorText("Failed to send OTP. Try again!");
         }
 
         // setError("");
@@ -156,21 +159,29 @@ const Register = () => {
     const handleVerifyOtp = async () => {
         try {
             const otpCode = otp.join("");
-    
+
             if (!confirmationResult) {
-                setError("OTP verification failed. Please request a new OTP.");
+                setErrorText("OTP verification failed. Please request a new OTP.");
                 return;
             }
-    
+
             await confirmationResult.confirm(otpCode);
             setIsOtpModalOpen(false);
-            navigate("/home");
+            dispatch(registerUserWithPhone(form))
+                .unwrap()
+                .then(() => {
+                    navigate("/home");
+                })
+                .catch((err) => {
+                    console.error("Registration Error:", err);
+                    setErrorText("Registration failed. Please try again.");
+                });
         } catch (error) {
             console.error("Invalid OTP:", error);
-            setError("Invalid OTP! Please try again.");
+            setErrorText("Invalid OTP! Please try again.");
         }
     };
-    
+
 
     const handleGoogleRegister = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
@@ -184,13 +195,21 @@ const Register = () => {
 
                 // Add data base
 
-                navigate("/home");
+                dispatch(loginWithGoogle({ email: userInfo.email, googleId: userInfo.id }))
+                    .unwrap()
+                    .then(() => {
+                        navigate('/home');
+                    })
+                    .catch((err) => {
+                        console.error('Google registration failed:', err);
+                        setErrorText('Google registration failed');
+                    });
             } catch (error) {
                 console.error("Error fetching Google user info:", error);
-                setError("Google registration failed");
+                setErrorText("Google registration failed");
             }
         },
-        onError: () => setError("Google registration failed"),
+        onError: () => setErrorText("Google registration failed"),
     });
 
     return (
@@ -206,13 +225,13 @@ const Register = () => {
                 <p className="text-center text-sm mt-2 text-gray-400">
                     To use Pulse! Please enter your details
                 </p>
-                <p className="h-4 text-red-500 text-sm text-center mt-2">{error}</p>
+                <p className="h-4 text-red-500 text-sm text-center mt-2">{errorText}</p>
 
                 <InputField
                     type="tel"
-                    name="phone"
+                    name="phoneNumber"
                     placeholder="Phone Number"
-                    value={form.phone}
+                    value={form.phoneNumber}
                     onChange={handleChange}
                     onKeyDown={handleKeyDown}
                 />
@@ -271,12 +290,18 @@ const Register = () => {
                     </span>
                 </p>
             </div>
-            {/* OTP Modal */}
-            {/* {isOtpModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+
+            {isOtpModalOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 flex justify-center items-center z-50"
+                    onKeyDown={(e) => {
+                        if (e.key === "Escape") setIsOtpModalOpen(false);
+                    }}
+                    tabIndex={-1} // Để có thể bắt sự kiện keydown trên div
+                >
                     <div className="bg-white p-6 rounded-lg w-96 text-center">
                         <h2 className="text-xl font-bold mb-4">Enter OTP</h2>
-                        <p className="text-sm text-gray-500">We've sent a verification code to +84{form.phone.slice(1)}</p>
+                        <p className="text-sm text-gray-500">We've sent a verification code to +84{form.phoneNumber.slice(1)}</p>
                         <div className="flex justify-center gap-2 mt-4">
                             {otp.map((num, index) => (
                                 <input
@@ -285,73 +310,38 @@ const Register = () => {
                                     type="text"
                                     maxLength={1}
                                     value={num}
+                                    autoComplete="off"
                                     onChange={(e) => handleOtpChange(index, e.target.value)}
                                     onKeyDown={(e) => {
-                                        if (e.key === "Enter" && index > 0) {
+                                        if (e.key === "Enter" && index === otp.length - 1) {
                                             handleVerifyOtp();
+                                        } else if (e.key === "ArrowRight" && index < otp.length - 1) {
+                                            document.getElementById(`otp-${index + 1}`)?.focus();
+                                        } else if (e.key === "ArrowLeft" && index > 0) {
+                                            document.getElementById(`otp-${index - 1}`)?.focus();
+                                        } else if (e.key === "Backspace" && !otp[index] && index > 0) {
+                                            document.getElementById(`otp-${index - 1}`)?.focus();
                                         }
                                     }}
-                                    className="w-10 h-10 text-center border border-gray-300 rounded"
+                                    className="w-10 h-10 text-center border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                             ))}
                         </div>
-                        <button onClick={handleVerifyOtp} className="bg-green-500 text-white px-4 py-2 mt-4 mr-4 rounded cursor-pointer">Verify OTP</button>
-                        <button onClick={() => setIsOtpModalOpen(false)} className="text-red-500 mt-4 ml-4 cursor-pointer">Cancel</button>
+                        <button
+                            onClick={handleVerifyOtp}
+                            className="bg-green-500 text-white px-4 py-2 mt-4 mr-4 rounded cursor-pointer"
+                        >
+                            Verify OTP
+                        </button>
+                        <button
+                            onClick={() => setIsOtpModalOpen(false)}
+                            className="text-red-500 mt-4 ml-4 cursor-pointer"
+                        >
+                            Cancel
+                        </button>
                     </div>
                 </div>
-            )} */}
-
-{isOtpModalOpen && (
-    <div 
-        className="fixed inset-0 bg-black/50 flex justify-center items-center z-50"
-        onKeyDown={(e) => {
-            if (e.key === "Escape") setIsOtpModalOpen(false);
-        }}
-        tabIndex={-1} // Để có thể bắt sự kiện keydown trên div
-    >
-        <div className="bg-white p-6 rounded-lg w-96 text-center">
-            <h2 className="text-xl font-bold mb-4">Enter OTP</h2>
-            <p className="text-sm text-gray-500">We've sent a verification code to +84{form.phone.slice(1)}</p>
-            <div className="flex justify-center gap-2 mt-4">
-                {otp.map((num, index) => (
-                    <input
-                        key={index}
-                        id={`otp-${index}`}
-                        type="text"
-                        maxLength={1}
-                        value={num}
-                        autoComplete="off"
-                        onChange={(e) => handleOtpChange(index, e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter" && index === otp.length - 1) {
-                                handleVerifyOtp();
-                            } else if (e.key === "ArrowRight" && index < otp.length - 1) {
-                                document.getElementById(`otp-${index + 1}`)?.focus();
-                            } else if (e.key === "ArrowLeft" && index > 0) {
-                                document.getElementById(`otp-${index - 1}`)?.focus();
-                            } else if (e.key === "Backspace" && !otp[index] && index > 0) {
-                                document.getElementById(`otp-${index - 1}`)?.focus();
-                            }
-                        }}
-                        className="w-10 h-10 text-center border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                ))}
-            </div>
-            <button 
-                onClick={handleVerifyOtp} 
-                className="bg-green-500 text-white px-4 py-2 mt-4 mr-4 rounded cursor-pointer"
-            >
-                Verify OTP
-            </button>
-            <button 
-                onClick={() => setIsOtpModalOpen(false)} 
-                className="text-red-500 mt-4 ml-4 cursor-pointer"
-            >
-                Cancel
-            </button>
-        </div>
-    </div>
-)}
+            )}
 
         </div>
     );
