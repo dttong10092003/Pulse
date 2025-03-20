@@ -168,14 +168,14 @@ const Register = () => {
             await confirmationResult.confirm(otpCode);
             setIsOtpModalOpen(false);
             dispatch(registerUserWithPhone(form))
-                .unwrap()
-                .then(() => {
-                    navigate("/home");
-                })
-                .catch((err) => {
-                    console.error("Registration Error:", err);
-                    setErrorText("Registration failed. Please try again.");
-                });
+            .unwrap()
+            .then(() => {
+                navigate("/userinfo", { state: { phoneNumber: form.phoneNumber } });
+            })
+            .catch((err) => {
+                console.error("Registration Error:", err);
+                setErrorText("Registration failed. Please try again.");
+            });
         } catch (error) {
             console.error("Invalid OTP:", error);
             setErrorText("Invalid OTP! Please try again.");
@@ -196,14 +196,15 @@ const Register = () => {
                 // Add data base
 
                 dispatch(loginWithGoogle({ email: userInfo.email, googleId: userInfo.id }))
-                    .unwrap()
-                    .then(() => {
-                        navigate('/home');
-                    })
-                    .catch((err) => {
-                        console.error('Google registration failed:', err);
-                        setErrorText('Google registration failed');
-                    });
+                .unwrap()
+                .then(() => {
+                  // Chuyển đến UserProfileForm (không cần email nữa)
+                  navigate("/userinfo", { state: { email: userInfo.email, googleId: userInfo.id } });
+                })
+                .catch((err) => {
+                  console.error("Google login failed: ", err);
+                  setErrorText("Google login failed");
+                });
             } catch (error) {
                 console.error("Error fetching Google user info:", error);
                 setErrorText("Google registration failed");

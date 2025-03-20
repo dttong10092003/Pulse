@@ -2,8 +2,10 @@ import type React from "react";
 import { Home, Bell, MessageSquare, Bookmark, User, LayoutDashboard, MoreHorizontal, Settings, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-
+import { useDispatch } from 'react-redux';
+import { logout } from '../redux/slice/authSlice';
 const Sidebar = () => {
+    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [activeItem, setActiveItem] = useState(localStorage.getItem("activeItem") || "Home");
     const [showMenu, setShowMenu] = useState(false);
@@ -24,7 +26,11 @@ const Sidebar = () => {
         localStorage.setItem("activeItem", label);
         navigate(path);
     };
-
+    // Hàm xử lý logout
+    const handleLogout = () => {
+        dispatch(logout());  // Gọi action logout để cập nhật trạng thái user về null
+        navigate("/");  // Chuyển hướng người dùng về trang đăng nhập (hoặc trang khác nếu cần)
+    };
     return (
         <aside className="fixed top-0 left-0 h-screen w-72 bg-[#1F1F1F] text-white p-3 flex flex-col justify-between border-r border-zinc-800">
             <div>
@@ -52,7 +58,7 @@ const Sidebar = () => {
                         {showMenu && (
                             <div className="absolute right-1/2 translate-x-1/2 bottom-[40px] w-16 flex flex-col items-center p-2 rounded-lg shadow-lg">
                                 <button className="p-2 hover:text-white text-zinc-400 cursor-pointer" onClick={() => navigate("/home/setting")}><Settings size={20} /></button>
-                                <button className="p-2 hover:text-white text-zinc-400 cursor-pointer" onClick={() => navigate("/")}><LogOut size={20} /></button>
+                                <button className="p-2 hover:text-white text-zinc-400 cursor-pointer" onClick={handleLogout}><LogOut size={20} /></button>
                             </div>
                         )}
                     </button>
