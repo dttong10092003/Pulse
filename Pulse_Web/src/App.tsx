@@ -4,8 +4,12 @@ import { ClipLoader } from 'react-spinners'; // Import spinner từ react-spinne
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Home from './pages/Home';
+import UserInfo from './pages/userInfo/UserInfo';
+import { Provider } from 'react-redux';
+import { store } from './redux/store';
 import './App.css';
-  const App = () => {
+
+const App = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(false); // State để theo dõi trạng thái loading
 
@@ -16,7 +20,7 @@ import './App.css';
   }, [location]);
 
   return (
-    <>
+    <Provider store={store}>
       {loading && (
         <div className="loading-overlay">
           {/* Hiển thị spinner khi đang loading */}
@@ -26,10 +30,11 @@ import './App.css';
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/userinfo" element={<UserInfo />} />
         <Route path="/home/*" element={<Home />} /> {/* thêm để quản lý các route con */}
       </Routes>
-    </>
+    </Provider>
   );
-}
+};
 
 export default App;
