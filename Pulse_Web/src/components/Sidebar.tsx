@@ -5,10 +5,10 @@ import { useState, useEffect } from "react";
 import { Columns2, ChevronRight } from "lucide-react";
 
 const Sidebar = () => {
+    const [showSidebar, setShowSidebar] = useState(true);
     const navigate = useNavigate();
     const [activeItem, setActiveItem] = useState(localStorage.getItem("activeItem") || "Home");
     const [showMenu, setShowMenu] = useState(false);
-    const [showSidebar, setShowSidebar] = useState(true); // Dùng state để toggle sidebar
     const [isHovered, setIsHovered] = useState(false); // Thêm state để kiểm tra hover vào sidebar
 
     useEffect(() => {
