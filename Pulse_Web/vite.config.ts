@@ -7,4 +7,12 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),],
+    server: {
+      port: 4000,
+      open: true,
+    },
+    build: {
+      outDir: 'dist',
+    },
+    base: '/',
 })
