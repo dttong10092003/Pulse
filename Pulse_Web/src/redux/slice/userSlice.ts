@@ -1,120 +1,123 @@
-// import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-// import axios from "axios";
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import axios from 'axios';
 
-// // API Gateway Endpoint
-// const API_GATEWAY_URL = "http://localhost:3000/users";
+const USER_SERVICE_URL = 'http://localhost:3000/users'; // Cập nhật URL nếu cần
 
-// // Định nghĩa kiểu dữ liệu User
-// interface UserProfile {
-//   userId: string;
-//   firstname: string;
-//   lastname: string;
-//   DOB: string;
-//   gender: string;
-//   phoneNumber?: string;
-//   email?: string;
-//   address?: string;
-//   bio?: string;
-//   avatar?: string;
-//   backgroundAvatar?: string;
-// }
+// Define the type for the user state
+interface UserState {
+  userDetails: any | null; // Thông tin chi tiết người dùng
+  loading: boolean;
+  error: string | null;
+}
 
-// // Trạng thái Redux cho user
-// interface UserState {
-//   user: UserProfile | null;
-//   loading: boolean;
-//   error: string | null;
-// }
+// Define the initial state
+const initialState: UserState = {
+  userDetails: null,
+  loading: false,
+  error: null,
+};
 
-// // Trạng thái ban đầu của Redux store
-// const initialState: UserState = {
-//   user: null,
-//   loading: false,
-//   error: null,
-// };
+// Thunk to get user details from the API
+export const getUserDetails = createAsyncThunk(
+  'user/getUserDetails',
+  async (userId: string, { getState, rejectWithValue }) => {
+    const token = (getState() as any).auth.user?.token; // Lấy token từ Redux store
+    try {
+      const response = await axios.get(`${USER_SERVICE_URL}/${userId}`, {
+        headers: { Authorization: `${token}` },
+      });
+      return response.data; // Trả về dữ liệu người dùng
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || error.message);
+      }
+      return rejectWithValue('An unknown error occurred');
+    }
+  }
+);
 
-// // 🌟 **1. Lấy thông tin người dùng theo ID**
-// export const fetchUserProfile = createAsyncThunk(
-//   "user/fetchUserProfile",
-//   async (userId: string, { rejectWithValue }) => {
-//     try {
-//       const token = localStorage.getItem("token");
-//       if (!token) throw new Error("Unauthorized: No token provided");
+// Thunk to create a new user detail
+export const createUserDetail = createAsyncThunk(
+    'user/createUserDetail',
+    async (userData: any, { getState, rejectWithValue }) => {
+      const token = (getState() as any).auth.user?.token; // Lấy token từ Redux store
+      try {
+        console.log("Data sent to API:", userData); // Debug: Kiểm tra dữ liệu gửi đi
+        const response = await axios.post(`${USER_SERVICE_URL}`, userData, {
+          headers: { Authorization: `${token}` },
+        });
+        return response.data; // Trả về dữ liệu người dùng mới
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          return rejectWithValue(error.response?.data?.message || error.message);
+        }
+        return rejectWithValue('An unknown error occurred');
+      }
+    }
+  );
+// Thunk to update user details
+export const updateUserDetail = createAsyncThunk(
+    'user/updateUserDetail',
+    async (userData: any, { getState, rejectWithValue }) => {
+      const token = (getState() as any).auth.user?.token; // Lấy token từ Redux store
+      try {
+        console.log("Data sent to API:", userData); // Debug: Kiểm tra dữ liệu gửi đi
+        const response = await axios.put(`${USER_SERVICE_URL}/${userData.id}`, userData, {
+          headers: { Authorization: `${token}` },
+        });
+        return response.data; // Trả về dữ liệu người dùng đã cập nhật
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          return rejectWithValue(error.response?.data?.message || error.message);
+        }
+        return rejectWithValue('An unknown error occurred');
+      }
+    }
+  );
+// User slice
+const userSlice = createSlice({
+  name: 'user',
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(getUserDetails.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getUserDetails.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.userDetails = action.payload; // Lưu thông tin người dùng vào state
+      })
+      .addCase(getUserDetails.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(createUserDetail.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createUserDetail.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.userDetails = action.payload; // Lưu thông tin người dùng mới vào state
+      })
+      .addCase(createUserDetail.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(updateUserDetail.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateUserDetail.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.userDetails = action.payload; // Lưu thông tin người dùng đã cập nhật vào state
+      })
+      .addCase(updateUserDetail.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+  },
+});
 
-//       const response = await axios.get(`${API_GATEWAY_URL}/${userId}`, {
-//         headers: { Authorization: `Bearer ${token}` },
-//       });
-
-//       return response.data; // Trả về dữ liệu user từ API
-//     } catch (error) {
-//       if (axios.isAxiosError(error) && error.response) {
-//         return rejectWithValue(error.response.data?.message || "Failed to fetch user data");
-//       }
-//       return rejectWithValue("Failed to fetch user data");
-//     }
-//   }
-// );
-
-// // 🌟 **2. Cập nhật thông tin người dùng**
-// export const updateUserProfile = createAsyncThunk(
-//   "user/updateUserProfile",
-//   async (userData: UserProfile, { rejectWithValue }) => {
-//     try {
-//       const token = localStorage.getItem("token");
-//       if (!token) throw new Error("Unauthorized: No token provided");
-
-//       const response = await axios.put(`${API_GATEWAY_URL}/${userData.userId}`, userData, {
-//         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-//       });
-
-//       return response.data.user; // Trả về dữ liệu user đã cập nhật
-//     } catch (error) {
-//       if (axios.isAxiosError(error) && error.response) {
-//         return rejectWithValue(error.response.data?.message || "Failed to update user data");
-//       }
-//       return rejectWithValue("Failed to update user data");
-//     }
-//   }
-// );
-
-// // 🌟 **Tạo Redux Slice**
-// const userSlice = createSlice({
-//   name: "user",
-//   initialState,
-//   reducers: {
-//     setUserProfile: (state, action: PayloadAction<UserProfile>) => {
-//       state.user = action.payload;
-//     },
-//   },
-//   extraReducers: (builder) => {
-//     builder
-//       .addCase(fetchUserProfile.pending, (state) => {
-//         state.loading = true;
-//         state.error = null;
-//       })
-//       .addCase(fetchUserProfile.fulfilled, (state, action: PayloadAction<UserProfile>) => {
-//         state.loading = false;
-//         state.user = action.payload;
-//       })
-//       .addCase(fetchUserProfile.rejected, (state, action) => {
-//         state.loading = false;
-//         state.error = action.payload as string;
-//       })
-//       .addCase(updateUserProfile.pending, (state) => {
-//         state.loading = true;
-//         state.error = null;
-//       })
-//       .addCase(updateUserProfile.fulfilled, (state, action: PayloadAction<UserProfile>) => {
-//         state.loading = false;
-//         state.user = action.payload;
-//       })
-//       .addCase(updateUserProfile.rejected, (state, action) => {
-//         state.loading = false;
-//         state.error = action.payload as string;
-//       });
-//   },
-// });
-
-// // 🌟 Export actions và reducer
-// export const { setUserProfile } = userSlice.actions;
-// export default userSlice.reducer;
+export default userSlice.reducer;

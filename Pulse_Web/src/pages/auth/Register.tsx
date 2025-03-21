@@ -168,14 +168,15 @@ const Register = () => {
             await confirmationResult.confirm(otpCode);
             setIsOtpModalOpen(false);
             dispatch(registerUserWithPhone(form))
-            .unwrap()
-            .then(() => {
-                navigate("/userinfo", { state: { phoneNumber: form.phoneNumber } });
-            })
-            .catch((err) => {
-                console.error("Registration Error:", err);
-                setErrorText("Registration failed. Please try again.");
-            });
+                .unwrap()
+                .then((response) => {
+                    console.log("Token đăng ký: ", response.token);
+                    navigate("/userinfo", { state: { phoneNumber: form.phoneNumber } });
+                })
+                .catch((err) => {
+                    console.error("Registration Error:", err);
+                    setErrorText("Registration failed. Please try again.");
+                });
         } catch (error) {
             console.error("Invalid OTP:", error);
             setErrorText("Invalid OTP! Please try again.");
@@ -183,6 +184,35 @@ const Register = () => {
     };
 
 
+    // const handleGoogleRegister = useGoogleLogin({
+    //     onSuccess: async (tokenResponse) => {
+    //         try {
+    //             // Gọi API của Google để lấy thông tin user
+    //             const res = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
+    //                 headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+    //             });
+    //             const userInfo = await res.json();
+    //             console.log("Google User Info:", userInfo);
+
+    //             // Add data base
+
+    //             dispatch(loginWithGoogle({ email: userInfo.email, googleId: userInfo.id }))
+    //             .unwrap()
+    //             .then(() => {
+    //               // Chuyển đến UserProfileForm (không cần email nữa)
+    //               navigate("/userinfo", { state: { email: userInfo.email, googleId: userInfo.id } });
+    //             })
+    //             .catch((err) => {
+    //               console.error("Google login failed: ", err);
+    //               setErrorText("Google login failed");
+    //             });
+    //         } catch (error) {
+    //             console.error("Error fetching Google user info:", error);
+    //             setErrorText("Google registration failed");
+    //         }
+    //     },
+    //     onError: () => setErrorText("Google registration failed"),
+    // });
     const handleGoogleRegister = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
             try {
@@ -193,18 +223,17 @@ const Register = () => {
                 const userInfo = await res.json();
                 console.log("Google User Info:", userInfo);
 
-                // Add data base
-
+                // Dispatch loginWithGoogle action
                 dispatch(loginWithGoogle({ email: userInfo.email, googleId: userInfo.id }))
-                .unwrap()
-                .then(() => {
-                  // Chuyển đến UserProfileForm (không cần email nữa)
-                  navigate("/userinfo", { state: { email: userInfo.email, googleId: userInfo.id } });
-                })
-                .catch((err) => {
-                  console.error("Google login failed: ", err);
-                  setErrorText("Google login failed");
-                });
+                    .unwrap()
+                    .then(() => {
+                        // Nếu login thành công, kiểm tra người dùng đã có thông tin hay chưa
+                        navigate("/userinfo", { state: { email: userInfo.email, googleId: userInfo.id } });
+                    })
+                    .catch((err) => {
+                        console.error("Google login failed: ", err);
+                        setErrorText("Google login failed");
+                    });
             } catch (error) {
                 console.error("Error fetching Google user info:", error);
                 setErrorText("Google registration failed");

@@ -86,22 +86,67 @@ const Login = () => {
       });
   };
   
+  // const handleGoogleLogin = useGoogleLogin({
+  //   onSuccess: async (tokenResponse) => {
+  //     try {
+  //       const res = await fetch(
+  //         "https://www.googleapis.com/oauth2/v1/userinfo?alt=json",
+  //         {
+  //           headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+  //         }
+  //       );
+  //       const userInfo = await res.json();
+  //       console.log("Google User Info:", userInfo);
+
+  //       dispatch(loginWithGoogle({ email: userInfo.email, googleId: userInfo.id }))
+  //         .unwrap()
+  //         .then(() => {
+  //           navigate("/home");
+  //         })
+  //         .catch((err) => {
+  //           console.error("Google login failed: ", err);
+  //           setErrorText("Google login failed");
+  //         });
+  //     } catch (error) {
+  //       console.error("Error fetching Google user info:", error);
+  //       setErrorText("Google login failed");
+  //     }
+  //   },
+  //   onError: () => setErrorText("Google login failed"),
+  // });
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const res = await fetch(
-          "https://www.googleapis.com/oauth2/v1/userinfo?alt=json",
-          {
-            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-          }
-        );
+        const res = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
         const userInfo = await res.json();
         console.log("Google User Info:", userInfo);
-
+  
+        // Gọi API đăng nhập với Google
         dispatch(loginWithGoogle({ email: userInfo.email, googleId: userInfo.id }))
           .unwrap()
-          .then(() => {
-            navigate("/home");
+          .then((response) => {
+            const { token, isVerified, user } = response;
+            
+            // Thêm logging để debug
+            console.log("API Response:", response);
+            console.log("isVerified value:", isVerified);
+            console.log("User data:", user);
+            
+            // Lưu token trước bất kể trường hợp nào
+            localStorage.setItem('token', token);
+            
+            // Chỉ kiểm tra isVerified để quyết định điều hướng
+            if (isVerified) {
+              // Nếu đã xác thực đủ thông tin, chuyển hướng sang /home
+              console.log("User verified, navigating to /home");
+              navigate("/home");
+            } else {
+              // Nếu chưa xác thực đủ thông tin, chuyển hướng sang /userinfo
+              console.log("User not verified, navigating to /userinfo");
+              navigate("/userinfo", { state: { email: userInfo.email, googleId: userInfo.id } });
+            }
           })
           .catch((err) => {
             console.error("Google login failed: ", err);
@@ -114,7 +159,7 @@ const Login = () => {
     },
     onError: () => setErrorText("Google login failed"),
   });
-
+  
   return (
     <div className="relative w-full h-screen flex items-center justify-center">
       {/* Hiệu ứng nền sao */}
