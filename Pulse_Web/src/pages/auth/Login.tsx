@@ -3,19 +3,17 @@ import { useState, useEffect, useRef } from "react";
 import { GoogleLogo } from "../../assets";
 import { InputField } from "./components";
 import { useGoogleLogin } from "@react-oauth/google";
-
-const users = [
-  { username: "admin", password: "admin123" },
-  { username: "user1", password: "password1" },
-  { username: "user2", password: "password2" },
-  { username: "test", password: "test123" },
-  { username: "tong", password: "tong123" },
-];
+import { loginUser, loginWithGoogle } from '../../redux/slice/authSlice';
+import { RootState, AppDispatch } from '../../redux/store';
+import { useDispatch, useSelector } from 'react-redux';
 
 const Login = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: "admin", password: "admin123" });
-  const [error, setError] = useState("");
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading } = useSelector((state: RootState) => state.auth);
+
+  const [form, setForm] = useState({ username: '', password: '' });
+  const [errorText, setErrorText] = useState("");
   const [isBtnEnable, setIsBtnEnable] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -65,51 +63,103 @@ const Login = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setError("");
+    setErrorText("");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && isBtnEnable) {
-      handleLogin();
+       handleLogin();
     }
   };
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     if (!isBtnEnable) return;
-
-    const userExists = users.find(
-      (user) => user.username === form.username && user.password === form.password
-    );
-
-    if (!userExists) {
-      setError("Invalid username or password. Please try again!");
-      return;
-    }
-
-    navigate("/home");
+    
+    dispatch(loginUser(form))
+      .unwrap() 
+      .then(() => {
+        navigate('/home');
+      })
+      .catch((err) => {
+        console.error('Login Error: ', err);
+        setErrorText('Invalid username or password. Please try again');
+      });
   };
+  
+  // const handleGoogleLogin = useGoogleLogin({
+  //   onSuccess: async (tokenResponse) => {
+  //     try {
+  //       const res = await fetch(
+  //         "https://www.googleapis.com/oauth2/v1/userinfo?alt=json",
+  //         {
+  //           headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+  //         }
+  //       );
+  //       const userInfo = await res.json();
+  //       console.log("Google User Info:", userInfo);
 
+  //       dispatch(loginWithGoogle({ email: userInfo.email, googleId: userInfo.id }))
+  //         .unwrap()
+  //         .then(() => {
+  //           navigate("/home");
+  //         })
+  //         .catch((err) => {
+  //           console.error("Google login failed: ", err);
+  //           setErrorText("Google login failed");
+  //         });
+  //     } catch (error) {
+  //       console.error("Error fetching Google user info:", error);
+  //       setErrorText("Google login failed");
+  //     }
+  //   },
+  //   onError: () => setErrorText("Google login failed"),
+  // });
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const res = await fetch(
-          "https://www.googleapis.com/oauth2/v1/userinfo?alt=json",
-          {
-            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-          }
-        );
+        const res = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
         const userInfo = await res.json();
         console.log("Google User Info:", userInfo);
-
-        navigate("/home");
+  
+        // Gọi API đăng nhập với Google
+        dispatch(loginWithGoogle({ email: userInfo.email, googleId: userInfo.id }))
+          .unwrap()
+          .then((response) => {
+            const { token, isVerified, user } = response;
+            
+            // Thêm logging để debug
+            console.log("API Response:", response);
+            console.log("isVerified value:", isVerified);
+            console.log("User data:", user);
+            
+            // Lưu token trước bất kể trường hợp nào
+            localStorage.setItem('token', token);
+            
+            // Chỉ kiểm tra isVerified để quyết định điều hướng
+            if (isVerified) {
+              // Nếu đã xác thực đủ thông tin, chuyển hướng sang /home
+              console.log("User verified, navigating to /home");
+              navigate("/home");
+            } else {
+              // Nếu chưa xác thực đủ thông tin, chuyển hướng sang /userinfo
+              console.log("User not verified, navigating to /userinfo");
+              navigate("/userinfo", { state: { email: userInfo.email, googleId: userInfo.id } });
+            }
+          })
+          .catch((err) => {
+            console.error("Google login failed: ", err);
+            setErrorText("Google login failed");
+          });
       } catch (error) {
         console.error("Error fetching Google user info:", error);
-        setError("Google login failed");
+        setErrorText("Google login failed");
       }
     },
-    onError: () => setError("Google login failed"),
+    onError: () => setErrorText("Google login failed"),
   });
-
+  
   return (
     <div className="relative w-full h-screen flex items-center justify-center">
       {/* Hiệu ứng nền sao */}
@@ -120,7 +170,7 @@ const Login = () => {
         <h1 className="text-3xl font-bold text-center text-green-400">PULSE</h1>
         <p className="text-center text-xl mt-2">Log in to your account</p>
         <p className="text-center text-sm mt-2 text-gray-400">Welcome back! Please enter your details</p>
-        <p className="h-4 text-red-500 text-sm text-center mt-2">{error}</p>
+        <p className="h-4 text-red-500 text-sm text-center mt-2">{errorText}</p>
 
         <InputField
           type="text"
@@ -152,7 +202,7 @@ const Login = () => {
           ${isBtnEnable ? "bg-green-400 hover:bg-green-700" : "bg-gray-600 cursor-not-allowed"}`}
           disabled={!isBtnEnable}
         >
-          Log in
+          {loading ? 'Logging in...' : 'Log in'}
         </button>
 
         <button 
