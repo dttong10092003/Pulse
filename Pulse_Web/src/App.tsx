@@ -4,8 +4,8 @@ import { ClipLoader } from 'react-spinners'; // Import spinner từ react-spinne
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Home from './pages/Home';
-
-const App = () => {
+import './App.css';
+  const App = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(false); // State để theo dõi trạng thái loading
 
