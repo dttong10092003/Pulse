@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ChatInput } from './index';
 import { Phone, Search, Columns2, Video, X, File, Bell, UserPlus, Pin, EyeOff, TriangleAlert, Trash2, LogOut } from 'lucide-react';
-
 interface Message {
   id: number;
   text: string;
@@ -21,6 +20,7 @@ interface ConversationDetailProps {
 }
 
 const ConversationDetail: React.FC<ConversationDetailProps> = ({ selectedConversation }) => {
+
   const [showSidebar, setShowSidebar] = useState(false);
   const [isToggled, setIsToggled] = useState(false);
   const toggleSidebar = () => {
@@ -29,34 +29,35 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({ selectedConvers
   const toggleSwitch = () => {
     setIsToggled(!isToggled);
   };
+
   return (
-    <div className="w-full h-screen flex">
-      {/* Main Chat Container */}
-      <div className={`${showSidebar ? 'w-2/3' : 'w-full'} bg-[#282828b2] flex flex-col transition-all duration-300`}>
+    <div className={`flex ${showSidebar ? 'w-full' : 'w-3/4'}`}>
+      {/* Main chat area */}
+      <div className={`${showSidebar ? 'w-3/4' : 'w-full'} bg-[#282828b2] h-screen flex flex-col`}>
         {/* Header */}
         <div className="bg-[#282828b2] p-3 text-white flex items-center justify-between">
-          {/* Avatar và tên cuộc trò chuyện */}
-          <div className="flex items-center gap-3">
-            <img
-              src={selectedConversation.avatar}
-              alt={selectedConversation.name}
-              className="w-10 h-10 rounded-full mr-3"
-            />
-            <h3 className="font-bold text-lg">{selectedConversation.name}</h3>
-          </div>
+            {/* Avatar và tên cuộc trò chuyện */}
+            <div className="flex items-center gap-3">
+              <img
+                src={selectedConversation.avatar}
+                alt={selectedConversation.name}
+                className="w-10 h-10 rounded-full mr-3"
+              />
+              <h3 className="font-bold text-lg">{selectedConversation.name}</h3>
+            </div>
 
-          {/* Các icon bên phải */}
-          <div className="flex items-center gap-4">
-            <Phone size={20} className="text-white cursor-pointer hover:text-gray-400 transition duration-200" />
-            <Video size={20} className="text-white cursor-pointer hover:text-gray-400 transition duration-200" />
-            <Search size={20} className="text-white cursor-pointer hover:text-gray-400 transition duration-200" />
-            <Columns2
-              size={20}
-              className={`cursor-pointer transition duration-200 ${showSidebar ? 'text-green-400' : 'text-white hover:text-gray-400'}`}
-              onClick={toggleSidebar}
-            />
+            {/* Các icon bên phải */}
+            <div className="flex items-center gap-4">
+              <Phone size={20} className="text-white cursor-pointer hover:text-gray-400 transition duration-200" />
+              <Video size={20} className="text-white cursor-pointer hover:text-gray-400 transition duration-200" />
+              <Search size={20} className="text-white cursor-pointer hover:text-gray-400 transition duration-200" />
+              <Columns2
+                size={20}
+                className={`cursor-pointer transition duration-200 ${showSidebar ? 'text-green-400' : 'text-white hover:text-gray-400'}`}
+                onClick={toggleSidebar}
+              />
+            </div>
           </div>
-        </div>
 
         {/* Chat Content */}
         <div className="flex-1 p-5 overflow-y-auto space-y-4">
@@ -64,9 +65,9 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({ selectedConvers
             <div key={msg.id} className={`flex items-start gap-3 ${msg.isSentByUser ? 'flex-row-reverse' : ''}`}>
               {/* Nếu là tin nhắn của người khác, hiển thị avatar */}
               {!msg.isSentByUser && (
-                <img
-                  src={selectedConversation.isGroup ? msg.senderAvatar : selectedConversation.avatar}
-                  alt={msg.sender}
+                <img 
+                  src={selectedConversation.isGroup ? msg.senderAvatar : selectedConversation.avatar} 
+                  alt={msg.sender} 
                   className="w-8 h-8 rounded-full"
                 />
               )}
@@ -92,7 +93,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({ selectedConvers
 
         <ChatInput />
       </div>
-
+      
       {/* Right Sidebar */}
       {showSidebar && (
         <div className="w-1/3 bg-[#1e1e1e] h-screen flex flex-col border-l border-gray-700"
@@ -198,7 +199,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({ selectedConvers
                   </div>
                   <div
                     onClick={toggleSwitch}
-                    className={`w-12 h-6 bg-gray-700 rounded-full flex items-center p-1 cursor-pointer ${isToggled ? 'bg-green-7  00' : 'bg-gray-700'}`}
+                    className={`w-12 h-6 bg-gray-700 rounded-full flex items-center p-1 cursor-pointer ${isToggled ? 'bg-green-700' : 'bg-gray-700'}`}
                   >
                     {/* Toggle circle */}
                     <div
