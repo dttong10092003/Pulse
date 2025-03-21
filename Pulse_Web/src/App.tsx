@@ -15,7 +15,7 @@ const App = () => {
 
   useEffect(() => {
     setLoading(true); // Khi thay đổi location thì bắt đầu loading
-    const timeout = setTimeout(() => setLoading(false), 500); // Giả lập thời gian loading 500ms
+    const timeout = setTimeout(() => setLoading(false), 120); // Giả lập thời gian loading 500ms
     return () => clearTimeout(timeout); // Dọn dẹp khi unmount
   }, [location]);
 
