@@ -63,12 +63,32 @@ export const registerUserWithPhone = createAsyncThunk(
   }
 );
 
+// export const loginWithGoogle = createAsyncThunk(
+//   'auth/loginWithGoogle',
+//   async (googleUserInfo: { email: string, googleId: string }, { rejectWithValue }) => {
+//     try {
+//       console.log('Google User Info:', googleUserInfo);
+//       console.log(`${URI_API}/login/google`);
+//       const response = await axios.post(`${URI_API}/login/google`, {
+//         email: googleUserInfo.email,
+//         googleId: googleUserInfo.googleId
+//       }, {
+//         headers: {
+//           'Content-Type': 'application/json',
+//         },
+//       });
+
+//       return response.data; // Response chứa token và user (hoặc thông tin cần thiết)
+//     } catch (error) {
+//       return rejectWithValue(error instanceof Error ? error.message : 'Google login failed');
+//     }
+//   }
+// );
 export const loginWithGoogle = createAsyncThunk(
   'auth/loginWithGoogle',
   async (googleUserInfo: { email: string, googleId: string }, { rejectWithValue }) => {
     try {
       console.log('Google User Info:', googleUserInfo);
-      console.log(`${URI_API}/login/google`);
       const response = await axios.post(`${URI_API}/login/google`, {
         email: googleUserInfo.email,
         googleId: googleUserInfo.googleId
@@ -78,7 +98,7 @@ export const loginWithGoogle = createAsyncThunk(
         },
       });
 
-      return response.data; // Response chứa token và user (hoặc thông tin cần thiết)
+      return response.data; // Response chứa token và user, isVerified
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Google login failed');
     }
@@ -116,6 +136,7 @@ const authSlice = createSlice({
       .addCase(registerUserWithPhone.fulfilled, (state, action: PayloadAction<{ username: string; token: string }>) => {
         state.loading = false;
         state.user = action.payload;  // Save user and token
+        console.log("Token đăng ký thành công: ", action.payload.token);
       })
       .addCase(registerUserWithPhone.rejected, (state, action) => {
         state.loading = false;
@@ -128,6 +149,7 @@ const authSlice = createSlice({
       .addCase(loginWithGoogle.fulfilled, (state, action: PayloadAction<{ username: string; token: string }>) => {
         state.loading = false;
         state.user = action.payload;  // Save user and token
+        console.log("Token đăng ký bằng Google: ", action.payload.token);
       })
       .addCase(loginWithGoogle.rejected, (state, action) => {
         state.loading = false;

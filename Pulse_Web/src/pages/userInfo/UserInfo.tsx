@@ -1,10 +1,17 @@
-import React, { useState } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { User, Mail, Phone, Calendar } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../../redux/store";
+import { createUserDetail } from "../../redux/slice/userSlice";
 
 export default function UserProfileForm() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { phoneNumber = "", email = "" } = location.state || {}; // Lấy thông tin khi điều hướng từ Register
+
+  const dispatch = useDispatch<AppDispatch>();
+  const { userDetails } = useSelector((state: RootState) => state.user);
 
   const [formData, setFormData] = useState({
     firstname: "",
@@ -18,6 +25,20 @@ export default function UserProfileForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  useEffect(() => {
+    if (userDetails) {
+      setFormData((prev) => ({
+        ...prev,
+        firstname: userDetails.firstname,
+        lastname: userDetails.lastname,
+        dob: userDetails.dob,
+        gender: userDetails.gender,
+        phoneNumber: userDetails.phoneNumber,
+        email: userDetails.email,
+      }));
+    }
+  }, [userDetails]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -56,14 +77,31 @@ export default function UserProfileForm() {
     if (validateForm()) {
       setIsSubmitting(true);
 
-      setTimeout(() => {
-        console.log(formData);
-        setIsSubmitting(false);
-        setSubmitSuccess(true);
-        setTimeout(() => setSubmitSuccess(false), 3000);
-      }, 1500);
+      const dataToSend = {
+        ...formData,  // Truyền tất cả dữ liệu từ formData
+        avatar: "",  // Thêm avatar mặc định nếu cần
+        backgroundAvatar: "", // Thêm backgroundAvatar mặc định nếu cần
+      };
+      console.log(dataToSend); // Debug: Kiểm tra dữ liệu gửi đi
+      // Tạo mới thông tin người dùng nếu chưa có
+      dispatch(createUserDetail(dataToSend))
+        .unwrap()
+        .then((response) => {
+          setIsSubmitting(false);
+          setSubmitSuccess(true);
+          setTimeout(() => setSubmitSuccess(false), 3000);
+          navigate('/home'); // Điều hướng về trang chính
+          console.log("User details created successfully:", response);
+        })
+        .catch((err) => {
+          console.error("Error creating user details:", err);
+          setIsSubmitting(false);
+        });
+
     }
   };
+
+
 
   return (
     <div className="min-h-screen bg-[#0a1122] flex items-center justify-center p-4 relative overflow-hidden">
@@ -106,9 +144,8 @@ export default function UserProfileForm() {
                     value={formData.firstname}
                     placeholder="John"
                     onChange={handleChange}
-                    className={`w-full pl-9 py-2 bg-slate-800/50 border ${
-                      errors.firstname ? "border-red-500" : "border-slate-700"
-                    } rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
+                    className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.firstname ? "border-red-500" : "border-slate-700"
+                      } rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
                   />
                 </div>
                 {errors.firstname && <p className="text-red-500 text-xs mt-1">{errors.firstname}</p>}
@@ -128,9 +165,8 @@ export default function UserProfileForm() {
                     value={formData.lastname}
                     placeholder="Doe"
                     onChange={handleChange}
-                    className={`w-full pl-9 py-2 bg-slate-800/50 border ${
-                      errors.lastname ? "border-red-500" : "border-slate-700"
-                    } rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
+                    className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.lastname ? "border-red-500" : "border-slate-700"
+                      } rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
                   />
                 </div>
                 {errors.lastname && <p className="text-red-500 text-xs mt-1">{errors.lastname}</p>}
@@ -193,8 +229,8 @@ export default function UserProfileForm() {
                     placeholder="+84xxxxxxxxx or 0xxxxxxxxx"
                     readOnly={!!phoneNumber} // Không cho chỉnh sửa nếu đã nhập từ trước
                     onChange={handleChange}
-                    className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.phoneNumber ? "border-red-500" : "border-slate-700"} rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}                  
-                    />
+                    className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.phoneNumber ? "border-red-500" : "border-slate-700"} rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
+                  />
                 </div>
                 {errors.phoneNumber ? (
                   <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>
@@ -218,8 +254,8 @@ export default function UserProfileForm() {
                     placeholder="explain@domain.com"
                     readOnly={!!email} // Không cho chỉnh sửa nếu đã nhập từ trước
                     onChange={handleChange}
-                    className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.email ? "border-red-500" : "border-slate-700"} rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}                  
-                    />
+                    className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.email ? "border-red-500" : "border-slate-700"} rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
+                  />
                 </div>
                 {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
               </div>
