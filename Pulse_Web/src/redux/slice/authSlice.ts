@@ -9,6 +9,8 @@ interface AuthState {
   user: { username: string; token: string } | null;
   loading: boolean;
   error: string | null;
+  checkStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+  checkMessage: string | null;
 }
 
 // Define the initial state
@@ -16,6 +18,8 @@ const initialState: AuthState = {
   user: null,
   loading: false,
   error: null,
+  checkStatus: 'idle',
+  checkMessage: null,
 };
 
 // Define the type for user login data
@@ -28,6 +32,11 @@ interface RegisterData {
   phoneNumber: string;
   username: string;
   password: string;
+}
+
+interface CheckUserExistsData {
+  phoneNumber?: string;
+  username?: string;
 }
 
 // Tạo thunk cho đăng nhập
@@ -105,6 +114,25 @@ export const loginWithGoogle = createAsyncThunk(
   }
 );
 
+export const checkUserExists = createAsyncThunk(
+  'auth/checkUserExists',
+  async (data: CheckUserExistsData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`${URI_API}/check-user`, data, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      return response.data; // Trả về message
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      }
+      return rejectWithValue('Phone number or Username already in use');
+    }
+  }
+);
+
 // Tạo slice cho auth
 const authSlice = createSlice({
   name: 'auth',
@@ -154,6 +182,18 @@ const authSlice = createSlice({
       .addCase(loginWithGoogle.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(checkUserExists.pending, (state) => {
+        state.checkStatus = 'loading';
+        state.checkMessage = null;
+      })
+      .addCase(checkUserExists.fulfilled, (state, action: PayloadAction<{ message: string }>) => {
+        state.checkStatus = 'succeeded';
+        state.checkMessage = action.payload.message;
+      })
+      .addCase(checkUserExists.rejected, (state, action) => {
+        state.checkStatus = 'failed';
+        state.checkMessage = action.payload as string;
       });
   },
 });
