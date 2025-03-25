@@ -5,7 +5,7 @@ import { InputField } from "./components";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../redux/store';
-import { registerUserWithPhone, loginWithGoogle } from '../../redux/slice/authSlice';
+import { registerUserWithPhone, loginWithGoogle, checkUserExists } from '../../redux/slice/authSlice';
 
 import { auth } from "../../firebase/setup";
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
@@ -116,6 +116,10 @@ const Register = () => {
         }
 
         try {
+            const check = await dispatch(checkUserExists({ phoneNumber: form.phoneNumber, username: form.username }))
+                .unwrap();
+            console.log("Check user exists result:", check.message);
+
             setErrorText("");
 
             // Kiểm tra và chỉ khởi tạo reCAPTCHA nếu chưa tồn tại
@@ -136,13 +140,16 @@ const Register = () => {
             console.log("OTP sent successfully");
             console.log("Confirmation result:", result);
             console.log("isOtpModalOpen set to true");
-        } catch (error) {
-            console.error("Error sending OTP:", error);
-            setErrorText("Failed to send OTP. Try again!");
+        } catch (err) {
+            if (typeof err === 'string') {
+                setErrorText(err); // Backend trả về message rõ ràng rồi
+            } else {
+                setErrorText("Đăng ký thất bại. Vui lòng thử lại.");
+            }
+
+            console.error("❌ Check failed or already exists:", err);
         }
 
-        // setError("");
-        // navigate("/home");
     };
 
     const handleOtpChange = (index: number, value: string) => {
