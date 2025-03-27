@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { User, Mail, Phone, Calendar } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
@@ -8,10 +8,12 @@ import { createUserDetail } from "../../redux/slice/userSlice";
 export default function UserProfileForm() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { phoneNumber = "", email = "" } = location.state || {}; // Lấy thông tin khi điều hướng từ Register
+  const { phoneNumber = "", email = "" } = location.state || {}; 
 
   const dispatch = useDispatch<AppDispatch>();
   const { userDetails } = useSelector((state: RootState) => state.user);
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [formData, setFormData] = useState({
     firstname: "",
@@ -25,6 +27,58 @@ export default function UserProfileForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+
+    const stars = Array.from({ length: 299 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      radius: Math.random() * 1.5 + 0.5,
+    }))
+
+    const drawStars = () => {
+      // Create vertical gradient from top to bottom
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
+      gradient.addColorStop(0, "#0f172a")
+      gradient.addColorStop(1, "#1e293b")
+
+      // Fill background with gradient
+      ctx.fillStyle = gradient
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      // Draw stars
+      ctx.fillStyle = "white"
+      stars.forEach((star) => {
+        ctx.beginPath()
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2)
+        ctx.fill()
+      })
+    }
+
+    drawStars()
+
+    // Resize handler
+    const handleResize = () => {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+      drawStars()
+    }
+
+    window.addEventListener('resize', handleResize)
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
 
   useEffect(() => {
     if (userDetails) {
@@ -78,48 +132,31 @@ export default function UserProfileForm() {
       setIsSubmitting(true);
 
       const dataToSend = {
-        ...formData,  // Truyền tất cả dữ liệu từ formData
-        avatar: "",  // Thêm avatar mặc định nếu cần
-        backgroundAvatar: "", // Thêm backgroundAvatar mặc định nếu cần
+        ...formData,
+        avatar: "",
+        backgroundAvatar: "",
       };
-      console.log(dataToSend); // Debug: Kiểm tra dữ liệu gửi đi
-      // Tạo mới thông tin người dùng nếu chưa có
+      console.log(dataToSend);
       dispatch(createUserDetail(dataToSend))
         .unwrap()
         .then((response) => {
           setIsSubmitting(false);
           setSubmitSuccess(true);
           setTimeout(() => setSubmitSuccess(false), 3000);
-          navigate('/home'); // Điều hướng về trang chính
+          navigate('/home');
           console.log("User details created successfully:", response);
         })
         .catch((err) => {
           console.error("Error creating user details:", err);
           setIsSubmitting(false);
         });
-
     }
   };
 
-
-
   return (
     <div className="min-h-screen bg-[#0a1122] flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(100)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-white"
-            style={{
-              width: Math.random() * 2 + 1 + "px",
-              height: Math.random() * 2 + 1 + "px",
-              top: Math.random() * 100 + "%",
-              left: Math.random() * 100 + "%",
-              opacity: Math.random() * 0.7 + 0.3,
-            }}
-          />
-        ))}
-      </div>
+      {/* Starry background effect */}
+      <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full" />
 
       <div className="w-full max-w-2xl bg-slate-900/70 rounded-lg border border-slate-800 shadow-xl overflow-hidden relative z-10">
         <div className="p-6 sm:p-8">
@@ -128,6 +165,7 @@ export default function UserProfileForm() {
           <p className="text-slate-400 text-center mb-6">Please enter your details</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Rest of the form remains the same as in the original code */}
             {/* First Name & Last Name */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* First Name */}
@@ -227,7 +265,7 @@ export default function UserProfileForm() {
                     type="text"
                     value={formData.phoneNumber}
                     placeholder="+84xxxxxxxxx or 0xxxxxxxxx"
-                    readOnly={!!phoneNumber} // Không cho chỉnh sửa nếu đã nhập từ trước
+                    readOnly={!!phoneNumber}
                     onChange={handleChange}
                     className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.phoneNumber ? "border-red-500" : "border-slate-700"} rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
                   />
@@ -252,7 +290,7 @@ export default function UserProfileForm() {
                     type="text"
                     value={formData.email}
                     placeholder="explain@domain.com"
-                    readOnly={!!email} // Không cho chỉnh sửa nếu đã nhập từ trước
+                    readOnly={!!email}
                     onChange={handleChange}
                     className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.email ? "border-red-500" : "border-slate-700"} rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
                   />

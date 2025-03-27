@@ -38,6 +38,10 @@ interface CheckUserExistsData {
   phoneNumber?: string;
   username?: string;
 }
+interface CheckEmailOrPhoneData {
+  email?: string;
+  phoneNumber?: string;
+}
 
 // Tạo thunk cho đăng nhập
 export const loginUser = createAsyncThunk(
@@ -132,7 +136,24 @@ export const checkUserExists = createAsyncThunk(
     }
   }
 );
-
+export const checkEmailOrPhoneExists = createAsyncThunk(
+  'auth/checkEmailOrPhoneExists',
+  async (data: CheckEmailOrPhoneData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`${URI_API}/check-email-phone`, data, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      return response.data; // Trả về { message: 'Account exists' }
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      }
+      return rejectWithValue('Phone number or Email not found');
+    }
+  }
+);
 // Tạo slice cho auth
 const authSlice = createSlice({
   name: 'auth',
@@ -194,7 +215,21 @@ const authSlice = createSlice({
       .addCase(checkUserExists.rejected, (state, action) => {
         state.checkStatus = 'failed';
         state.checkMessage = action.payload as string;
+      })
+      .addCase(checkEmailOrPhoneExists.pending, (state) => {
+        state.checkStatus = 'loading';
+        state.checkMessage = null;
+      })
+      .addCase(checkEmailOrPhoneExists.fulfilled, (state, action: PayloadAction<{ message: string }>) => {
+        state.checkStatus = 'succeeded';
+        state.checkMessage = action.payload.message;
+      })
+      .addCase(checkEmailOrPhoneExists.rejected, (state, action) => {
+        state.checkStatus = 'failed';
+        state.checkMessage = action.payload as string;
       });
+
+      
   },
 });
 
