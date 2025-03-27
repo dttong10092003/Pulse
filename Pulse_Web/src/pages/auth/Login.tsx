@@ -192,9 +192,11 @@ const Login = () => {
           onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
         />
 
-        <p className="mt-4 text-sm text-blue-400 hover:text-gray-200 cursor-pointer inline-block float-right">
+        <button className="mt-4 text-sm text-blue-400 hover:text-gray-200 cursor-pointer inline-block float-right"
+        onClick={() => navigate("/forgot-password")}
+        >
           Forgot Password?
-        </p>
+        </button>
 
         <button
           onClick={handleLogin}
