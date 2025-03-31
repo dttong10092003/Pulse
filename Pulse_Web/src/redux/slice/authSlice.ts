@@ -214,7 +214,7 @@ export const resetPasswordWithPhone = createAsyncThunk(
         },
       });
       return response.data; // { message: "Password has been reset successfully via phone" }
-    } catch (error: any) {
+    } catch (error) {
       if (axios.isAxiosError(error) && error.response?.data?.message) {
         return rejectWithValue(error.response.data.message);
       }
