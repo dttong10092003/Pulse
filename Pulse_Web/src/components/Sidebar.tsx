@@ -3,6 +3,8 @@ import { Home, Bell, MessageSquare, Bookmark, User, LayoutDashboard, MoreHorizon
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Columns2, ChevronRight } from "lucide-react";
+import { useSelector } from 'react-redux';
+import { RootState } from '../redux/store';
 
 const Sidebar = () => {
     const [showSidebar, setShowSidebar] = useState(true);
@@ -10,6 +12,8 @@ const Sidebar = () => {
     const [activeItem, setActiveItem] = useState(localStorage.getItem("activeItem") || "Home");
     const [showMenu, setShowMenu] = useState(false);
     const [isHovered, setIsHovered] = useState(false); // Thêm state để kiểm tra hover vào sidebar
+    const userDetail = useSelector((state: RootState) => state.auth.userDetail);
+    
 
     useEffect(() => {
         const handleStorageChange = () => {
@@ -33,7 +37,7 @@ const Sidebar = () => {
     };
 
     return (
-        <aside 
+        <aside
             className={`fixed top-0 left-0 h-screen ${showSidebar ? 'w-72' : 'w-20'} bg-[#1F1F1F] text-white p-3 flex flex-col justify-between border-r border-zinc-800 transition-all duration-300`}
             onMouseEnter={() => setIsHovered(true)} // Khi rê chuột vào sidebar
             onMouseLeave={() => setIsHovered(false)} // Khi rê chuột ra khỏi sidebar
@@ -53,11 +57,23 @@ const Sidebar = () => {
             </div>
             <div className="flex flex-col">
                 <div className="flex items-center gap-2 p-3 pl-0 relative">
-                    <img src="https://picsum.photos/200" alt="Profile" className="w-11 h-11 rounded-full object-cover ml-2" />
+                    {/* <img src="https://picsum.photos/200" alt="Profile" className="w-11 h-11 rounded-full object-cover ml-2" />
                     <div className={`flex flex-col ml-1 ${!showSidebar && 'hidden'}`}>
                         <span className="text-white font-semibold">200Lab Guest</span>
                         <span className="text-zinc-400 text-sm">@guest</span>
+                    </div> */}
+                    <img
+                        src={userDetail?.avatar || "https://picsum.photos/200"}
+                        alt="Profile"
+                        className="w-11 h-11 rounded-full object-cover ml-2"
+                    />
+                    <div className={`flex flex-col ml-1 ${!showSidebar && 'hidden'}`}>
+                        <span className="text-white font-semibold">
+                            {userDetail?.firstname} {userDetail?.lastname}
+                        </span>
+                        <span className="text-zinc-400 text-sm">@{userDetail?.username}</span>
                     </div>
+
                     {/* Show three dots button only when sidebar is expanded */}
                     {showSidebar && (
                         <button onClick={() => setShowMenu(!showMenu)} className="ml-auto text-zinc-400 hover:text-white relative cursor-pointer">
@@ -80,7 +96,7 @@ const Sidebar = () => {
             </div>
             {/* Sidebar toggle button */}
             <button
-                className={`cursor-pointer absolute top-4 right-1 text-lg transition duration-200 ${isHovered || showSidebar ? 'text-green-400' : 'text-white hover:text-gray-400'}`} 
+                className={`cursor-pointer absolute top-4 right-1 text-lg transition duration-200 ${isHovered || showSidebar ? 'text-green-400' : 'text-white hover:text-gray-400'}`}
                 onClick={toggleSidebar}
             >
                 {showSidebar ? <Columns2 size={20} /> : <ChevronRight size={20} />} {/* Change icon when sidebar is collapsed */}

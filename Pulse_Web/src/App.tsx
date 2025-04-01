@@ -5,6 +5,10 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Home from './pages/Home';
 import UserInfo from './pages/userInfo/UserInfo'; // Trang UserInfo
+
+import UserInfo from './pages/userInfo/UserInfo';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 import { Provider } from 'react-redux';
 import { store } from './redux/store';
 import './App.css';
@@ -31,7 +35,9 @@ const App = () => {
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/userinfo" element={<UserInfo />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/home/*" element={<Home />} /> {/* thêm để quản lý các route con */}
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </Provider>
   );
