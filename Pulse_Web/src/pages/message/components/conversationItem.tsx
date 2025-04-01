@@ -2,7 +2,7 @@ import React from 'react';
 
 interface ConversationItemProps {
   conversation: {
-    conversationId: string;
+    _id: string;
     groupName: string;
     avatar: string;
     isOnline?: boolean;
@@ -19,7 +19,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, onSel
     <div
       className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer relative 
         ${isSelected ? 'bg-cyan-600/30' : 'bg-gray-700 hover:bg-gray-600'}`}
-      onClick={() => onSelectConversation(conversation.conversationId)}
+      onClick={() => onSelectConversation(conversation._id)}
     >
       {/* Avatar */}
       <div className="relative">

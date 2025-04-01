@@ -5,37 +5,47 @@ const CHAT_SERVICE_URL = 'http://localhost:3000/chat';
 
 interface Conversation {
   _id: string;
-  members: string[];
+  members: {userId: string; name: string; avatar: string}[]; // Danh sách thành viên trong nhóm
   isGroup: boolean;
   groupName: string;
-  adminId: string | null;
-  updatedAt: string;
-  createdAt: string;
+  adminId?: string;
+  updatedAt?: string;
+  createdAt?: string;
+  messages: Message[];
+  unreadCount: number;
+  avatar: string;
+  lastMessage?: string; // Tin nhắn cuối cùng (có thể là tên người gửi + nội dung)
+  isOnline?: boolean; // Trạng thái online của người dùng
 }
 
 interface Message {
-  _id: string;
+  _id?: string;
   conversationId: string;
   senderId: string;
   type: 'text' | 'emoji' | 'image' | 'file';
   content: string;
   isDeleted: boolean;
   timestamp: string;
+  pinned?: boolean;
+  senderAvatar?: string;
+  isSentByUser: boolean; // Để xác định xem tin nhắn có phải do người dùng gửi hay không
 }
 
 // Define the state for Chat
 interface ChatState {
-  conversations: Conversation[] | null;
-  messages: Message[] | null;
+  conversations: Conversation[];
+  messages: Message[];
   onlineUsers: string[]; // List of online users
+  selectedConversation: Conversation | null; // Cuộc trò chuyện đã chọn
   loading: boolean;
   error: string | null;
 }
 
 const initialState: ChatState = {
-  conversations: null,
-  messages: null,
+  conversations: [],
+  messages: [],
   onlineUsers: [],
+  selectedConversation: null,
   loading: false,
   error: null,
 };
@@ -226,7 +236,7 @@ export const searchConversations = createAsyncThunk(
 // 9️⃣ Gửi tin nhắn
 export const sendMessage = createAsyncThunk(
   'chat/sendMessage',
-  async ({ conversationId, senderId, type, content }: { conversationId: string; senderId: string; type: string; content: string }, { getState, rejectWithValue }) => {
+  async ({ conversationId, senderId, type, content, isDeleted }: { conversationId: string; senderId: string; type: string; content: string, isDeleted: boolean }, { getState, rejectWithValue }) => {
     const token = (getState() as any).auth.user?.token;
     if (!token) {
       return rejectWithValue('No token found');
@@ -235,7 +245,7 @@ export const sendMessage = createAsyncThunk(
     try {
       const response = await axios.post(
         `${CHAT_SERVICE_URL}/messages/send`,
-        { conversationId, senderId, type, content },
+        { conversationId, senderId, type, content, isDeleted },
         { headers: { Authorization: `${token}` } }
       );
       return response.data;
@@ -405,7 +415,24 @@ export const unpinMessage = createAsyncThunk(
 const chatSlice = createSlice({
   name: 'chat',
   initialState,
-  reducers: {},
+  reducers: {
+    addMessageToState: (state, action: PayloadAction<Message>) => {
+      if (state.selectedConversation) {
+        const conversation = state.selectedConversation;
+        // Tìm cuộc trò chuyện và cập nhật tin nhắn
+        if (conversation._id === action.payload.conversationId) {
+          state.messages.push(action.payload); // Thêm tin nhắn vào state
+        }
+      }
+    },
+    // Action để cập nhật cuộc trò chuyện đã chọn
+    setSelectedConversation: (state, action: PayloadAction<Conversation | null>) => {
+      state.selectedConversation = action.payload;
+      if (action.payload) {
+        state.messages = action.payload.messages || [];
+      }
+    },
+  },
   extraReducers: (builder) => {
     // 1️⃣ Kiểm tra trạng thái online của người dùng
     builder
@@ -673,4 +700,5 @@ const chatSlice = createSlice({
   },
 });
 
+export const { addMessageToState, setSelectedConversation } = chatSlice.actions;
 export default chatSlice.reducer;

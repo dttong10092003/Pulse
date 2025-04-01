@@ -7,13 +7,13 @@ interface Message {
   content: string;
   timestamp: string;
   senderAvatar?: string; // Nếu là chat nhóm, mỗi tin nhắn có avatar riêng
-  isSentByUser: boolean;
+  isSentByUser?: boolean;
   type: string; // Loại tin nhắn (text, emoji, image, v.v.)
   isDeleted: boolean; // Nếu tin nhắn đã bị xóa
-  isPinned: boolean; // Nếu tin nhắn đã được ghim
+  isPinned?: boolean; // Nếu tin nhắn đã được ghim
 }
 interface Conversation {
-  conversationId: string;
+  _id: string; // ID của cuộc trò chuyện
   groupName: string;
   avatar: string;
   isOnline?: boolean;
@@ -56,14 +56,14 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ conversations
 
           return (
             <ConversationItem
-              key={conversation.conversationId}
+              key={conversation._id}
               conversation={{
                 ...conversation,
                 lastMessage,
                 unreadCount: conversation.unreadCount,
               }}
               onSelectConversation={onSelectConversation}
-              isSelected={conversation.conversationId === selectedConversationId}
+              isSelected={conversation._id === selectedConversationId}
             />
           );
         })}

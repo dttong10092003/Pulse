@@ -14,12 +14,12 @@ interface Message {
 
 interface ConversationDetailProps {
   selectedConversation: {
-    conversationId: string;
+    _id: string;
     groupName: string;
     avatar: string; // Avatar chung nếu là chat riêng
     isGroup: boolean;
     messages: Message[];
-  };
+  } | null;
 }
 
 const ConversationDetail: React.FC<ConversationDetailProps> = ({ selectedConversation }) => {
@@ -32,6 +32,10 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({ selectedConvers
   const toggleSwitch = () => {
     setIsToggled(!isToggled);
   };
+
+  if (!selectedConversation) {
+    return <div className="p-5 text-white">No conversation selected. Please select a conversation to start chatting.</div>;
+  }
 
   return (
     <div className={`flex ${showSidebar ? 'w-full' : 'w-3/4'}`}>
