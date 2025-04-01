@@ -82,7 +82,7 @@ export const updateUserDetail = createAsyncThunk(
       try {
         // Gửi yêu cầu POST đến API Gateway với mảng userIds
         const response = await axios.post(`${USER_SERVICE_URL}/user-details-by-ids`, { userIds }, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `${token}` },
         });
         return response.data; // Trả về dữ liệu người dùng
       } catch (error) {
