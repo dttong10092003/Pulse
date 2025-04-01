@@ -2,21 +2,24 @@ import React, { useState } from 'react';
 import { ChatInput } from './index';
 import { Phone, Search, Columns2, Video, X, File, Bell, UserPlus, Pin, EyeOff, TriangleAlert, Trash2, LogOut } from 'lucide-react';
 interface Message {
-  id: number;
-  text: string;
-  sender: string;
+  conversationId: string;
+  senderId: string;
+  content: string;
+  timestamp: string;
   senderAvatar?: string; // Nếu là chat nhóm, mỗi tin nhắn có avatar riêng
   isSentByUser: boolean;
-  timestamp: string;
+  
+  
 }
 
 interface ConversationDetailProps {
   selectedConversation: {
-    name: string;
+    _id: string;
+    groupName: string;
     avatar: string; // Avatar chung nếu là chat riêng
     isGroup: boolean;
     messages: Message[];
-  };
+  } | null;
 }
 
 const ConversationDetail: React.FC<ConversationDetailProps> = ({ selectedConversation }) => {
@@ -30,6 +33,10 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({ selectedConvers
     setIsToggled(!isToggled);
   };
 
+  if (!selectedConversation) {
+    return <div className="p-5 text-white">No conversation selected. Please select a conversation to start chatting.</div>;
+  }
+
   return (
     <div className={`flex ${showSidebar ? 'w-full' : 'w-3/4'}`}>
       {/* Main chat area */}
@@ -40,10 +47,10 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({ selectedConvers
             <div className="flex items-center gap-3">
               <img
                 src={selectedConversation.avatar}
-                alt={selectedConversation.name}
+                alt={selectedConversation.groupName}
                 className="w-10 h-10 rounded-full mr-3"
               />
-              <h3 className="font-bold text-lg">{selectedConversation.name}</h3>
+              <h3 className="font-bold text-lg">{selectedConversation.groupName}</h3>
             </div>
 
             {/* Các icon bên phải */}
@@ -61,13 +68,13 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({ selectedConvers
 
         {/* Chat Content */}
         <div className="flex-1 p-5 overflow-y-auto space-y-4">
-          {selectedConversation.messages.map((msg) => (
-            <div key={msg.id} className={`flex items-start gap-3 ${msg.isSentByUser ? 'flex-row-reverse' : ''}`}>
+          {selectedConversation.messages.map((msg, index) => (
+            <div key={index} className={`flex items-start gap-3 ${msg.isSentByUser ? 'flex-row-reverse' : ''}`}>
               {/* Nếu là tin nhắn của người khác, hiển thị avatar */}
               {!msg.isSentByUser && (
                 <img 
                   src={selectedConversation.isGroup ? msg.senderAvatar : selectedConversation.avatar} 
-                  alt={msg.sender} 
+                  alt={msg.senderId} 
                   className="w-8 h-8 rounded-full"
                 />
               )}
@@ -75,11 +82,11 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({ selectedConvers
               <div className="flex flex-col max-w-[70%]">
                 {/* Nếu là chat nhóm, hiển thị tên người gửi (trừ tin nhắn của user) */}
                 {!msg.isSentByUser && selectedConversation.isGroup && (
-                  <p className="text-xs text-gray-400 mb-1">{msg.sender}</p>
+                  <p className="text-xs text-gray-400 mb-1">{msg.senderId}</p>
                 )}
 
                 <div className={`p-3 rounded-lg text-white ${msg.isSentByUser ? 'bg-green-600' : 'bg-gray-600'} break-words`}>
-                  {msg.text}
+                  {msg.content}
                 </div>
 
                 {/* Hiển thị thời gian */}
@@ -117,10 +124,10 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({ selectedConvers
             <div className="flex flex-col items-center mb-4">
               <img
                 src={selectedConversation.avatar}
-                alt={selectedConversation.name}
+                alt={selectedConversation.groupName}
                 className="w-20 h-20 rounded-full mb-2"
               />
-              <h2 className="text-white font-bold text-lg">{selectedConversation.name}</h2>
+              <h2 className="text-white font-bold text-lg">{selectedConversation.groupName}</h2>
               {selectedConversation.isGroup && (
                 <p className="text-gray-400 text-sm">Group · {selectedConversation.messages.length} message</p>
               )}

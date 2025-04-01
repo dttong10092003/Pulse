@@ -247,7 +247,9 @@ export const getUserProfile = createAsyncThunk(
       });
       return res.data;
     } catch (err) {
-      return rejectWithValue('Failed to fetch user profile');
+      if (axios.isAxiosError(err) && err.response?.data?.message) {
+        return rejectWithValue(err.response.data.message);
+      }
     }
   }
 );

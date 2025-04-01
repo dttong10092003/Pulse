@@ -1,15 +1,51 @@
 import React, { useState } from 'react';
 import { Upload, SendHorizonal, Smile } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { addMessageToState } from '../../../redux/slice/chatSlice';
+import { io } from 'socket.io-client';
+import { RootState } from '../../../redux/store';
+
+const socket = io('http://localhost:5005');
 
 const ChatInput: React.FC = () => {
   const [message, setMessage] = useState('');
   const [isEmojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
+  const dispatch = useDispatch();
+
+  // const handleSend = () => {
+  //   if (message.trim()) {
+  //     console.log('Message sent:', message);
+  //     setMessage('');
+  //   }
+  // };
 
   const handleSend = () => {
+    if (!selectedConversation?._id) {
+      console.error('No conversation selected');
+      return; // Không gửi tin nhắn nếu không có selectedConversation
+    }
+
     if (message.trim()) {
-      console.log('Message sent:', message);
-      setMessage('');
+      // Tạo tin nhắn mới
+      const newMessage = {
+        conversationId: selectedConversation._id, // Sử dụng _id thay vì conversationId
+        senderId: "userId1", // Cập nhật với userId thực tế từ Redux
+        content: message,
+        type: 'text' as const,
+        timestamp: new Date().toISOString(),
+        isDeleted: false,
+        isSentByUser: true,
+      };
+
+      // Gửi tin nhắn qua Socket.IO
+      socket.emit('sendMessage', newMessage);
+
+      // Thêm tin nhắn vào Redux state
+      dispatch(addMessageToState(newMessage));
+
+      setMessage(''); // Xóa nội dung sau khi gửi
     }
   };
 

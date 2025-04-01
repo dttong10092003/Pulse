@@ -2,14 +2,15 @@ import React from 'react';
 
 interface ConversationItemProps {
   conversation: {
-    id: number;
-    name: string;
-    lastMessage: string;
+    _id: string;
+    groupName: string;
     avatar: string;
     isOnline?: boolean;
+    isGroup?: boolean;
     unreadCount: number;
+    lastMessage?: string; // Tin nhắn cuối cùng (có thể là tên người gửi + nội dung)
   };
-  onSelectConversation: (id: number) => void;
+  onSelectConversation: (conversationId: string) => void;
   isSelected: boolean;
 }
 
@@ -18,11 +19,11 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, onSel
     <div
       className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer relative 
         ${isSelected ? 'bg-cyan-600/30' : 'bg-gray-700 hover:bg-gray-600'}`}
-      onClick={() => onSelectConversation(conversation.id)}
+      onClick={() => onSelectConversation(conversation._id)}
     >
       {/* Avatar */}
       <div className="relative">
-        <img src={conversation.avatar} alt={conversation.name} className="w-10 h-10 rounded-full" />
+        <img src={conversation.avatar} alt={conversation.groupName} className="w-10 h-10 rounded-full" />
         
         {/* ✅ Icon online nằm trên cùng bên trái */}
         {conversation.isOnline && (
@@ -32,8 +33,9 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, onSel
 
       {/* Nội dung */}
       <div className="flex-1 min-w-0">
-        <h3 className="text-white">{conversation.name}</h3>
+        <h3 className="text-white">{conversation.groupName}</h3>
         <p className="text-gray-400 text-sm truncate w-[180px]">{conversation.lastMessage}</p>
+
       </div>
 
       {/* ✅ Badge tin nhắn chưa đọc nằm bên phải cạnh tên */}
