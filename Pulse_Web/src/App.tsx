@@ -4,7 +4,7 @@ import { ClipLoader } from 'react-spinners'; // Import spinner từ react-spinne
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Home from './pages/Home';
-import UserInfo from './pages/userInfo/UserInfo';
+import UserInfo from './pages/userInfo/UserInfo'; // Trang UserInfo
 import { Provider } from 'react-redux';
 import { store } from './redux/store';
 import './App.css';
@@ -15,7 +15,7 @@ const App = () => {
 
   useEffect(() => {
     setLoading(true); // Khi thay đổi location thì bắt đầu loading
-    const timeout = setTimeout(() => setLoading(false), 120); // Giả lập thời gian loading 500ms
+    const timeout = setTimeout(() => setLoading(false), 120); // Giả lập thời gian loading 120ms
     return () => clearTimeout(timeout); // Dọn dẹp khi unmount
   }, [location]);
 

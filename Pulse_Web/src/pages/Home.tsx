@@ -7,6 +7,7 @@ import EditProfile from "./profile/EditProfile";
 import Explore from "./explore/Explore";
 import Setting from "./setting/AccountSettings";
 import Notification from "./notification/Notification";
+import UserInfo_Follow from "./userInfor_Follow/UserInfo_Follow";
 import { Routes, Route, useLocation } from "react-router-dom";
  
 const Home = () => {
@@ -27,6 +28,7 @@ const Home = () => {
           <Route path="/explore" element={<Explore />} />
           <Route path="/setting" element={<Setting />} />
           <Route path="/notifications" element={<Notification />} />
+          <Route path="/user-info" element={<UserInfo_Follow />} />
         </Routes>
       </div>
 
