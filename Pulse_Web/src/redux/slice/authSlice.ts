@@ -13,7 +13,7 @@ interface AuthState {
   checkMessage: string | null;
   resetStatus?: 'idle' | 'loading' | 'succeeded' | 'failed';
   resetMessage?: string | null;
-
+  userDetail?: UserDetail | null;
 }
 
 
@@ -26,6 +26,8 @@ const initialState: AuthState = {
   checkMessage: null,
   resetStatus: 'idle',
   resetMessage: null,
+  userDetail: null,
+  
 };
 
 // Define the type for user login data
@@ -60,7 +62,19 @@ interface ResetPasswordWithPhonePayload {
   phoneNumber: string;
   password: string;
 }
-
+interface UserDetail {
+  _id: string;
+  userId: string;
+  username: string;
+  firstname: string;
+  lastname: string;
+  DOB: string;
+  gender: string;
+  phoneNumber: string;
+  email: string;
+  avatar: string;
+  backgroundAvatar: string;
+}
 
 // Tạo thunk cho đăng nhập
 export const loginUser = createAsyncThunk(
@@ -222,6 +236,21 @@ export const resetPasswordWithPhone = createAsyncThunk(
     }
   }
 );
+export const getUserProfile = createAsyncThunk(
+  'auth/getUserProfile',
+  async (token: string, { rejectWithValue }) => {
+    try {
+      const res = await axios.get(`${URI_API}/me`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+      return res.data;
+    } catch (err) {
+      return rejectWithValue('Failed to fetch user profile');
+    }
+  }
+);
 
 
 // Tạo slice cho auth
@@ -337,6 +366,13 @@ const authSlice = createSlice({
       .addCase(resetPasswordWithPhone.rejected, (state, action) => {
         state.resetStatus = 'failed';
         state.resetMessage = action.payload as string;
+      })
+      .addCase(getUserProfile.fulfilled, (state, action: PayloadAction<{ user: { username: string; token?: string }, userDetail: UserDetail }>) => {
+        state.user = { ...action.payload.user, token: action.payload.user.token || '' };
+        state.userDetail = action.payload.userDetail;
+      })      
+      .addCase(getUserProfile.rejected, (state, action) => {
+        state.error = action.payload as string;
       });
 
 
