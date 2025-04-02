@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, SendHorizonal, Smile } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -20,6 +20,22 @@ const ChatInput: React.FC = () => {
   //     setMessage('');
   //   }
   // };
+
+  useEffect(() => {
+    console.log('Socket ID:', socket.id);
+  }, []);
+
+  useEffect(() => {
+    // Lắng nghe sự kiện receiveMessage từ server
+    socket.on('receiveMessage', (newMessage) => {
+      dispatch(addMessageToState(newMessage)); // Thêm tin nhắn vào Redux
+    });
+
+    // Dọn dẹp khi component unmount
+    return () => {
+      socket.off('receiveMessage');
+    };
+  }, [dispatch]);
 
   const handleSend = () => {
     if (!selectedConversation?._id) {

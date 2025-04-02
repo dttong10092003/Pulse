@@ -79,6 +79,7 @@ const Login = () => {
     .unwrap()
     .then((res) => {
       localStorage.setItem('token', res.token);
+      console.log("Login successful, token:", res.token);
       dispatch(getUserProfile(res.token)); // lấy profile
       navigate('/home');
     })
