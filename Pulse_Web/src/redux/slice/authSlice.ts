@@ -6,7 +6,8 @@ const URI_API = 'http://localhost:3000/auth';
 
 // Define the type for the auth state
 interface AuthState {
-  user: { username: string; token: string } | null;
+  user: {_id: string, username: string} | null;
+  token: string | null; // Lưu token từ localStorage
   loading: boolean;
   error: string | null;
   checkStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
@@ -20,6 +21,7 @@ interface AuthState {
 // Define the initial state
 const initialState: AuthState = {
   user: null,
+  token: localStorage.getItem('token') || '', // Lưu token từ localStorage
   loading: false,
   error: null,
   checkStatus: 'idle',
@@ -88,7 +90,19 @@ export const loginUser = createAsyncThunk(
           'Content-Type': 'application/json',
         },
       });
-      return response.data;  // Giả sử API trả về { user, token }
+       // Kiểm tra phản hồi trả về từ backend
+       if (response.data && response.data.token && response.data.user) {
+        console.log("Token đăng nhập thành công: ", response.data.token);
+        console.log("User đăng nhập thành công: ", response.data.user);
+        
+        
+        return {
+          user: { _id: response.data.user._id, username: response.data.user.username },   // Lưu thông tin user
+          token: response.data.token,   // Lưu token
+        };
+      } else {
+        return rejectWithValue('Token hoặc user không được trả về từ server');
+      }
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Something went wrong');
     }
@@ -273,9 +287,11 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(loginUser.fulfilled, (state, action: PayloadAction<{ username: string; token: string }>) => {
+      .addCase(loginUser.fulfilled, (state, action: PayloadAction<{user: {_id:string, username: string}, token: string}>) => {
         state.loading = false;
-        state.user = action.payload;  // Save user and token
+        state.user = action.payload.user; 
+        state.token = action.payload.token;
+        localStorage.setItem('token', action.payload.token);
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -285,9 +301,9 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(registerUserWithPhone.fulfilled, (state, action: PayloadAction<{ username: string; token: string }>) => {
+      .addCase(registerUserWithPhone.fulfilled, (state, action: PayloadAction<{user: {_id: string, username: string}, token: string}>) => {
         state.loading = false;
-        state.user = action.payload;  // Save user and token
+        state.user = action.payload.user;;  // Save user and token
         console.log("Token đăng ký thành công: ", action.payload.token);
       })
       .addCase(registerUserWithPhone.rejected, (state, action) => {
@@ -298,9 +314,9 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(loginWithGoogle.fulfilled, (state, action: PayloadAction<{ username: string; token: string }>) => {
+      .addCase(loginWithGoogle.fulfilled, (state, action: PayloadAction<{user: {_id: string, username: string}, token: string}>) => {
         state.loading = false;
-        state.user = action.payload;  // Save user and token
+        state.user = action.payload.user;  // Save user and token
         console.log("Token đăng ký bằng Google: ", action.payload.token);
       })
       .addCase(loginWithGoogle.rejected, (state, action) => {
@@ -371,8 +387,9 @@ const authSlice = createSlice({
         state.resetStatus = 'failed';
         state.resetMessage = action.payload as string;
       })
-      .addCase(getUserProfile.fulfilled, (state, action: PayloadAction<{ user: { username: string; token?: string }, userDetail: UserDetail }>) => {
-        state.user = { ...action.payload.user, token: action.payload.user.token || '' };
+      .addCase(getUserProfile.fulfilled, (state, action: PayloadAction<{ user: {_id: string, username: string}, userDetail: UserDetail, token?: string }>) => {
+        state.user = { ...action.payload.user};
+        state.token = action.payload.token || state.token; // Lưu token nếu có
         state.userDetail = action.payload.userDetail;
       })      
       .addCase(getUserProfile.rejected, (state, action) => {

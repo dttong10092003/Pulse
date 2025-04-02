@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ConversationSidebar, ConversationDetail } from './components';
-
+import { addMessageToState } from '../../redux/slice/chatSlice';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedConversation } from '../../redux/slice/chatSlice';
-import { RootState } from '../../redux/store';
+import { setSelectedConversation, getAllConversations } from '../../redux/slice/chatSlice';
+import { RootState, AppDispatch } from '../../redux/store';
+import { io } from 'socket.io-client';
+
+const socket = io('http://localhost:5005');
 
 // const initialConversations = [
 //   {
@@ -88,10 +91,35 @@ import { RootState } from '../../redux/store';
 const Message: React.FC = () => {
   // const [conversations, setConversations] = useState(initialConversations);
   //   const [selectedConversation, setSelectedConversation] = useState(conversations[0]);
-    
-    const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
+  const { user, token } = useSelector((state: RootState) => state.auth);
   const conversations = useSelector((state: RootState) => state.chat.conversations);
   const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
+  console.log('Useraaaaaaaaaaaaaaa:', user); // Kiểm tra xem user đã được lấy chưa
+  console.log('Tokenaaaaaa:', token); // Kiểm tra xem token đã được lấy chưa
+  useEffect(() => {
+    if (token && user) {
+      console.log('Tokenbbbbb:', token);  // Kiểm tra token có hợp lệ không
+      console.log('User ID:', user._id);  // Kiểm tra user._id có hợp lệ không
+      dispatch(getAllConversations(user._id)); // Lấy tất cả các cuộc trò chuyện của người dùng
+    }
+  }, [dispatch, user, token]); // Chỉ gọi lại khi user hoặc token thay đổi
+
+  console.log('Conversations:', conversations); // Kiểm tra xem conversations đã được lấy chưa
+  console.log('Selected Conversation:', selectedConversation); // Kiểm tra xem cuộc trò chuyện đã được chọn chưa
+
+  useEffect(() => {
+    // Lắng nghe sự kiện 'receiveMessage' và cập nhật tin nhắn trong Redux
+    socket.on('receiveMessage', (newMessage) => {
+      dispatch(addMessageToState(newMessage));
+    });
+
+    // Dọn dẹp sự kiện khi component unmount
+    return () => {
+      socket.off('receiveMessage');
+    };
+  }, [dispatch]);
+
   const handleSelectConversation = (conversation: any) => {
     dispatch(setSelectedConversation(conversation)); // Cập nhật cuộc trò chuyện đã chọn trong Redux
   };
@@ -101,13 +129,13 @@ const Message: React.FC = () => {
     <div className="flex h-screen">
       {/* <ConversationSidebar />
       <ConversationDetail /> */}
-      <ConversationSidebar 
-         onSelectConversation={handleSelectConversation}
-         selectedConversationId={selectedConversation?._id || ''}
-         conversations={conversations} 
+      <ConversationSidebar
+        onSelectConversation={handleSelectConversation}
+        selectedConversationId={selectedConversation?._id || ''}
+        conversations={conversations}
       />
-       {/* Truyền selectedConversation vào ConversationDetail */}
-       <ConversationDetail selectedConversation={selectedConversation} />
+      {/* Truyền selectedConversation vào ConversationDetail */}
+      <ConversationDetail selectedConversation={selectedConversation} />
     </div>
   );
 };

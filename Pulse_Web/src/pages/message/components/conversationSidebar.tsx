@@ -31,6 +31,11 @@ interface ConversationSidebarProps {
 }
 
 const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ conversations, onSelectConversation, selectedConversationId }) => {
+  // Kiểm tra conversations có dữ liệu không
+  if (!conversations || conversations.length === 0) {
+    return <div className="text-white">No conversations available.</div>;
+  }
+
   return (
     <div className="w-1/4 bg-[#282828cc] h-screen p-5 text-white overflow-y-auto flex-shrink-0">
       <div className="flex justify-between items-center mb-4">

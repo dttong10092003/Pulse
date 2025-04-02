@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { RootState } from '../store';
 
 const CHAT_SERVICE_URL = 'http://localhost:3000/chat';
 
@@ -50,11 +51,37 @@ const initialState: ChatState = {
   error: null,
 };
 
+export const getAllConversations = createAsyncThunk(
+  'chat/getAllConversations',
+  async (userId: string, { getState, rejectWithValue }) => {
+    console.log('Fetching all conversations for user:', userId);
+    const token = (getState() as RootState).auth?.token; // Lấy token từ Redux store
+    console.log('Tokencccccccccccccccccccccccccccccccccccccc:', token); // Debugging log
+    if (!token) {
+      console.error('No token found in state');
+      return rejectWithValue('No token found');
+    }
+
+    try {
+      const response = await axios.get(`${CHAT_SERVICE_URL}/conversations/all/${userId}`, {
+        headers: { Authorization: `${token}` },
+      });
+      // const response = await axios.get(`${CHAT_SERVICE_URL}/conversations/all/${userId}`);
+      
+      console.log('Fetched conversations:', response.data);
+      return response.data || []; // Trả về danh sách cuộc trò chuyện
+    } catch (error) {
+      console.error('Error getting all conversations:', error);
+      return rejectWithValue('Failed to get all conversations');
+    }
+  }
+);
+
 // 1️⃣ Kiểm tra trạng thái online của người dùng
 export const checkUserOnline = createAsyncThunk(
   'chat/checkUserOnline',
   async (userId: string, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token; // Lấy token từ Redux store
+    const token = (getState() as RootState).auth?.token; // Lấy token từ Redux store
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -75,7 +102,7 @@ export const checkUserOnline = createAsyncThunk(
 export const createOrGetPrivateConversation = createAsyncThunk(
   'chat/createOrGetPrivateConversation',
   async ({ user1, user2, user2Name }: { user1: string; user2: string; user2Name: string }, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token;
+    const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -98,7 +125,7 @@ export const createOrGetPrivateConversation = createAsyncThunk(
 export const createGroupConversation = createAsyncThunk(
   'chat/createGroupConversation',
   async ({ groupName, members, adminId }: { groupName: string; members: string[]; adminId: string }, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token;
+    const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -121,7 +148,7 @@ export const createGroupConversation = createAsyncThunk(
 export const addMemberToGroup = createAsyncThunk(
   'chat/addMemberToGroup',
   async ({ conversationId, newMember }: { conversationId: string; newMember: string }, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token;
+    const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -144,7 +171,7 @@ export const addMemberToGroup = createAsyncThunk(
 export const removeMemberFromGroup = createAsyncThunk(
   'chat/removeMemberFromGroup',
   async ({ conversationId, memberId }: { conversationId: string; memberId: string }, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token;
+    const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -167,7 +194,7 @@ export const removeMemberFromGroup = createAsyncThunk(
 export const changeGroupAdmin = createAsyncThunk(
   'chat/changeGroupAdmin',
   async ({ conversationId, newAdminId }: { conversationId: string; newAdminId: string }, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token;
+    const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -190,7 +217,7 @@ export const changeGroupAdmin = createAsyncThunk(
 export const getRecentConversations = createAsyncThunk(
   'chat/getRecentConversations',
   async (userId: string, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token;
+    const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -212,7 +239,7 @@ export const getRecentConversations = createAsyncThunk(
 export const searchConversations = createAsyncThunk(
   'chat/searchConversations',
   async (query: { userId: string; keyword: string }, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token;
+    const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -237,7 +264,7 @@ export const searchConversations = createAsyncThunk(
 export const sendMessage = createAsyncThunk(
   'chat/sendMessage',
   async ({ conversationId, senderId, type, content, isDeleted }: { conversationId: string; senderId: string; type: string; content: string, isDeleted: boolean }, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token;
+    const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -260,7 +287,7 @@ export const sendMessage = createAsyncThunk(
 export const getMessages = createAsyncThunk(
   'chat/getMessages',
   async (conversationId: string, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token;
+    const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -282,7 +309,7 @@ export const getMessages = createAsyncThunk(
 export const getRecentImages = createAsyncThunk(
   'chat/getRecentImages',
   async (conversationId: string, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token;
+    const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -304,7 +331,7 @@ export const getRecentImages = createAsyncThunk(
 export const getRecentFiles = createAsyncThunk(
   'chat/getRecentFiles',
   async (conversationId: string, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token;
+    const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -326,7 +353,7 @@ export const getRecentFiles = createAsyncThunk(
 export const pinMessage = createAsyncThunk(
   'chat/pinMessage',
   async ({ conversationId, messageId }: { conversationId: string; messageId: string }, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token;
+    const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -349,7 +376,7 @@ export const pinMessage = createAsyncThunk(
 export const getPinnedMessages = createAsyncThunk(
   'chat/getPinnedMessages',
   async (conversationId: string, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token;
+    const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -371,7 +398,7 @@ export const getPinnedMessages = createAsyncThunk(
 export const revokeMessage = createAsyncThunk(
   'chat/revokeMessage',
   async ({ messageId }: { messageId: string }, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token;
+    const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -394,7 +421,7 @@ export const revokeMessage = createAsyncThunk(
 export const unpinMessage = createAsyncThunk(
   'chat/unpinMessage',
   async ({ conversationId, messageId }: { conversationId: string; messageId: string }, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token;
+    const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
     }
@@ -436,6 +463,18 @@ const chatSlice = createSlice({
   extraReducers: (builder) => {
     // 1️⃣ Kiểm tra trạng thái online của người dùng
     builder
+    .addCase(getAllConversations.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    })
+    .addCase(getAllConversations.fulfilled, (state, action: PayloadAction<Conversation[]>) => {
+      state.loading = false;
+      state.conversations = action.payload;  // Lưu danh sách cuộc trò chuyện vào state
+    })
+    .addCase(getAllConversations.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;  // Lưu lỗi nếu có
+    })
       .addCase(checkUserOnline.pending, (state) => {
         state.loading = true;
         state.error = null;
