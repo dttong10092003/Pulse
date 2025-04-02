@@ -2,27 +2,33 @@ import { Share2, MessageSquare, Users, UserRoundPen, ArrowLeft, } from "lucide-r
 import { useNavigate } from "react-router-dom";
 import { Posts, Featured, Media } from "./components";
 import { useState } from "react";
-
+import { useSelector } from 'react-redux';
+import { RootState } from '../../redux/store';
 const MyProfile = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("Posts");
+    const userDetail = useSelector((state: RootState) => state.auth.userDetail); // Lấy userDetail từ Redux
+
+
+
     const handleBack = () => {
         localStorage.setItem("activeItem", "Home"); // Cập nhật sidebar về Home
         window.dispatchEvent(new Event("storage")); // Phát sự kiện để Sidebar cập nhật lại
         navigate("/home"); // Chuyển hướng về trang Home
     };
+    // Profile Data lấy từ Redux
     const profileData = {
-        username: "200Lab Guest",
-        handle: "@guest",
-        bio: "Hello", // Thêm tiểu sử
+        firstname: userDetail?.firstname,
+        lastname: userDetail?.lastname,
+        handle: `@${userDetail?.username}`,
+        bio: userDetail?.bio || "Hello", // Nếu không có tiểu sử, mặc định là "Hello"
         stats: {
-            count: 453,
-            posts: 170,
-            followers: 8,
-            status: "sad",
+            count: 453, // Tạm thời giữ số liệu mẫu, sau này có thể lấy từ backend
+            posts: 170, // Số bài viết
+            followers: 8, // Số người theo dõi
+            status: "sad", // Trạng thái (có thể lấy từ user hoặc cập nhật sau)
         },
     };
-
     const posts = [
         {
             content: "Xin chào",
@@ -71,7 +77,10 @@ const MyProfile = () => {
     return (
         <main className="bg-[#1F1F1F] text-white">
             {/* Header */}
-            <div className="relative w-full h-48 bg-cover bg-center" style={{ backgroundImage: "url('https://picsum.photos/200')" }}>
+            <div className="relative w-full h-48 bg-cover bg-center"
+                style={{
+                    backgroundImage: `url(${userDetail?.backgroundAvatar})`,
+                }}>
                 <div className="absolute inset-0 bg-black/50 " />
                 <button className="absolute hover:bg-white/20 top-4 left-4 p-3 rounded-full transition text-white cursor-pointer" onClick={handleBack}>
                     <ArrowLeft size={28} />
@@ -79,10 +88,10 @@ const MyProfile = () => {
             </div>
             <div className="relative px-4 -mt-16 flex flex-col items-start">
                 <div className="flex items-center gap-4">
-                    <img src="https://i.pravatar.cc/300" alt="Avatar" className="w-24 h-24 rounded-full" />
+                    <img src={userDetail?.avatar} alt="Avatar" className="w-24 h-24 rounded-full" />
                 </div>
                 <div className="mt-4">
-                    <h2 className="text-2xl font-bold">{profileData.username}</h2>
+                    <h2 className="text-2xl font-bold">{profileData.firstname} {profileData.lastname}</h2>
                     <p className="text-zinc-500">{profileData.handle}</p>
                 </div>
                 <p className="text-zinc-400 mt-2">{profileData.bio}</p>
@@ -120,7 +129,7 @@ const MyProfile = () => {
                 </button>
             </div>
             <div className="mt-4">
-                {activeTab === "Posts" && <Posts posts={posts} username={profileData.username} />}
+                {activeTab === "Posts" && <Posts posts={posts} username={`${profileData.firstname} ${profileData.lastname}`} avatar={userDetail?.avatar ?? "default-avatar-url"} />}
                 {activeTab === "Featured" && <Featured />}
                 {activeTab === "Media" && <Media />}
             </div>

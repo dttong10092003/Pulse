@@ -1,10 +1,11 @@
 import { Heart, MessageCircle, Bookmark, MoreHorizontal } from "lucide-react";
 
-const Posts = ({ posts, username }: { posts: any[]; username: string }) => {
+const Posts = ({ posts, username, avatar }: { posts: any[]; username: string; avatar: string }) => {
+    console.log("Rendering posts:", posts);
     return (
         <div className="divide-zinc-800">
             {posts.map((post, index) => (
-                <PostCard key={index} {...post} user={username} />
+                <PostCard key={index} {...post} user={username} avatar={avatar} />
             ))}
         </div>
     );
@@ -12,12 +13,14 @@ const Posts = ({ posts, username }: { posts: any[]; username: string }) => {
 
 const PostCard = ({
     user,
+    avatar,
     content,
     time,
     likes,
     comments,
 }: {
     user: string;
+    avatar: string;
     content: string;
     time: string;
     likes: number;
@@ -26,7 +29,8 @@ const PostCard = ({
     return (
         <div className="p-4 hover:bg-zinc-900/50">
             <div className="flex items-start gap-3">
-                <img src="https://i.pravatar.cc/300" alt="Avatar" className="w-10 h-10 rounded-full" />
+                {/* Avatar */}
+                <img src={avatar} alt="Avatar" className="w-10 h-10 rounded-full" />
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
