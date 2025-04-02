@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Camera, Save, Trash2, User, AtSign, Link, Pencil, CircleCheck, PhoneCallIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from 'react-redux';
+import { RootState } from '../../redux/store';
+
 interface ProfileFormData {
+    phoneNumber: string;
     firstName: string;
     lastName: string;
     username: string;
@@ -10,16 +14,37 @@ interface ProfileFormData {
 }
 
 export default function EditProfile() {
-    const [formData, setFormData] = useState<ProfileFormData>({
-        firstName: "200Lab",
-        lastName: "Guest",
-        username: "guest",
-        bio: "Hello, I'm using this app!",
-        link: "sad",
-    });
+    const userDetail = useSelector((state: RootState) => state.auth.userDetail); // Lấy userDetail từ Redux
     const navigate = useNavigate();
-    const [backgroundImage, setBackgroundImage] = useState("https://picsum.photos/800/300");
-    const [avatarImage, setAvatarImage] = useState("https://i.pravatar.cc/300");
+
+    const [formData, setFormData] = useState<ProfileFormData>({
+        phoneNumber: "",
+        firstName: "",
+        lastName: "",
+        username: "",
+        bio: "",
+        link: "",
+    });
+
+    const [backgroundImage, setBackgroundImage] = useState<string>("");
+    const [avatarImage, setAvatarImage] = useState<string>("");
+
+    // Khi userDetail thay đổi, cập nhật lại backgroundImage và avatarImage
+    useEffect(() => {
+        if (userDetail) {
+            setFormData({
+                phoneNumber: userDetail.phoneNumber || "", // Thêm trường phoneNumber vào formData
+                firstName: userDetail.firstname || "",
+                lastName: userDetail.lastname || "",
+                username: userDetail.username || "",
+                bio: userDetail.bio || "",
+                link: "", // Nếu có
+            });
+
+            setBackgroundImage(userDetail.backgroundAvatar);
+            setAvatarImage(userDetail.avatar);
+        }
+    }, [userDetail]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -61,10 +86,12 @@ export default function EditProfile() {
             reader.readAsDataURL(file);
         }
     };
+
     // Hàm quay lại trang My Profile khi nhấn vào nút quay lại
     const handleBack = () => {
         navigate("/home/my-profile"); // Điều hướng về trang /my-profile
     };
+
     return (
         <div className="flex-1 bg-[#1F1F1F] text-white">
             {/* Header */}
@@ -126,14 +153,13 @@ export default function EditProfile() {
                 <h3 className="text-sm font-semibold text-zinc-500 uppercase mb-4 text-left">Edit Profile</h3>
 
                 <div className="bg-[#181818] p-6 rounded-lg shadow-md space-y-4">
-                    {[
-                        { label: "Phone Number", name: "firstName", type: "text", icon: <PhoneCallIcon size={18} /> },
+                    {[{ label: "Phone Number", name: "phoneNumber", type: "text", icon: <PhoneCallIcon size={18} />, readonly: true }, // Thêm readonly
                         { label: "First Name", name: "firstName", type: "text", icon: <User size={18} /> },
                         { label: "Last Name", name: "lastName", type: "text", icon: <User size={18} /> },
                         { label: "Username", name: "username", type: "text", icon: <AtSign size={18} /> },
                         { label: "Bio", name: "bio", type: "text", icon: <Pencil size={18} /> },
                         { label: "Link", name: "link", type: "text", icon: <Link size={18} /> },
-                    ].map(({ label, name, type, icon }) => (
+                    ].map(({ label, name, type, icon, readonly }) => (
                         <div key={name} className="flex items-center gap-4  border-zinc-700 pb-4">
                             <div className="flex items-center gap-2 text-zinc-400 w-1/3">
                                 {icon}
@@ -147,13 +173,13 @@ export default function EditProfile() {
                                     value={formData[name as keyof ProfileFormData]}
                                     onChange={handleChange}
                                     className="w-full bg-transparent text-white border-zinc-600 px-3 py-2 rounded-md outline-none focus:border-[#00FF7F]"
+                                    readOnly={readonly} // Chỉ đọc nếu là phoneNumber
                                 />
                                 <CircleCheck size={20} className="text-[#00FF7F]" />
                             </div>
                         </div>
                     ))}
                 </div>
-
 
             </div>
         </div>

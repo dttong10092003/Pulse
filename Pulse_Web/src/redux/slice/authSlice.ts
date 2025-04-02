@@ -72,6 +72,8 @@ interface UserDetail {
   gender: string;
   phoneNumber: string;
   email: string;
+  address: string;
+  bio: string;
   avatar: string;
   backgroundAvatar: string;
 }
