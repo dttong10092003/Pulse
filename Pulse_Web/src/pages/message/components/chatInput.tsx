@@ -48,6 +48,7 @@ const ChatInput: React.FC = () => {
       const newMessage = {
         conversationId: selectedConversation._id, // Sử dụng _id thay vì conversationId
         senderId: "userId1", // Cập nhật với userId thực tế từ Redux
+        name: "Tòng", // Tên người gửi (có thể lấy từ Redux hoặc props)
         content: message,
         type: 'text' as const,
         timestamp: new Date().toISOString(),
