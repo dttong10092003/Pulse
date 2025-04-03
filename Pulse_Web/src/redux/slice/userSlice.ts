@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { RootState } from '../store';
 
 const USER_SERVICE_URL = 'http://localhost:3000/users'; // Cập nhật URL nếu cần
 
@@ -21,7 +22,7 @@ const initialState: UserState = {
 export const getUserDetails = createAsyncThunk(
   'user/getUserDetails',
   async (userId: string, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token; // Lấy token từ Redux store
+    const token = (getState() as RootState ).auth?.token; // Lấy token từ Redux store
     try {
       const response = await axios.get(`${USER_SERVICE_URL}/${userId}`, {
         headers: { Authorization: `${token}` },
@@ -40,7 +41,7 @@ export const getUserDetails = createAsyncThunk(
 export const createUserDetail = createAsyncThunk(
     'user/createUserDetail',
     async (userData: any, { getState, rejectWithValue }) => {
-      const token = (getState() as any).auth.user?.token; // Lấy token từ Redux store
+      const token = (getState() as RootState ).auth?.token; // Lấy token từ Redux store
       try {
         console.log("Data sent to API:", userData); // Debug: Kiểm tra dữ liệu gửi đi
         const response = await axios.post(`${USER_SERVICE_URL}`, userData, {
@@ -59,7 +60,7 @@ export const createUserDetail = createAsyncThunk(
 export const updateUserDetail = createAsyncThunk(
     'user/updateUserDetail',
     async (userData: any, { getState, rejectWithValue }) => {
-      const token = (getState() as any).auth.user?.token; // Lấy token từ Redux store
+      const token = (getState() as RootState ).auth?.token; // Lấy token từ Redux store
       try {
         console.log("Data sent to API:", userData); // Debug: Kiểm tra dữ liệu gửi đi
         const response = await axios.put(`${USER_SERVICE_URL}/${userData.id}`, userData, {
@@ -78,7 +79,7 @@ export const updateUserDetail = createAsyncThunk(
   export const getUserDetailsByIds = createAsyncThunk(
     'user/getUserDetailsByIds',
     async (userIds: string[], { getState, rejectWithValue }) => {
-      const token = (getState() as any).auth.user?.token; // Lấy token từ Redux store
+      const token = (getState() as RootState ).auth?.token; // Lấy token từ Redux store
       try {
         // Gửi yêu cầu POST đến API Gateway với mảng userIds
         const response = await axios.post(`${USER_SERVICE_URL}/user-details-by-ids`, { userIds }, {
