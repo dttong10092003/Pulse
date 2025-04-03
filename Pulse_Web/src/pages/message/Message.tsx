@@ -121,6 +121,7 @@ const Message: React.FC = () => {
   }, [dispatch]);
 
   const handleSelectConversation = (conversation: any) => {
+    console.log('Selected conversationqweqweqweqwe:', conversation); // Kiểm tra cuộc trò chuyện đã chọn
     dispatch(setSelectedConversation(conversation)); // Cập nhật cuộc trò chuyện đã chọn trong Redux
   };
 
