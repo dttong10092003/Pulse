@@ -7,12 +7,22 @@ import EditProfile from "./profile/EditProfile";
 import Explore from "./explore/Explore";
 import Setting from "./setting/AccountSettings";
 import Notification from "./notification/Notification";
+import UserInfo_Follow from "./userInfor_Follow/UserInfo_Follow";
 import { Routes, Route, useLocation } from "react-router-dom";
- 
+import { useEffect } from "react";
+import { getUserProfile} from '../redux/slice/authSlice';
+import {  AppDispatch } from '../redux/store';
+import { useDispatch } from 'react-redux';
 const Home = () => {
   const location = useLocation();
+  const dispatch = useDispatch<AppDispatch>();
   const isHiddenRightSidebar = location.pathname === "/home/message" || location.pathname === "/home/setting";
-
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      dispatch(getUserProfile(token));
+    }
+  }, [dispatch]);
   return (
     <div className="flex bg-[#1F1F1F] text-white min-h-screen">
       {/* Sidebar cố định */}
@@ -27,6 +37,7 @@ const Home = () => {
           <Route path="/explore" element={<Explore />} />
           <Route path="/setting" element={<Setting />} />
           <Route path="/notifications" element={<Notification />} />
+          <Route path="/user-info" element={<UserInfo_Follow />} />
         </Routes>
       </div>
 

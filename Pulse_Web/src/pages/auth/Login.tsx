@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { GoogleLogo } from "../../assets";
 import { InputField } from "./components";
 import { useGoogleLogin } from "@react-oauth/google";
-import { loginUser, loginWithGoogle } from '../../redux/slice/authSlice';
+import { loginUser, loginWithGoogle, getUserProfile} from '../../redux/slice/authSlice';
 import { RootState, AppDispatch } from '../../redux/store';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -76,10 +76,14 @@ const Login = () => {
     if (!isBtnEnable) return;
     
     dispatch(loginUser(form))
-      .unwrap() 
-      .then(() => {
-        navigate('/home');
-      })
+    .unwrap()
+    .then((res) => {
+      localStorage.setItem('token', res.token);
+      console.log("Login successful, token:", res.token);
+      dispatch(getUserProfile(res.token)); // lấy profile
+      navigate('/home');
+    })
+  
       .catch((err) => {
         console.error('Login Error: ', err);
         setErrorText('Invalid username or password. Please try again');
@@ -192,9 +196,11 @@ const Login = () => {
           onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
         />
 
-        <p className="mt-4 text-sm text-blue-400 hover:text-gray-200 cursor-pointer inline-block float-right">
+        <button className="mt-4 text-sm text-blue-400 hover:text-gray-200 cursor-pointer inline-block float-right"
+        onClick={() => navigate("/forgot-password")}
+        >
           Forgot Password?
-        </p>
+        </button>
 
         <button
           onClick={handleLogin}
