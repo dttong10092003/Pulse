@@ -6,7 +6,7 @@ const CHAT_SERVICE_URL = 'http://localhost:3000/chat';
 
 interface Conversation {
   _id: string;
-  members: {userId: string; name: string; avatar: string}[]; // Danh sách thành viên trong nhóm
+  members: { userId: string; name: string; avatar: string }[]; // Danh sách thành viên trong nhóm
   isGroup: boolean;
   groupName: string;
   adminId?: string;
@@ -22,12 +22,13 @@ interface Conversation {
 interface Message {
   _id?: string;
   conversationId: string;
+  name: string; // Tên người gửi (nếu là nhóm)
   senderId: string;
   type: 'text' | 'emoji' | 'image' | 'file';
   content: string;
   isDeleted: boolean;
   timestamp: string;
-  pinned?: boolean;
+  isPinned?: boolean;
   senderAvatar?: string;
   isSentByUser: boolean; // Để xác định xem tin nhắn có phải do người dùng gửi hay không
 }
@@ -67,7 +68,7 @@ export const getAllConversations = createAsyncThunk(
         headers: { Authorization: `${token}` },
       });
       // const response = await axios.get(`${CHAT_SERVICE_URL}/conversations/all/${userId}`);
-      
+
       console.log('Fetched conversations:', response.data);
       return response.data || []; // Trả về danh sách cuộc trò chuyện
     } catch (error) {
@@ -101,7 +102,7 @@ export const checkUserOnline = createAsyncThunk(
 // 2️⃣ Tạo hoặc lấy cuộc trò chuyện riêng tư
 export const createOrGetPrivateConversation = createAsyncThunk(
   'chat/createOrGetPrivateConversation',
-  async ({ user1, user2, user2Name }: { user1: string; user2: string; user2Name: string }, { getState, rejectWithValue }) => {
+  async ({ user1, user2, user2Name, user2Avatar }: { user1: string; user2: string; user2Name: string, user2Avatar: string }, { getState, rejectWithValue }) => {
     const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
@@ -110,7 +111,7 @@ export const createOrGetPrivateConversation = createAsyncThunk(
     try {
       const response = await axios.post(
         `${CHAT_SERVICE_URL}/conversations/private`,
-        { user1, user2, user2Name },
+        { user1, user2, user2Name, user2Avatar },
         { headers: { Authorization: `${token}` } }
       );
       return response.data;
@@ -124,7 +125,7 @@ export const createOrGetPrivateConversation = createAsyncThunk(
 // 3️⃣ Tạo nhóm chat
 export const createGroupConversation = createAsyncThunk(
   'chat/createGroupConversation',
-  async ({ groupName, members, adminId }: { groupName: string; members: string[]; adminId: string }, { getState, rejectWithValue }) => {
+  async ({ groupName, members, adminId, avatar }: { groupName: string; members: string[]; adminId: string, avatar: string }, { getState, rejectWithValue }) => {
     const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
@@ -133,7 +134,7 @@ export const createGroupConversation = createAsyncThunk(
     try {
       const response = await axios.post(
         `${CHAT_SERVICE_URL}/conversations/group`,
-        { groupName, members, adminId },
+        { groupName, members, adminId, avatar },
         { headers: { Authorization: `${token}` } }
       );
       return response.data;
@@ -439,6 +440,32 @@ export const unpinMessage = createAsyncThunk(
     }
   }
 );
+
+// 17️⃣ Cập nhật thông tin nhóm
+export const updateGroupConversation = createAsyncThunk(
+  'chat/updateGroupConversation',
+  async (
+    { conversationId, groupName, avatar }: { conversationId: string; groupName: string; avatar: string },
+    { getState, rejectWithValue }
+  ) => {
+    const token = (getState() as RootState).auth?.token;
+    if (!token) {
+      return rejectWithValue('No token found');
+    }
+
+    try {
+      const response = await axios.put(
+        `${CHAT_SERVICE_URL}/conversations/group/update/${conversationId}`,
+        { groupName, avatar },
+        { headers: { Authorization: `${token}` } }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error updating group conversation:', error);
+      return rejectWithValue('Failed to update group conversation');
+    }
+  }
+);
 const chatSlice = createSlice({
   name: 'chat',
   initialState,
@@ -455,6 +482,8 @@ const chatSlice = createSlice({
     // Action để cập nhật cuộc trò chuyện đã chọn
     setSelectedConversation: (state, action: PayloadAction<Conversation | null>) => {
       state.selectedConversation = action.payload;
+      console.log('Selected conversationwwwwwwwwwwwwww:', action.payload); // Debugging log
+
       if (action.payload) {
         state.messages = action.payload.messages || [];
       }
@@ -463,18 +492,18 @@ const chatSlice = createSlice({
   extraReducers: (builder) => {
     // 1️⃣ Kiểm tra trạng thái online của người dùng
     builder
-    .addCase(getAllConversations.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    })
-    .addCase(getAllConversations.fulfilled, (state, action: PayloadAction<Conversation[]>) => {
-      state.loading = false;
-      state.conversations = action.payload;  // Lưu danh sách cuộc trò chuyện vào state
-    })
-    .addCase(getAllConversations.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload as string;  // Lưu lỗi nếu có
-    })
+      .addCase(getAllConversations.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getAllConversations.fulfilled, (state, action: PayloadAction<Conversation[]>) => {
+        state.loading = false;
+        state.conversations = action.payload;  // Lưu danh sách cuộc trò chuyện vào state
+      })
+      .addCase(getAllConversations.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;  // Lưu lỗi nếu có
+      })
       .addCase(checkUserOnline.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -733,6 +762,24 @@ const chatSlice = createSlice({
         }
       })
       .addCase(unpinMessage.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+    // 17️⃣ Cập nhật thông tin nhóm
+    builder
+      .addCase(updateGroupConversation.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateGroupConversation.fulfilled, (state, action: PayloadAction<Conversation>) => {
+        state.loading = false;
+        // Cập nhật thông tin nhóm trong state
+        const index = state.conversations.findIndex(conv => conv._id === action.payload._id);
+        if (index !== -1) {
+          state.conversations[index] = action.payload; // Cập nhật thông tin nhóm trong danh sách cuộc trò chuyện
+        }
+      })
+      .addCase(updateGroupConversation.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

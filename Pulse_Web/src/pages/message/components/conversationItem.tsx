@@ -1,16 +1,55 @@
 import React from 'react';
 
+// interface Conversation {
+//   _id: string;
+//   groupName: string;
+//   avatar: string;
+//   isOnline?: boolean;
+//   isGroup?: boolean;
+//   unreadCount: number;
+//   lastMessage?: string;
+// }
+
+interface Message {
+  conversationId: string;
+  senderId: string;
+  name: string; // Tên người gửi
+  content: string;
+  timestamp: string;
+  senderAvatar?: string; // Nếu là chat nhóm, mỗi tin nhắn có avatar riêng
+  isSentByUser?: boolean;
+  type: string; // Loại tin nhắn (text, emoji, image, v.v.)
+  isDeleted: boolean; // Nếu tin nhắn đã bị xóa
+  isPinned?: boolean; // Nếu tin nhắn đã được ghim
+}
+interface Conversation {
+  _id: string; // ID của cuộc trò chuyện
+  groupName: string;
+  avatar: string;
+  isOnline?: boolean;
+  isGroup?: boolean;
+  unreadCount: number;
+  adminId?: string; // Nếu là nhóm, ID của người quản trị nhóm
+  members: { userId: string; name: string; avatar: string }[]; // Danh sách thành viên trong nhóm
+  messages: Message[]; // Danh sách tin nhắn trong cuộc trò chuyện
+  lastMessage?: string;
+}
+
 interface ConversationItemProps {
-  conversation: {
-    _id: string;
-    groupName: string;
-    avatar: string;
-    isOnline?: boolean;
-    isGroup?: boolean;
-    unreadCount: number;
-    lastMessage?: string; // Tin nhắn cuối cùng (có thể là tên người gửi + nội dung)
-  };
-  onSelectConversation: (conversationId: string) => void;
+  // conversation: {
+  //   _id: string;
+  //   groupName: string;
+  //   avatar: string;
+  //   isOnline?: boolean;
+  //   isGroup?: boolean;
+  //   unreadCount: number;
+  //   lastMessage?: string; // Tin nhắn cuối cùng (có thể là tên người gửi + nội dung)
+  // };
+  // onSelectConversation: (conversation: any) => void;
+
+  conversation: Conversation;
+  onSelectConversation: (conversation: Conversation) => void;
+  
   isSelected: boolean;
 }
 
@@ -19,7 +58,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, onSel
     <div
       className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer relative 
         ${isSelected ? 'bg-cyan-600/30' : 'bg-gray-700 hover:bg-gray-600'}`}
-      onClick={() => onSelectConversation(conversation._id)}
+      onClick={() => onSelectConversation(conversation)}
     >
       {/* Avatar */}
       <div className="relative">

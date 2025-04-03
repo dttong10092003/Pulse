@@ -4,6 +4,7 @@ import { ConversationItem } from './index';
 interface Message {
   conversationId: string;
   senderId: string;
+  name: string; // Tên người gửi (nếu là nhóm)
   content: string;
   timestamp: string;
   senderAvatar?: string; // Nếu là chat nhóm, mỗi tin nhắn có avatar riêng
@@ -22,11 +23,12 @@ interface Conversation {
   adminId?: string; // Nếu là nhóm, ID của người quản trị nhóm
   members: { userId: string; name: string; avatar: string }[]; // Danh sách thành viên trong nhóm
   messages: Message[]; // Danh sách tin nhắn trong cuộc trò chuyện
+  // lastMessage?: string;
 }
 
 interface ConversationSidebarProps {
   conversations: Conversation[];
-  onSelectConversation: (conversationId: string) => void;
+  onSelectConversation: (conversation: Conversation) => void;
   selectedConversationId: string;
 }
 
@@ -54,7 +56,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ conversations
               lastMessage = `You: ${lastMsg.content}`;
             } else {
               lastMessage = conversation.isGroup
-                ? `${lastMsg.senderId}: ${lastMsg.content}`
+                ? `${lastMsg.name}: ${lastMsg.content}`
                 : lastMsg.content;
             }
           }
