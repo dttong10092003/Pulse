@@ -4,6 +4,7 @@ import { ClipLoader } from 'react-spinners'; // Import spinner từ react-spinne
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Home from './pages/Home';
+
 import UserInfo from './pages/userInfo/UserInfo';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';

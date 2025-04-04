@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { RootState } from '../store';
 
 const USER_SERVICE_URL = 'http://localhost:3000/users'; // Cập nhật URL nếu cần
 
@@ -21,7 +22,7 @@ const initialState: UserState = {
 export const getUserDetails = createAsyncThunk(
   'user/getUserDetails',
   async (userId: string, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.user?.token; // Lấy token từ Redux store
+    const token = (getState() as RootState ).auth?.token; // Lấy token từ Redux store
     try {
       const response = await axios.get(`${USER_SERVICE_URL}/${userId}`, {
         headers: { Authorization: `${token}` },
@@ -40,7 +41,7 @@ export const getUserDetails = createAsyncThunk(
 export const createUserDetail = createAsyncThunk(
     'user/createUserDetail',
     async (userData: any, { getState, rejectWithValue }) => {
-      const token = (getState() as any).auth.user?.token; // Lấy token từ Redux store
+      const token = (getState() as RootState ).auth?.token; // Lấy token từ Redux store
       try {
         console.log("Data sent to API:", userData); // Debug: Kiểm tra dữ liệu gửi đi
         const response = await axios.post(`${USER_SERVICE_URL}`, userData, {
@@ -59,7 +60,7 @@ export const createUserDetail = createAsyncThunk(
 export const updateUserDetail = createAsyncThunk(
     'user/updateUserDetail',
     async (userData: any, { getState, rejectWithValue }) => {
-      const token = (getState() as any).auth.user?.token; // Lấy token từ Redux store
+      const token = (getState() as RootState ).auth?.token; // Lấy token từ Redux store
       try {
         console.log("Data sent to API:", userData); // Debug: Kiểm tra dữ liệu gửi đi
         const response = await axios.put(`${USER_SERVICE_URL}/${userData.id}`, userData, {
@@ -78,11 +79,11 @@ export const updateUserDetail = createAsyncThunk(
   export const getUserDetailsByIds = createAsyncThunk(
     'user/getUserDetailsByIds',
     async (userIds: string[], { getState, rejectWithValue }) => {
-      const token = (getState() as any).auth.user?.token; // Lấy token từ Redux store
+      const token = (getState() as RootState ).auth?.token; // Lấy token từ Redux store
       try {
         // Gửi yêu cầu POST đến API Gateway với mảng userIds
         const response = await axios.post(`${USER_SERVICE_URL}/user-details-by-ids`, { userIds }, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `${token}` },
         });
         return response.data; // Trả về dữ liệu người dùng
       } catch (error) {
@@ -93,6 +94,32 @@ export const updateUserDetail = createAsyncThunk(
       }
     }
   );
+
+// Thunk to get top 10 users from the API
+export const getTop10Users = createAsyncThunk(
+  'user/getTop10Users',
+  async (_, { getState, rejectWithValue }) => {
+    const token = (getState() as RootState).auth?.token; // Lấy token từ Redux store
+
+    if (!token) {
+      return rejectWithValue('No token provided'); // Nếu không có token, trả về lỗi
+    }
+
+    try {
+      const response = await axios.post(`${USER_SERVICE_URL}/top10-users`, {}, {
+        headers: { Authorization: `Bearer ${token}` }, // Gửi token đúng định dạng
+      });
+
+      return response.data; // Trả về dữ liệu người dùng
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error response:", error.response?.data); // Log thêm lỗi nếu có
+        return rejectWithValue(error.response?.data?.message || error.message);
+      }
+      return rejectWithValue('An unknown error occurred');
+    }
+  }
+);
 
 // User slice
 const userSlice = createSlice({
@@ -146,6 +173,18 @@ const userSlice = createSlice({
         state.userDetails = action.payload; // Lưu danh sách userDetails vào state
       })
       .addCase(getUserDetailsByIds.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(getTop10Users.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getTop10Users.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.userDetails = action.payload; // Lưu danh sách top 10 người dùng vào state
+      })
+      .addCase(getTop10Users.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
