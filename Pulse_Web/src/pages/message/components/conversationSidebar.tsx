@@ -1,36 +1,37 @@
 import React from 'react';
 import { ConversationItem } from './index';
+import { ConversationSidebarProps } from '../../../redux/slice/types';
 
-interface Message {
-  conversationId: string;
-  senderId: string;
-  name: string; // Tên người gửi (nếu là nhóm)
-  content: string;
-  timestamp: string;
-  senderAvatar?: string; // Nếu là chat nhóm, mỗi tin nhắn có avatar riêng
-  isSentByUser?: boolean;
-  type: string; // Loại tin nhắn (text, emoji, image, v.v.)
-  isDeleted: boolean; // Nếu tin nhắn đã bị xóa
-  isPinned?: boolean; // Nếu tin nhắn đã được ghim
-}
-interface Conversation {
-  _id: string; // ID của cuộc trò chuyện
-  groupName: string;
-  avatar: string;
-  isOnline?: boolean;
-  isGroup?: boolean;
-  unreadCount: number;
-  adminId?: string; // Nếu là nhóm, ID của người quản trị nhóm
-  members: { userId: string; name: string; avatar: string }[]; // Danh sách thành viên trong nhóm
-  messages: Message[]; // Danh sách tin nhắn trong cuộc trò chuyện
-  // lastMessage?: string;
-}
+// interface Message {
+//   conversationId: string;
+//   senderId: string;
+//   name: string; // Tên người gửi (nếu là nhóm)
+//   content: string;
+//   timestamp: string;
+//   senderAvatar: string; // Nếu là chat nhóm, mỗi tin nhắn có avatar riêng
+//   isSentByUser: boolean;
+//   type: string; // Loại tin nhắn (text, emoji, image, v.v.)
+//   isDeleted: boolean; // Nếu tin nhắn đã bị xóa
+//   isPinned: boolean; // Nếu tin nhắn đã được ghim
+// }
+// interface Conversation {
+//   _id: string; // ID của cuộc trò chuyện
+//   groupName: string;
+//   avatar: string;
+//   isOnline?: boolean;
+//   isGroup: boolean;
+//   unreadCount?: number;
+//   adminId?: string; // Nếu là nhóm, ID của người quản trị nhóm
+//   members: { userId: string; name: string; avatar: string }[]; // Danh sách thành viên trong nhóm
+//   messages: Message[]; // Danh sách tin nhắn trong cuộc trò chuyện
+//   // lastMessage?: string;
+// }
 
-interface ConversationSidebarProps {
-  conversations: Conversation[];
-  onSelectConversation: (conversation: Conversation) => void;
-  selectedConversationId: string;
-}
+// interface ConversationSidebarProps {
+//   conversations: Conversation[];
+//   onSelectConversation: (conversation: Conversation) => void;
+//   selectedConversationId: string;
+// }
 
 const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ conversations, onSelectConversation, selectedConversationId }) => {
   // Kiểm tra conversations có dữ liệu không
