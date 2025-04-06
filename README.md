@@ -19,3 +19,5 @@ npm install redux-thunk
 npm install dayjs
 
 npm install date-fns
+
+Chú ý mấy cái props trong slice nên để hết vào types trong slice và cmt nó thuộc slice nào nha

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, SendHorizonal, Smile } from 'lucide-react';
-import EmojiPicker from 'emoji-picker-react';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addMessageToState } from '../../../redux/slice/chatSlice';
 import { io } from 'socket.io-client';
@@ -48,12 +48,14 @@ const ChatInput: React.FC = () => {
       const newMessage = {
         conversationId: selectedConversation._id, // Sử dụng _id thay vì conversationId
         senderId: "userId1", // Cập nhật với userId thực tế từ Redux
-        name: "Tòng", // Tên người gửi (có thể lấy từ Redux hoặc props)
+        name: "aaaa", // Tên người gửi (có thể lấy từ Redux hoặc props)
         content: message,
         type: 'text' as const,
         timestamp: new Date().toISOString(),
         isDeleted: false,
         isSentByUser: true,
+        isPinned: false,
+        senderAvatar: "", // Cập nhật với avatar thực tế từ Redux
       };
 
       // Gửi tin nhắn qua Socket.IO
@@ -66,7 +68,7 @@ const ChatInput: React.FC = () => {
     }
   };
 
-  const handleEmojiClick = (emojiObject: any) => {
+  const handleEmojiClick = (emojiObject: EmojiClickData) => {
     setMessage((prevMessage) => prevMessage + emojiObject.emoji);
     setEmojiPickerOpen(false);
   };

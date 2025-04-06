@@ -4,6 +4,7 @@ import { addMessageToState } from '../../redux/slice/chatSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSelectedConversation, getAllConversations } from '../../redux/slice/chatSlice';
 import { RootState, AppDispatch } from '../../redux/store';
+import { Conversation, Member } from '../../redux/slice/types';
 import { io } from 'socket.io-client';
 
 const socket = io('http://localhost:5005');
@@ -86,7 +87,41 @@ const socket = io('http://localhost:5005');
 // ];
 
 
+// interface User {
+//   _id: string;
+//   username: string;
+// }
 
+// interface Conversation {
+//   _id: string;
+//   groupName: string;
+//   avatar: string;
+//   isGroup: boolean;
+//   messages: Message[];
+//   members: Member[];
+//   adminId?: string; // Chỉ có trong cuộc trò chuyện nhóm
+//   unreadCount?: number;
+//   isOnline?: boolean;
+// }
+
+// interface Member {
+//   userId: string;
+//   name: string;
+//   avatar: string;
+// }
+
+// interface Message {
+//   conversationId: string;
+//   senderId: string;
+//   content: string;
+//   timestamp: string;
+//   name: string; // Tên người gửi (nếu là nhóm)
+//   senderAvatar: string;
+//   isSentByUser: boolean;
+//   type: 'text' | 'emoji' | 'image' | 'file';
+//   isDeleted: boolean;
+//   isPinned: boolean;
+// }
 
 const Message: React.FC = () => {
   // const [conversations, setConversations] = useState(initialConversations);
@@ -95,18 +130,18 @@ const Message: React.FC = () => {
   const { user, token } = useSelector((state: RootState) => state.auth);
   const conversations = useSelector((state: RootState) => state.chat.conversations);
   const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
-  console.log('Useraaaaaaaaaaaaaaa:', user); // Kiểm tra xem user đã được lấy chưa
-  console.log('Tokenaaaaaa:', token); // Kiểm tra xem token đã được lấy chưa
   useEffect(() => {
     if (token && user) {
-      console.log('Tokenbbbbb:', token);  // Kiểm tra token có hợp lệ không
-      console.log('User ID:', user._id);  // Kiểm tra user._id có hợp lệ không
       dispatch(getAllConversations(user._id)); // Lấy tất cả các cuộc trò chuyện của người dùng
     }
   }, [dispatch, user, token]); // Chỉ gọi lại khi user hoặc token thay đổi
 
-  console.log('Conversations:', conversations); // Kiểm tra xem conversations đã được lấy chưa
-  console.log('Selected Conversation:', selectedConversation); // Kiểm tra xem cuộc trò chuyện đã được chọn chưa
+  // const updatedConversations = conversations.map((conversation) => ({
+  //   ...conversation,
+  //   groupName: conversation.isGroup && conversation.groupName ? conversation.groupName : getOtherUserName(conversation.members),
+  //   avatar: conversation.isGroup && conversation.avatar ? conversation.avatar : getOtherUserAvatar(conversation.members),
+  //   unreadCount: conversation.unreadCount || 0,
+  // }));
 
   useEffect(() => {
     // Lắng nghe sự kiện 'receiveMessage' và cập nhật tin nhắn trong Redux
@@ -120,11 +155,34 @@ const Message: React.FC = () => {
     };
   }, [dispatch]);
 
-  const handleSelectConversation = (conversation: any) => {
+  const handleSelectConversation = (conversation: Conversation) => {
+    if(!user) return; // Nếu không có user, không làm gì cả
+
+    const updateConversation = {
+      ...conversation,
+      groupName: conversation.isGroup && conversation.groupName ? conversation.groupName : getOtherUserName(conversation.members),
+      avatar: conversation.isGroup && conversation.avatar ? conversation.avatar : getOtherUserAvatar(conversation.members),
+      unreadCount: 0, // Đánh dấu cuộc trò chuyện là đã đọc
+    };
+
     console.log('Selected conversationqweqweqweqwe:', conversation); // Kiểm tra cuộc trò chuyện đã chọn
-    dispatch(setSelectedConversation(conversation)); // Cập nhật cuộc trò chuyện đã chọn trong Redux
+    console.log('Updated conversation:', updateConversation); // Kiểm tra cuộc trò chuyện đã cập nhật
+    dispatch(setSelectedConversation(updateConversation)); // Cập nhật cuộc trò chuyện đã chọn trong Redux
   };
 
+   // Lấy tên người còn lại trong cuộc trò chuyện (không phải user hiện tại)
+   const getOtherUserName = (members: Member[]) => {
+    if (!user) return '';
+    const otherMember = members.find((member) => member.userId !== user._id);
+    return otherMember ? otherMember.name : '';
+  };
+
+  // Lấy avatar người còn lại trong cuộc trò chuyện
+  const getOtherUserAvatar = (members: Member[]) => {
+    if (!user) return '';
+    const otherMember = members.find((member) => member.userId !== user._id);
+    return otherMember ? otherMember.avatar : '';
+  };
 
   return (
     <div className="flex h-screen">
