@@ -1,37 +1,38 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { RootState } from '../store';
+import { Conversation, Message } from './types';
 
 const CHAT_SERVICE_URL = 'http://localhost:3000/chat';
 
-interface Conversation {
-  _id: string;
-  members: { userId: string; name: string; avatar: string }[]; // Danh sách thành viên trong nhóm
-  isGroup: boolean;
-  groupName: string;
-  adminId?: string;
-  updatedAt?: string;
-  createdAt?: string;
-  messages: Message[];
-  unreadCount: number;
-  avatar: string;
-  lastMessage?: string; // Tin nhắn cuối cùng (có thể là tên người gửi + nội dung)
-  isOnline?: boolean; // Trạng thái online của người dùng
-}
+// interface Conversation {
+//   _id: string;
+//   members: { userId: string; name: string; avatar: string }[]; // Danh sách thành viên trong nhóm
+//   isGroup: boolean;
+//   groupName: string;
+//   adminId?: string;
+//   updatedAt?: string;
+//   createdAt?: string;
+//   messages: Message[];
+//   unreadCount?: number;
+//   avatar: string;
+//   lastMessage?: string; // Tin nhắn cuối cùng (có thể là tên người gửi + nội dung)
+//   isOnline?: boolean; // Trạng thái online của người dùng
+// }
 
-interface Message {
-  _id?: string;
-  conversationId: string;
-  name: string; // Tên người gửi (nếu là nhóm)
-  senderId: string;
-  type: 'text' | 'emoji' | 'image' | 'file';
-  content: string;
-  isDeleted: boolean;
-  timestamp: string;
-  isPinned?: boolean;
-  senderAvatar?: string;
-  isSentByUser: boolean; // Để xác định xem tin nhắn có phải do người dùng gửi hay không
-}
+// interface Message {
+//   _id?: string;
+//   conversationId: string;
+//   name: string; // Tên người gửi (nếu là nhóm)
+//   senderId: string;
+//   type: 'text' | 'emoji' | 'image' | 'file';
+//   content: string;
+//   isDeleted: boolean;
+//   timestamp: string;
+//   isPinned: boolean;
+//   senderAvatar: string;
+//   isSentByUser: boolean; // Để xác định xem tin nhắn có phải do người dùng gửi hay không
+// }
 
 // Define the state for Chat
 interface ChatState {
@@ -475,6 +476,9 @@ const chatSlice = createSlice({
         const conversation = state.selectedConversation;
         // Tìm cuộc trò chuyện và cập nhật tin nhắn
         if (conversation._id === action.payload.conversationId) {
+          if (!state.messages) {
+            state.messages = [];  // Khởi tạo mảng messages nếu chưa có
+          }
           state.messages.push(action.payload); // Thêm tin nhắn vào state
         }
       }
@@ -484,10 +488,14 @@ const chatSlice = createSlice({
       state.selectedConversation = action.payload;
       console.log('Selected conversationwwwwwwwwwwwwww:', action.payload); // Debugging log
 
+      // Kiểm tra nếu payload là null
       if (action.payload) {
         state.messages = action.payload.messages || [];
+      } else {
+        state.messages = [];  // Đặt mảng messages rỗng nếu không có cuộc trò chuyện nào được chọn
       }
     },
+    
   },
   extraReducers: (builder) => {
     // 1️⃣ Kiểm tra trạng thái online của người dùng
@@ -496,9 +504,25 @@ const chatSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(getAllConversations.fulfilled, (state, action: PayloadAction<Conversation[]>) => {
+      .addCase(getAllConversations.fulfilled, (state, action: PayloadAction<Conversation[], string, { arg: string }>) => {
         state.loading = false;
-        state.conversations = action.payload;  // Lưu danh sách cuộc trò chuyện vào state
+
+        const currentUserId = (action.meta.arg as string); // user._id
+        console.log('Fetched conversations:payloadadadadadad', action.payload); // Debugging log
+        console.log('User ID:', currentUserId); // Debugging log
+        state.conversations = action.payload.map((conv) => {
+          if (!conv.isGroup) {
+            const other = conv.members.find((m) => m.userId !== currentUserId);
+            return {
+              ...conv,
+              groupName: other?.name || 'Unknown',
+              avatar: other?.avatar || '',
+            };
+          }
+          return conv;
+        });
+
+
       })
       .addCase(getAllConversations.rejected, (state, action) => {
         state.loading = false;

@@ -19,10 +19,10 @@ import {
 interface Message {
   conversationId: string;
   senderId: string;
-  name?: string; // Tên người gửi (nếu là nhóm)
+  name: string; // Tên người gửi (nếu là nhóm)
   content: string;
   timestamp: string;
-  senderAvatar?: string; // Nếu là chat nhóm, mỗi tin nhắn có avatar riêng
+  senderAvatar: string; // Nếu là chat nhóm, mỗi tin nhắn có avatar riêng
   isSentByUser: boolean;
 }
 
