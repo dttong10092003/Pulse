@@ -12,6 +12,7 @@ import { Provider } from 'react-redux';
 import { store } from './redux/store';
 import './App.css';
 
+import PrivateRoute from './pages/PrivateRoute';
 const App = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(false); // State để theo dõi trạng thái loading
@@ -35,9 +36,20 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/userinfo" element={<UserInfo />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/home/*" element={<Home />} /> {/* thêm để quản lý các route con */}
         <Route path="/reset-password" element={<ResetPassword />} />
+
+        {/* ✅ GIỮ cái này để chặn chưa login */}
+        <Route
+          path="/home/*"
+          element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          }
+        />
+
       </Routes>
+
     </Provider>
   );
 };

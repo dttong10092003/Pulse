@@ -278,8 +278,12 @@ const authSlice = createSlice({
   reducers: {
     logout: (state) => {
       state.user = null;
+      state.token = null;
+      state.userDetail = null;
       state.error = null;
-    },
+      localStorage.removeItem("token");
+    }
+    ,
   },
   extraReducers: (builder) => {
     builder
@@ -305,6 +309,9 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload.user;;  // Save user and token
         console.log("Token đăng ký thành công: ", action.payload.token);
+        state.token = action.payload.token;
+        localStorage.setItem("token", action.payload.token);
+
       })
       .addCase(registerUserWithPhone.rejected, (state, action) => {
         state.loading = false;
