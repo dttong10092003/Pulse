@@ -306,7 +306,7 @@ const Register = () => {
 
                 <button
                     onClick={handleSignUp}
-                    className={`w-full mt-6 py-3 text-white font-bold rounded-full ${isBtnEnable ? "bg-blue-500 hover:bg-blue-700" : "bg-gray-600 cursor-not-allowed"
+                    className={`w-full mt-6 py-3 text-white font-bold rounded-full ${isBtnEnable ? "bg-blue-500 hover:bg-blue-700 cursor-pointer" : "bg-gray-600 cursor-not-allowed "
                         }`}
                     disabled={!isBtnEnable}
                 >

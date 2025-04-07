@@ -205,7 +205,7 @@ const Login = () => {
         <button
           onClick={handleLogin}
           className={`w-full mt-6 py-3 text-white font-bold rounded-full 
-          ${isBtnEnable ? "bg-green-400 hover:bg-green-700" : "bg-gray-600 cursor-not-allowed"}`}
+          ${isBtnEnable ? "bg-green-400 hover:bg-green-700 cursor-pointer" : "bg-gray-600 cursor-not-allowed"}`}
           disabled={!isBtnEnable}
         >
           {loading ? 'Logging in...' : 'Log in'}

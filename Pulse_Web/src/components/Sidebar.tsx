@@ -5,15 +5,24 @@ import { useState, useEffect } from "react";
 import { Columns2, ChevronRight } from "lucide-react";
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
+import { logout } from '../redux/slice/authSlice';
+import { useDispatch } from 'react-redux';
 
 const Sidebar = () => {
+    const dispatch = useDispatch();
     const [showSidebar, setShowSidebar] = useState(true);
     const navigate = useNavigate();
-    const [activeItem, setActiveItem] = useState(localStorage.getItem("activeItem") || "Home");
     const [showMenu, setShowMenu] = useState(false);
     const [isHovered, setIsHovered] = useState(false); // Thêm state để kiểm tra hover vào sidebar
     const userDetail = useSelector((state: RootState) => state.auth.userDetail);
-    
+    const getInitialActiveItem = () => {
+        const item = localStorage.getItem("activeItem");
+        const validItems = ["Home", "Notifications", "Messages", "Bookmarks", "My Profile", "Explore"];
+        return validItems.includes(item || "") ? item : "Home";
+      };
+      
+      const [activeItem, setActiveItem] = useState(getInitialActiveItem);
+      
 
     useEffect(() => {
         const handleStorageChange = () => {
@@ -57,13 +66,9 @@ const Sidebar = () => {
             </div>
             <div className="flex flex-col">
                 <div className="flex items-center gap-2 p-3 pl-0 relative">
-                    {/* <img src="https://picsum.photos/200" alt="Profile" className="w-11 h-11 rounded-full object-cover ml-2" />
-                    <div className={`flex flex-col ml-1 ${!showSidebar && 'hidden'}`}>
-                        <span className="text-white font-semibold">200Lab Guest</span>
-                        <span className="text-zinc-400 text-sm">@guest</span>
-                    </div> */}
+
                     <img
-                        src={userDetail?.avatar || "https://picsum.photos/200"}
+                        src={userDetail?.avatar}
                         alt="Profile"
                         className="w-11 h-11 rounded-full object-cover ml-2"
                     />
@@ -81,7 +86,11 @@ const Sidebar = () => {
                             {showMenu && (
                                 <div className="absolute right-1/2 translate-x-1/2 bottom-[40px] w-16 flex flex-col items-center p-2 rounded-lg shadow-lg">
                                     <button className="p-2 hover:text-white text-zinc-400 cursor-pointer" onClick={() => navigate("/home/setting")}><Settings size={20} /></button>
-                                    <button className="p-2 hover:text-white text-zinc-400 cursor-pointer" onClick={() => navigate("/")}><LogOut size={20} /></button>
+                                    <button className="p-2 hover:text-white text-zinc-400 cursor-pointer" onClick={() => {
+                                        localStorage.removeItem("activeItem");
+                                        dispatch(logout());
+                                        navigate("/");
+                                    }}><LogOut size={20} /></button>
                                 </div>
                             )}
                         </button>

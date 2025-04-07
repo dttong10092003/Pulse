@@ -4,6 +4,7 @@ import { User, Mail, Phone, Calendar } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../redux/store";
 import { createUserDetail } from "../../redux/slice/userSlice";
+import { getUserProfile } from "../../redux/slice/authSlice";
 
 export default function UserProfileForm() {
   const location = useLocation();
@@ -125,26 +126,62 @@ export default function UserProfileForm() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // const handleSubmit = (e: React.FormEvent) => {
+  //   e.preventDefault();
+
+  //   if (validateForm()) {
+  //     setIsSubmitting(true);
+
+  //     const dataToSend = {
+  //       ...formData,
+  //       avatar: "",
+  //       backgroundAvatar: "",
+  //     };
+  //     console.log(dataToSend);
+  //     dispatch(createUserDetail(dataToSend))
+  //       .unwrap()
+  //       .then((response) => {
+  //         setIsSubmitting(false);
+  //         setSubmitSuccess(true);
+  //         setTimeout(() => setSubmitSuccess(false), 3000);
+  //         navigate('/home');
+  //         console.log("User details created successfully:", response);
+  //       })
+  //       .catch((err) => {
+  //         console.error("Error creating user details:", err);
+  //         setIsSubmitting(false);
+  //       });
+  //   }
+  // };
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     if (validateForm()) {
       setIsSubmitting(true);
-
+  
       const dataToSend = {
         ...formData,
         avatar: "",
         backgroundAvatar: "",
       };
+  
       console.log(dataToSend);
+  
       dispatch(createUserDetail(dataToSend))
         .unwrap()
         .then((response) => {
+          console.log("User details created successfully:", response);
+  
+          // ✅ Gọi lại getUserProfile để cập nhật thông tin trong Sidebar
+          const token = localStorage.getItem("token");
+          if (token) {
+            dispatch(getUserProfile(token));
+          }
+  
           setIsSubmitting(false);
           setSubmitSuccess(true);
           setTimeout(() => setSubmitSuccess(false), 3000);
           navigate('/home');
-          console.log("User details created successfully:", response);
         })
         .catch((err) => {
           console.error("Error creating user details:", err);
@@ -152,7 +189,6 @@ export default function UserProfileForm() {
         });
     }
   };
-
   return (
     <div className="min-h-screen bg-[#0a1122] flex items-center justify-center p-4 relative overflow-hidden">
       {/* Starry background effect */}
@@ -303,7 +339,7 @@ export default function UserProfileForm() {
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full py-2.5 px-4 bg-green-500 hover:bg-green-600 text-white font-medium rounded-md transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full py-2.5 px-4 bg-green-500 hover:bg-green-600 text-white font-medium rounded-md transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Saving..." : "Save Profile"}
