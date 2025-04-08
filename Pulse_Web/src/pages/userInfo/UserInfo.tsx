@@ -4,12 +4,15 @@ import { User, Mail, Phone, Calendar } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../redux/store";
 import { createUserDetail } from "../../redux/slice/userSlice";
-import { getUserProfile } from "../../redux/slice/authSlice";
+import { getUserProfile, sendEmailOtp, verifyEmailOtp, checkEmailOrPhoneExists } from "../../redux/slice/authSlice";
+import { auth } from "../../firebase/setup";
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
 
 export default function UserProfileForm() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { phoneNumber = "", email = "" } = location.state || {}; 
+  const { phoneNumber = "", email = "" } = location.state || {};
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   const dispatch = useDispatch<AppDispatch>();
   const { userDetails } = useSelector((state: RootState) => state.user);
@@ -29,57 +32,63 @@ export default function UserProfileForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
+  // OTP related states
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otpType, setOtpType] = useState<"email" | "phone">("email");
+  const [otpError, setOtpError] = useState("");
+
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
     const stars = Array.from({ length: 299 }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
       radius: Math.random() * 1.5 + 0.5,
-    }))
+    }));
 
     const drawStars = () => {
       // Create vertical gradient from top to bottom
-      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
-      gradient.addColorStop(0, "#0f172a")
-      gradient.addColorStop(1, "#1e293b")
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, "#0f172a");
+      gradient.addColorStop(1, "#1e293b");
 
       // Fill background with gradient
-      ctx.fillStyle = gradient
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw stars
-      ctx.fillStyle = "white"
+      ctx.fillStyle = "white";
       stars.forEach((star) => {
-        ctx.beginPath()
-        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2)
-        ctx.fill()
-      })
-    }
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    };
 
-    drawStars()
+    drawStars();
 
     // Resize handler
     const handleResize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-      drawStars()
-    }
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      drawStars();
+    };
 
-    window.addEventListener('resize', handleResize)
+    window.addEventListener('resize', handleResize);
 
     // Cleanup
     return () => {
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [])
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     if (userDetails) {
@@ -94,6 +103,18 @@ export default function UserProfileForm() {
       }));
     }
   }, [userDetails]);
+
+  useEffect(() => {
+    if (isOtpModalOpen) {
+      // Reset OTP fields when opening modal
+      setOtp(["", "", "", "", "", ""]);
+
+      // Focus on first OTP input after reset
+      setTimeout(() => {
+        document.getElementById("otp-0")?.focus();
+      }, 100);
+    }
+  }, [isOtpModalOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -130,67 +151,200 @@ export default function UserProfileForm() {
   //   e.preventDefault();
 
   //   if (validateForm()) {
-  //     setIsSubmitting(true);
-
-  //     const dataToSend = {
-  //       ...formData,
-  //       avatar: "",
-  //       backgroundAvatar: "",
-  //     };
-  //     console.log(dataToSend);
-  //     dispatch(createUserDetail(dataToSend))
-  //       .unwrap()
-  //       .then((response) => {
-  //         setIsSubmitting(false);
-  //         setSubmitSuccess(true);
-  //         setTimeout(() => setSubmitSuccess(false), 3000);
-  //         navigate('/home');
-  //         console.log("User details created successfully:", response);
-  //       })
-  //       .catch((err) => {
-  //         console.error("Error creating user details:", err);
-  //         setIsSubmitting(false);
-  //       });
+  //     // Determine which type of OTP verification to show
+  //     if (phoneNumber) {
+  //       // If registered with phone, show email OTP verification
+  //       setOtpType("email");
+  //       setIsOtpModalOpen(true);
+  //     } else if (email) {
+  //       // If registered with Google/email, show phone OTP verification
+  //       setOtpType("phone");
+  //       setIsOtpModalOpen(true);
+  //     } else {
+  //       // Fallback - shouldn't normally happen
+  //       submitUserDetails();
+  //     }
   //   }
   // };
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
-    if (validateForm()) {
-      setIsSubmitting(true);
-  
-      const dataToSend = {
-        ...formData,
-        avatar: "",
-        backgroundAvatar: "",
-      };
-  
-      console.log(dataToSend);
-  
-      dispatch(createUserDetail(dataToSend))
-        .unwrap()
-        .then((response) => {
-          console.log("User details created successfully:", response);
-  
-          // ✅ Gọi lại getUserProfile để cập nhật thông tin trong Sidebar
-          const token = localStorage.getItem("token");
-          if (token) {
-            dispatch(getUserProfile(token));
+
+    if (!validateForm()) return;
+
+    try {
+      if (phoneNumber) {
+        // Đăng ký bằng số điện thoại => xác thực email
+        await dispatch(sendEmailOtp({ email: formData.email })).unwrap();
+        setOtpType("email");
+        setIsOtpModalOpen(true);
+        setOtpError("");
+      }
+      else if (email) {
+        // ✅ Kiểm tra phoneNumber có tồn tại không
+        const resultAction = await dispatch(checkEmailOrPhoneExists({ phoneNumber: formData.phoneNumber }));
+
+        // Nếu phone đã tồn tại thì resultAction.payload chứa message
+        if (checkEmailOrPhoneExists.fulfilled.match(resultAction)) {
+          const message = resultAction.payload?.message || "";
+          if (message.toLowerCase().includes("exists")) {
+            setErrors((prev) => ({
+              ...prev,
+              phoneNumber: "Phone number already exists",
+            }));
+            return; // ⛔ Dừng lại nếu đã tồn tại
           }
-  
-          setIsSubmitting(false);
-          setSubmitSuccess(true);
-          setTimeout(() => setSubmitSuccess(false), 3000);
-          navigate('/home');
-        })
-        .catch((err) => {
-          console.error("Error creating user details:", err);
-          setIsSubmitting(false);
-        });
+        }
+
+        // ✅ Nếu không tồn tại → tiếp tục gửi OTP
+        setOtpType("phone");
+
+        if (!window.recaptchaVerifier) {
+          window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+            size: "invisible",
+            callback: () => { },
+          });
+        }
+
+        const appVerifier = window.recaptchaVerifier;
+        const result = await signInWithPhoneNumber(
+          auth,
+          "+84" + formData.phoneNumber.slice(1),
+          appVerifier
+        );
+
+        setConfirmationResult(result);
+        setIsOtpModalOpen(true);
+      }
+      else {
+        // Fallback: không có phone/email
+        submitUserDetails();
+      }
+    } catch (err) {
+      const errMsg = typeof err === "string" ? err : "OTP sending failed";
+
+      // Gán lỗi dưới ô nhập tương ứng
+      if (errMsg.toLowerCase().includes("email")) {
+        setErrors((prev) => ({ ...prev, email: errMsg }));
+      } else if (errMsg.toLowerCase().includes("phone")) {
+        setErrors((prev) => ({ ...prev, phoneNumber: errMsg }));
+      } else {
+        setOtpError(errMsg);
+      }
     }
   };
+
+
+
+
+  // const handleVerifyOtp = async () => {
+  //   const otpCode = otp.join("");
+  //   if (otpCode.length < 6) {
+  //     setOtpError("Please enter full 6-digit OTP");
+  //     return;
+  //   }
+
+  //   try {
+  //     if (otpType === "email") {
+  //       // await dispatch(verifyEmailOtp({ email: formData.email, otp: otpCode })).unwrap();
+  //       setOtpError("");
+  //       setIsOtpModalOpen(false);
+  //       submitUserDetails();
+  //     } else if (otpType === "phone") {
+  //       if (!confirmationResult) {
+  //         setOtpError("Missing confirmation result. Please try again.");
+  //         return;
+  //       }
+  //       await dispatch(verifyEmailOtp({ email: formData.email, otp: otpCode })).unwrap();
+  //       setOtpError("");
+  //       setIsOtpModalOpen(false);
+  //       submitUserDetails();
+  //     }
+  //   } catch (err) {
+  //     console.error("OTP verification failed:", err);
+  //     setOtpError("Invalid OTP. Please try again.");
+  //   }
+  // };
+  const handleVerifyOtp = async () => {
+    const otpCode = otp.join("");
+    if (otpCode.length < 6) {
+      setOtpError("Please enter full 6-digit OTP");
+      return;
+    }
+
+    try {
+      if (otpType === "email") {
+        // ✅ Xác minh OTP email với server
+        await dispatch(verifyEmailOtp({ email: formData.email, otp: otpCode })).unwrap();
+        setOtpError("");
+        setIsOtpModalOpen(false);
+        submitUserDetails();
+      } else if (otpType === "phone") {
+        // ✅ Xác minh OTP điện thoại bằng Firebase
+        if (!confirmationResult) {
+          setOtpError("Missing confirmation result. Please try again.");
+          return;
+        }
+        await confirmationResult.confirm(otpCode);
+        setOtpError("");
+        setIsOtpModalOpen(false);
+        submitUserDetails();
+      }
+    } catch (err) {
+      console.error("OTP verification failed:", err);
+      setOtpError("Invalid OTP. Please try again.");
+    }
+  };
+
+
+  const submitUserDetails = () => {
+    setIsSubmitting(true);
+
+    const dataToSend = {
+      ...formData,
+      avatar: "",
+      backgroundAvatar: "",
+    };
+
+    console.log(dataToSend);
+
+    dispatch(createUserDetail(dataToSend))
+      .unwrap()
+      .then((response) => {
+        console.log("User details created successfully:", response);
+
+        // Call getUserProfile to update information in Sidebar
+        const token = localStorage.getItem("token");
+        if (token) {
+          dispatch(getUserProfile(token));
+        }
+
+        setIsSubmitting(false);
+        setSubmitSuccess(true);
+        setTimeout(() => setSubmitSuccess(false), 3000);
+        navigate('/home');
+      })
+      .catch((err) => {
+        console.error("Error creating user details:", err);
+        setIsSubmitting(false);
+      });
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      document.getElementById(`otp-${index + 1}`)?.focus();
+    }
+  };
+
+
+
   return (
     <div className="min-h-screen bg-[#0a1122] flex items-center justify-center p-4 relative overflow-hidden">
+      <div id="recaptcha-container"></div>
       {/* Starry background effect */}
       <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full" />
 
@@ -201,7 +355,6 @@ export default function UserProfileForm() {
           <p className="text-slate-400 text-center mb-6">Please enter your details</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Rest of the form remains the same as in the original code */}
             {/* First Name & Last Name */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* First Name */}
@@ -218,8 +371,7 @@ export default function UserProfileForm() {
                     value={formData.firstname}
                     placeholder="John"
                     onChange={handleChange}
-                    className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.firstname ? "border-red-500" : "border-slate-700"
-                      } rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
+                    className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.firstname ? "border-red-500" : "border-slate-700"} rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
                   />
                 </div>
                 {errors.firstname && <p className="text-red-500 text-xs mt-1">{errors.firstname}</p>}
@@ -239,8 +391,7 @@ export default function UserProfileForm() {
                     value={formData.lastname}
                     placeholder="Doe"
                     onChange={handleChange}
-                    className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.lastname ? "border-red-500" : "border-slate-700"
-                      } rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
+                    className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.lastname ? "border-red-500" : "border-slate-700"} rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
                   />
                 </div>
                 {errors.lastname && <p className="text-red-500 text-xs mt-1">{errors.lastname}</p>}
@@ -306,11 +457,13 @@ export default function UserProfileForm() {
                     className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.phoneNumber ? "border-red-500" : "border-slate-700"} rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
                   />
                 </div>
-                {errors.phoneNumber ? (
+                {errors.phoneNumber && (
                   <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>
-                ) : (
+                )}
+                {!errors.phoneNumber && (
                   <p className="text-slate-500 text-xs mt-1">Vietnamese format: +84 or 0 followed by 9 digits</p>
                 )}
+
               </div>
 
               {/* Email */}
@@ -325,13 +478,18 @@ export default function UserProfileForm() {
                     name="email"
                     type="text"
                     value={formData.email}
-                    placeholder="explain@domain.com"
+                    placeholder="example@domain.com"
                     readOnly={!!email}
                     onChange={handleChange}
                     className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.email ? "border-red-500" : "border-slate-700"} rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
                   />
                 </div>
-                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                {errors.email && (
+                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                )}
+                {!errors.email && (
+                  <p className="text-slate-500 text-xs mt-1">We'll send verification code to this email</p>
+                )}
               </div>
             </div>
 
@@ -349,6 +507,118 @@ export default function UserProfileForm() {
           </form>
         </div>
       </div>
+
+      {/* OTP Modal */}
+      {isOtpModalOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 flex justify-center items-center z-50"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setIsOtpModalOpen(false);
+          }}
+          tabIndex={-1}
+        >
+          <div className="bg-slate-800 p-6 rounded-lg w-96 text-center border border-slate-700 shadow-xl">
+            <h2 className="text-xl font-bold mb-4 text-white">Verification Required</h2>
+
+            {otpType === "email" ? (
+              <p className="text-sm text-slate-300 mb-2">
+                We've sent a verification code to your email: <span className="font-semibold">{formData.email}</span>
+              </p>
+            ) : (
+              <p className="text-sm text-slate-300 mb-2">
+                We've sent a verification code to your phone: <span className="font-semibold">{formData.phoneNumber}</span>
+              </p>
+            )}
+
+            <p className="text-xs text-slate-400 mb-4">Please enter the 6-digit code to verify your identity</p>
+            {otpError && (
+              <p className="text-sm text-red-500 mb-2">{otpError}</p>
+            )}
+
+            <div className="flex justify-center gap-2 mt-4">
+              {otp.map((num, index) => (
+                <input
+                  key={index}
+                  id={`otp-${index}`}
+                  type="text"
+                  maxLength={1}
+                  value={num}
+                  autoComplete="off"
+                  onChange={(e) => handleOtpChange(index, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && index === otp.length - 1) {
+                      handleVerifyOtp();
+                    } else if (e.key === "ArrowRight" && index < otp.length - 1) {
+                      document.getElementById(`otp-${index + 1}`)?.focus();
+                    } else if (e.key === "ArrowLeft" && index > 0) {
+                      document.getElementById(`otp-${index - 1}`)?.focus();
+                    } else if (e.key === "Backspace" && !otp[index] && index > 0) {
+                      document.getElementById(`otp-${index - 1}`)?.focus();
+                    }
+                  }}
+                  className="w-10 h-10 text-center bg-slate-700 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
+                />
+              ))}
+            </div>
+
+            <div className="flex justify-center space-x-4 mt-6">
+
+              <button
+                onClick={() => setIsOtpModalOpen(false)}
+                className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-md transition-colors duration-200 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleVerifyOtp}
+                className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-md transition-colors duration-200 cursor-pointer"
+              >
+                Verify
+              </button>
+            </div>
+
+            {/* <div className="mt-4 text-sm text-slate-400">
+              Didn't receive a code? <button className="text-green-400 hover:text-green-300 cursor-pointer">Resend code</button>
+            </div> */}
+            <div className="mt-4 text-sm text-slate-400">
+              Didn't receive a code?{" "}
+              <button
+                className="text-green-400 hover:text-green-300 cursor-pointer"
+                onClick={async () => {
+                  try {
+                    if (otpType === "email") {
+                      await dispatch(sendEmailOtp({ email: formData.email })).unwrap();
+                      setOtpError("OTP resent to email.");
+                    } else if (otpType === "phone" && confirmationResult) {
+                      // Resend không hỗ trợ trực tiếp với Firebase, cần reset recaptcha và gọi lại signIn
+                      if (window.recaptchaVerifier) {
+                        window.recaptchaVerifier.clear();
+                      }
+                      window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+                        size: "invisible",
+                        callback: () => { },
+                      });
+                      const result = await signInWithPhoneNumber(
+                        auth,
+                        "+84" + formData.phoneNumber.slice(1),
+                        window.recaptchaVerifier
+                      );
+                      setConfirmationResult(result);
+                      setOtpError("OTP resent to phone.");
+                    }
+                  } catch (err) {
+                    console.error("Resend OTP failed:", err);
+                    setOtpError("Failed to resend OTP. Try again later.");
+                  }
+                }}
+              >
+                Resend code
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
