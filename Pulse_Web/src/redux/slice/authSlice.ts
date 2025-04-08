@@ -167,6 +167,7 @@ export const loginWithGoogle = createAsyncThunk(
   }
 );
 
+
 export const checkUserExists = createAsyncThunk(
   'auth/checkUserExists',
   async (data: CheckUserExistsData, { rejectWithValue }) => {
@@ -324,6 +325,7 @@ const authSlice = createSlice({
       .addCase(loginWithGoogle.fulfilled, (state, action: PayloadAction<{user: {_id: string, username: string}, token: string}>) => {
         state.loading = false;
         state.user = action.payload.user;  // Save user and token
+        state.token = action.payload.token;
         console.log("Token đăng ký bằng Google: ", action.payload.token);
       })
       .addCase(loginWithGoogle.rejected, (state, action) => {

@@ -190,64 +190,44 @@ const Register = () => {
         }
     };
 
-
-    // const handleGoogleRegister = useGoogleLogin({
-    //     onSuccess: async (tokenResponse) => {
-    //         try {
-    //             // Gọi API của Google để lấy thông tin user
-    //             const res = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
-    //                 headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-    //             });
-    //             const userInfo = await res.json();
-    //             console.log("Google User Info:", userInfo);
-
-    //             // Add data base
-
-    //             dispatch(loginWithGoogle({ email: userInfo.email, googleId: userInfo.id }))
-    //             .unwrap()
-    //             .then(() => {
-    //               // Chuyển đến UserProfileForm (không cần email nữa)
-    //               navigate("/userinfo", { state: { email: userInfo.email, googleId: userInfo.id } });
-    //             })
-    //             .catch((err) => {
-    //               console.error("Google login failed: ", err);
-    //               setErrorText("Google login failed");
-    //             });
-    //         } catch (error) {
-    //             console.error("Error fetching Google user info:", error);
-    //             setErrorText("Google registration failed");
-    //         }
-    //     },
-    //     onError: () => setErrorText("Google registration failed"),
-    // });
     const handleGoogleRegister = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
-            try {
-                // Gọi API của Google để lấy thông tin user
-                const res = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
-                    headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+          try {
+            // Gọi API của Google để lấy thông tin user
+            const res = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
+              headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+            });
+      
+            const userInfo = await res.json(); // ✅ Chỉ gọi 1 lần
+            console.log("Google User Info:", userInfo);
+      
+            // Dispatch loginWithGoogle action
+            dispatch(loginWithGoogle({
+                email: userInfo.email,
+                googleId: userInfo.id
+              }))              
+              .unwrap()
+              .then((response) => {
+                // ✅ Lấy token từ response của dispatch
+                localStorage.setItem("token", response.token);
+      
+                // Điều hướng sang userinfo để điền tiếp
+                navigate("/userinfo", {
+                  state: { email: userInfo.email, googleId: userInfo.id },
                 });
-                const userInfo = await res.json();
-                console.log("Google User Info:", userInfo);
-
-                // Dispatch loginWithGoogle action
-                dispatch(loginWithGoogle({ email: userInfo.email, googleId: userInfo.id }))
-                    .unwrap()
-                    .then(() => {
-                        // Nếu login thành công, kiểm tra người dùng đã có thông tin hay chưa
-                        navigate("/userinfo", { state: { email: userInfo.email, googleId: userInfo.id } });
-                    })
-                    .catch((err) => {
-                        console.error("Google login failed: ", err);
-                        setErrorText("Google login failed");
-                    });
-            } catch (error) {
-                console.error("Error fetching Google user info:", error);
-                setErrorText("Google registration failed");
-            }
+              })
+              .catch((err) => {
+                console.error("Google login failed: ", err);
+                setErrorText("Google login failed");
+              });
+          } catch (error) {
+            console.error("Error fetching Google user info:", error);
+            setErrorText("Google registration failed");
+          }
         },
         onError: () => setErrorText("Google registration failed"),
-    });
+      });
+      
 
     return (
         <div className="relative w-full h-screen flex items-center justify-center">
@@ -315,7 +295,7 @@ const Register = () => {
 
                 <button
                     onClick={() => handleGoogleRegister()}
-                    className="w-full flex items-center justify-center mt-4 py-3 bg-gray-800 text-white rounded-full hover:bg-gray-700">
+                    className="w-full flex items-center justify-center mt-4 py-3 bg-gray-800 text-white rounded-full hover:bg-gray-700 cursor-pointer">
                     <img src={GoogleLogo} alt="Google" className="w-5 h-5 mr-2" />
                     Sign up with Google
                 </button>

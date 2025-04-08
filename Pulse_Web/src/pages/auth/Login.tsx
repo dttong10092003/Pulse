@@ -213,7 +213,7 @@ const Login = () => {
 
         <button 
           onClick={() => handleGoogleLogin()}
-          className="w-full flex items-center justify-center mt-4 py-3 bg-gray-800 text-white rounded-full hover:bg-gray-700">
+          className="w-full flex items-center justify-center mt-4 py-3 bg-gray-800 text-white rounded-full hover:bg-gray-700 cursor-pointer">
           <img src={GoogleLogo} alt="Google" className="w-5 h-5 mr-2" />
           Sign in with Google
         </button>
