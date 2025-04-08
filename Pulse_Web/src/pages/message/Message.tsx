@@ -87,41 +87,8 @@ const socket = io('http://localhost:5005');
 // ];
 
 
-// interface User {
-//   _id: string;
-//   username: string;
-// }
 
-// interface Conversation {
-//   _id: string;
-//   groupName: string;
-//   avatar: string;
-//   isGroup: boolean;
-//   messages: Message[];
-//   members: Member[];
-//   adminId?: string; // Chỉ có trong cuộc trò chuyện nhóm
-//   unreadCount?: number;
-//   isOnline?: boolean;
-// }
 
-// interface Member {
-//   userId: string;
-//   name: string;
-//   avatar: string;
-// }
-
-// interface Message {
-//   conversationId: string;
-//   senderId: string;
-//   content: string;
-//   timestamp: string;
-//   name: string; // Tên người gửi (nếu là nhóm)
-//   senderAvatar: string;
-//   isSentByUser: boolean;
-//   type: 'text' | 'emoji' | 'image' | 'file';
-//   isDeleted: boolean;
-//   isPinned: boolean;
-// }
 
 const Message: React.FC = () => {
   // const [conversations, setConversations] = useState(initialConversations);
@@ -144,8 +111,10 @@ const Message: React.FC = () => {
   // }));
 
   useEffect(() => {
+    console.log("Socket ID huhu:", socket.id);
     // Lắng nghe sự kiện 'receiveMessage' và cập nhật tin nhắn trong Redux
     socket.on('receiveMessage', (newMessage) => {
+      console.log('New message receivedddddd:', newMessage);
       dispatch(addMessageToState(newMessage));
     });
 

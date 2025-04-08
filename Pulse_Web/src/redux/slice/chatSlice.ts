@@ -467,21 +467,44 @@ export const updateGroupConversation = createAsyncThunk(
     }
   }
 );
+
 const chatSlice = createSlice({
   name: 'chat',
   initialState,
   reducers: {
+    // addMessageToState: (state, action: PayloadAction<Message>) => {
+    //   if (state.selectedConversation) {
+    //     const conversation = state.selectedConversation;
+    //     // Tìm cuộc trò chuyện và cập nhật tin nhắn
+    //     if (conversation._id === action.payload.conversationId) {
+    //       if (!conversation.messages) {
+    //         conversation.messages = [];  // Khởi tạo mảng messages nếu chưa có
+    //       }
+    //       conversation.messages.push(action.payload); // Thêm tin nhắn vào state
+    //       conversation.lastMessage = action.payload.content; // Cập nhật lastMessage
+    //     }
+    //   }
+    // },
     addMessageToState: (state, action: PayloadAction<Message>) => {
-      if (state.selectedConversation) {
-        const conversation = state.selectedConversation;
-        // Tìm cuộc trò chuyện và cập nhật tin nhắn
-        if (conversation._id === action.payload.conversationId) {
-          if (!state.messages) {
-            state.messages = [];  // Khởi tạo mảng messages nếu chưa có
-          }
-          state.messages.push(action.payload); // Thêm tin nhắn vào state
+      const newMessage = action.payload;
+      const conversation = state.selectedConversation;
+    
+      // Cập nhật tin nhắn vào selectedConversation
+      if (conversation && conversation._id === newMessage.conversationId) {
+        if (!conversation.messages) {
+          conversation.messages = [];
         }
+        conversation.messages.push(newMessage);
+        conversation.lastMessage = newMessage.content; // Cập nhật lastMessage
       }
+    
+      // Cập nhật lastMessage và unreadCount cho tất cả các cuộc trò chuyện
+      state.conversations.forEach((conv) => {
+        if (conv._id === newMessage.conversationId) {
+          conv.lastMessage = newMessage.content;
+          conv.unreadCount = conv.unreadCount ? conv.unreadCount + 1 : 1;
+        }
+      });
     },
     // Action để cập nhật cuộc trò chuyện đã chọn
     setSelectedConversation: (state, action: PayloadAction<Conversation | null>) => {
