@@ -146,12 +146,12 @@ export const registerUserWithPhone = createAsyncThunk(
 //     }
 //   }
 // );
-export const loginWithGoogle = createAsyncThunk(
-  'auth/loginWithGoogle',
+export const loginWithGoogleRegister = createAsyncThunk(
+  'auth/loginWithGoogleRegister',
   async (googleUserInfo: { email: string, googleId: string }, { rejectWithValue }) => {
     try {
       console.log('Google User Info:', googleUserInfo);
-      const response = await axios.post(`${URI_API}/login/google`, {
+      const response = await axios.post(`${URI_API}/register/google`, {
         email: googleUserInfo.email,
         googleId: googleUserInfo.googleId
       }, {
@@ -162,11 +162,33 @@ export const loginWithGoogle = createAsyncThunk(
 
       return response.data; // Response chứa token và user, isVerified
     } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Google login failed');
+      // return rejectWithValue(error instanceof Error ? error.message : 'Google login failed');
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        return rejectWithValue({
+          message: error.response.data.message,
+          status: error.response.status,
+        });
+      }
+      return rejectWithValue({ message: 'Google sign in failed. Email already in use ', status: 500 });
+
     }
   }
 );
 
+export const loginWithGoogle = createAsyncThunk(
+  'auth/loginWithGoogle',
+  async (googleUserInfo: { email: string, googleId: string }, { rejectWithValue }) => {
+    try {
+      const res = await axios.post(`${URI_API}/login/google`, googleUserInfo);
+      return res.data;
+    } catch (error: any) {
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      }
+      return rejectWithValue('Google login failed');
+    }
+  }
+);
 
 export const checkUserExists = createAsyncThunk(
   'auth/checkUserExists',
@@ -347,17 +369,17 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      .addCase(loginWithGoogle.pending, (state) => {
+      .addCase(loginWithGoogleRegister.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(loginWithGoogle.fulfilled, (state, action: PayloadAction<{ user: { _id: string, username: string }, token: string }>) => {
+      .addCase(loginWithGoogleRegister.fulfilled, (state, action: PayloadAction<{ user: { _id: string, username: string }, token: string }>) => {
         state.loading = false;
         state.user = action.payload.user;  // Save user and token
         state.token = action.payload.token;
         console.log("Token đăng ký bằng Google: ", action.payload.token);
       })
-      .addCase(loginWithGoogle.rejected, (state, action) => {
+      .addCase(loginWithGoogleRegister.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
@@ -457,7 +479,23 @@ const authSlice = createSlice({
       .addCase(verifyEmailOtp.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+
+      .addCase(loginWithGoogle.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(loginWithGoogle.fulfilled, (state, action: PayloadAction<{ user: { _id: string, username: string }, token: string }>) => {
+        state.loading = false;
+        state.user = action.payload.user;  // Save user and token
+        state.token = action.payload.token;
+        localStorage.setItem("token", action.payload.token);
+      })
+      .addCase(loginWithGoogle.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
+
   },
 });
 

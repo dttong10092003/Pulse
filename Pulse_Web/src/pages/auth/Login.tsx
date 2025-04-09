@@ -154,7 +154,7 @@ const Login = () => {
           })
           .catch((err) => {
             console.error("Google login failed: ", err);
-            setErrorText("Google login failed");
+            setErrorText("Your email is not a Google account");
           });
       } catch (error) {
         console.error("Error fetching Google user info:", error);
