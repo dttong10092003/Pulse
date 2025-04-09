@@ -485,8 +485,9 @@ const chatSlice = createSlice({
     //     }
     //   }
     // },
-    addMessageToState: (state, action: PayloadAction<Message>) => {
-      const newMessage = action.payload;
+    addMessageToState: (state, action: PayloadAction<{ message: Message; currentUserId: string }>) => {
+      const { message: newMessage, currentUserId } = action.payload;
+      // const newMessage = action.payload;
       const conversation = state.selectedConversation;
     
       // Cập nhật tin nhắn vào selectedConversation
@@ -494,17 +495,33 @@ const chatSlice = createSlice({
         if (!conversation.messages) {
           conversation.messages = [];
         }
-        conversation.messages.push(newMessage);
-        conversation.lastMessage = newMessage.content; // Cập nhật lastMessage
+        // conversation.messages.push(newMessage);
+        // conversation.lastMessage = newMessage.content; // Cập nhật lastMessage
+        conversation.messages = [
+          ...(conversation.messages || []),
+          newMessage,
+        ];
+      }
+
+      const conv = state.conversations.find(
+        (c) => c._id === newMessage.conversationId
+      );
+
+      if (conv) {
+        conv.lastMessage = newMessage.content;
+        conv.messages = [...(conv.messages || []), newMessage];
+        if (newMessage.senderId !== currentUserId) {
+          conv.unreadCount = (conv.unreadCount || 0) + 1;
+        }
       }
     
       // Cập nhật lastMessage và unreadCount cho tất cả các cuộc trò chuyện
-      state.conversations.forEach((conv) => {
-        if (conv._id === newMessage.conversationId) {
-          conv.lastMessage = newMessage.content;
-          conv.unreadCount = conv.unreadCount ? conv.unreadCount + 1 : 1;
-        }
-      });
+      // state.conversations.forEach((conv) => {
+      //   if (conv._id === newMessage.conversationId) {
+      //     conv.lastMessage = newMessage.content;
+      //     conv.unreadCount = conv.unreadCount ? conv.unreadCount + 1 : 1;
+      //   }
+      // });
     },
     // Action để cập nhật cuộc trò chuyện đã chọn
     setSelectedConversation: (state, action: PayloadAction<Conversation | null>) => {

@@ -3,7 +3,7 @@ import { ChatInput } from "./index";
 import { format, formatDistanceToNow } from "date-fns";
 import {  useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
-import { Message } from '../../../redux/slice/types';
+import { Conversation } from '../../../redux/slice/types';
 import {
   Phone,
   Search,
@@ -30,13 +30,7 @@ import {
 // }
 
 interface ConversationDetailProps {
-  selectedConversation: {
-    _id: string;
-    groupName: string;
-    avatar: string; // Avatar chung nếu là chat riêng
-    isGroup: boolean;
-    messages: Message[];
-  } | null;
+  selectedConversation: Conversation | null; // Thay đổi kiểu dữ liệu ở đây
 }
 
 const ConversationDetail: React.FC<ConversationDetailProps> = ({
