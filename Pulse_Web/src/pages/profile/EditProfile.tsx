@@ -1,29 +1,37 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Camera, Save, Trash2, User, AtSign, Link, Pencil, CircleCheck, PhoneCallIcon } from "lucide-react";
+import { ArrowLeft, Camera, Save, Trash2, User, AtSign, Pencil, CircleCheck, PhoneCallIcon, CalendarDays, CircleUser } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
-
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../../redux/store';
+import { updateUserDetail, getUserDetails } from '../../redux/slice/userSlice';
+import { getUserProfile } from '../../redux/slice/authSlice';
 interface ProfileFormData {
     phoneNumber: string;
+    email: string;
     firstName: string;
     lastName: string;
     username: string;
     bio: string;
-    link: string;
+    dob: string;
 }
 
 export default function EditProfile() {
     const userDetail = useSelector((state: RootState) => state.auth.userDetail); // Lấy userDetail từ Redux
     const navigate = useNavigate();
+    const dispatch = useDispatch<AppDispatch>();
+
 
     const [formData, setFormData] = useState<ProfileFormData>({
         phoneNumber: "",
+        email: "",
         firstName: "",
         lastName: "",
         username: "",
         bio: "",
-        link: "",
+        dob: "",
+
     });
 
     const [backgroundImage, setBackgroundImage] = useState<string>("");
@@ -32,13 +40,17 @@ export default function EditProfile() {
     // Khi userDetail thay đổi, cập nhật lại backgroundImage và avatarImage
     useEffect(() => {
         if (userDetail) {
+            const formattedDob = userDetail.DOB
+                ? new Date(userDetail.DOB).toISOString().split('T')[0]  // ISO date yyyy-mm-dd
+                : "";
             setFormData({
                 phoneNumber: userDetail.phoneNumber || "", // Thêm trường phoneNumber vào formData
+                email: userDetail.email || "",
                 firstName: userDetail.firstname || "",
                 lastName: userDetail.lastname || "",
                 username: userDetail.username || "",
                 bio: userDetail.bio || "",
-                link: "", // Nếu có
+                dob: formattedDob,
             });
 
             setBackgroundImage(userDetail.backgroundAvatar);
@@ -54,9 +66,44 @@ export default function EditProfile() {
         }));
     };
 
+    // const handleSave = () => {
+    //     console.log("Saving profile:", formData);
+    //     alert("Profile saved successfully!");
+    // };
     const handleSave = () => {
-        console.log("Saving profile:", formData);
-        alert("Profile saved successfully!");
+        if (!userDetail?._id) {
+            alert("User ID not found.");
+            return;
+        }
+
+        const dataToSend = {
+            id: userDetail.userId,
+            firstname: formData.firstName,
+            lastname: formData.lastName,
+            username: formData.username,
+            bio: formData.bio,
+            dob: formData.dob,
+            avatar: avatarImage,
+            backgroundAvatar: backgroundImage
+        };
+
+        dispatch(updateUserDetail(dataToSend))
+            .unwrap()
+            .then(() => {
+
+                const token = localStorage.getItem("token");
+                if (token) {
+                    dispatch(getUserProfile(token)); // ⬅️ Load lại userDetail dùng trong Sidebar
+                }
+                dispatch(getUserDetails(userDetail.userId))
+                    .then(() => {
+                        alert("Profile saved successfully!");
+                    });
+            })
+            .catch((err) => {
+                console.error("Update failed:", err);
+                alert("Failed to update profile.");
+            });
     };
 
     // Handle background image change
@@ -101,12 +148,12 @@ export default function EditProfile() {
             >
                 <div className="absolute inset-0 bg-black/50" />
                 <div className="absolute top-4 left-4 flex items-center gap-2">
-                    <button className="p-3 rounded-full text-white hover:bg-white/20 transition" onClick={handleBack}>
+                    <button className="p-3 rounded-full text-white hover:bg-white/20 transition cursor-pointer" onClick={handleBack}>
                         <ArrowLeft size={28} />
                     </button>
                 </div>
                 <div className="absolute top-4 right-4 flex items-center gap-2">
-                    <button className="p-3 rounded-full text-white hover:bg-white/20 transition">
+                    <button className="p-3 rounded-full text-white hover:bg-white/20 transition cursor-pointer">
                         <Trash2 size={22} />
                     </button>
                     {/* Change Background Image */}
@@ -120,7 +167,7 @@ export default function EditProfile() {
                         onChange={handleBackgroundChange}
                         className="hidden"
                     />
-                    <button onClick={handleSave} className="px-4 py-2 text-white hover:bg-white/20 rounded-md transition flex items-center gap-2">
+                    <button onClick={handleSave} className="px-4 py-2 text-white hover:bg-white/20 rounded-md transition flex items-center gap-2 cursor-pointer">
                         <Save size={18} />
                     </button>
                 </div>
@@ -153,14 +200,13 @@ export default function EditProfile() {
                 <h3 className="text-sm font-semibold text-zinc-500 uppercase mb-4 text-left">Edit Profile</h3>
 
                 <div className="bg-[#181818] p-6 rounded-lg shadow-md space-y-4">
-                    {[{ label: "Phone Number", name: "phoneNumber", type: "text", icon: <PhoneCallIcon size={18} />, readonly: true }, // Thêm readonly
-                        { label: "First Name", name: "firstName", type: "text", icon: <User size={18} /> },
-                        { label: "Last Name", name: "lastName", type: "text", icon: <User size={18} /> },
-                        { label: "Username", name: "username", type: "text", icon: <AtSign size={18} /> },
-                        { label: "Bio", name: "bio", type: "text", icon: <Pencil size={18} /> },
-                        { label: "Link", name: "link", type: "text", icon: <Link size={18} /> },
+                    {/* Các field cơ bản */}
+                    {[
+                        { label: "Phone Number", name: "phoneNumber", type: "text", icon: <PhoneCallIcon size={18} />, readonly: true },
+                        { label: "Email", name: "email", type: "text", icon: <AtSign size={18} />, readonly: true },
+                        { label: "Username", name: "username", type: "text", icon: <CircleUser size={18} /> },
                     ].map(({ label, name, type, icon, readonly }) => (
-                        <div key={name} className="flex items-center gap-4  border-zinc-700 pb-4">
+                        <div key={name} className="flex items-center gap-4 border-b border-zinc-700 pb-4">
                             <div className="flex items-center gap-2 text-zinc-400 w-1/3">
                                 {icon}
                                 <label className="text-sm">{label}</label>
@@ -172,14 +218,72 @@ export default function EditProfile() {
                                     type={type}
                                     value={formData[name as keyof ProfileFormData]}
                                     onChange={handleChange}
-                                    className="w-full bg-transparent text-white border-zinc-600 px-3 py-2 rounded-md outline-none focus:border-[#00FF7F]"
-                                    readOnly={readonly} // Chỉ đọc nếu là phoneNumber
+                                    className={`w-full bg-transparent text-white border border-white/30 px-3 py-2 rounded-md outline-none 
+            focus:border-[#00FF7F] focus:ring-1 focus:ring-[#00FF7F] 
+            ${name === "dob" ? "[&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:hue-rotate-90" : ""}`}
+                                    readOnly={readonly}
+                                />
+                                <CircleCheck size={20} className="text-[#00FF7F]" />
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* Họ tên gộp lại sau Username */}
+                    <div className="flex items-center gap-4 border-b border-zinc-700 pb-4">
+                        <div className="flex items-center gap-2 text-zinc-400 w-1/3">
+                            <User size={18} />
+                            <label className="text-sm">Full Name</label>
+                        </div>
+                        <div className="w-2/3 flex gap-2">
+                            <input
+                                id="firstName"
+                                name="firstName"
+                                type="text"
+                                value={formData.firstName}
+                                onChange={handleChange}
+                                placeholder="First name"
+                                className="w-1/2 bg-transparent text-white border border-white/30 px-3 py-2 rounded-md outline-none focus:border-[#00FF7F] focus:ring-1 focus:ring-[#00FF7F]"
+                            />
+                            <input
+                                id="lastName"
+                                name="lastName"
+                                type="text"
+                                value={formData.lastName}
+                                onChange={handleChange}
+                                placeholder="Last name"
+                                className="w-1/2 bg-transparent text-white border border-white/30 px-3 py-2 rounded-md outline-none focus:border-[#00FF7F] focus:ring-1 focus:ring-[#00FF7F]"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Ngày sinh và Bio */}
+                    {[
+                        { label: "Date of Birth", name: "dob", type: "date", icon: <CalendarDays size={18} /> },
+                        { label: "Bio", name: "bio", type: "text", icon: <Pencil size={18} /> },
+                    ].map(({ label, name, type, icon }) => (
+                        <div key={name} className="flex items-center gap-4 border-b border-zinc-700 pb-4">
+                            <div className="flex items-center gap-2 text-zinc-400 w-1/3">
+                                {icon}
+                                <label className="text-sm">{label}</label>
+                            </div>
+                            <div className="w-2/3 flex items-center gap-2">
+                                <input
+                                    id={name}
+                                    name={name}
+                                    type={type}
+                                    value={formData[name as keyof ProfileFormData]}
+                                    onChange={handleChange}
+                                    className={`w-full bg-transparent text-white border border-white/30 px-3 py-2 rounded-md outline-none 
+            focus:border-[#00FF7F] focus:ring-1 focus:ring-[#00FF7F] 
+            ${name === "dob" ? "[&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:hue-rotate-90" : ""}`}
                                 />
                                 <CircleCheck size={20} className="text-[#00FF7F]" />
                             </div>
                         </div>
                     ))}
                 </div>
+
+
 
             </div>
         </div>
