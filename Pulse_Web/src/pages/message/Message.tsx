@@ -115,25 +115,38 @@ const Message: React.FC = () => {
     // Lắng nghe sự kiện 'receiveMessage' và cập nhật tin nhắn trong Redux
     socket.on('receiveMessage', (newMessage) => {
       console.log('New message receivedddddd:', newMessage);
-      dispatch(addMessageToState(newMessage));
+      if (!user?._id) return;
+      if (newMessage.senderId === user._id) return;
+      // dispatch(addMessageToState(newMessage));
+      dispatch(addMessageToState({
+        message: newMessage,
+        currentUserId: user._id,
+      }));
     });
 
     // Dọn dẹp sự kiện khi component unmount
     return () => {
       socket.off('receiveMessage');
     };
-  }, [dispatch]);
+  }, [dispatch, user]);
 
   const handleSelectConversation = (conversation: Conversation) => {
-    if(!user) return; // Nếu không có user, không làm gì cả
-
+    // 🔥 Join room khi chọn conversation
+    socket.emit("joinRoom", conversation._id);
+    const fullConversation = conversations.find((c) => c._id === conversation._id);
+    if (!fullConversation) return;
     const updateConversation = {
-      ...conversation,
-      groupName: conversation.isGroup && conversation.groupName ? conversation.groupName : getOtherUserName(conversation.members),
-      avatar: conversation.isGroup && conversation.avatar ? conversation.avatar : getOtherUserAvatar(conversation.members),
-      unreadCount: 0, // Đánh dấu cuộc trò chuyện là đã đọc
+      ...fullConversation,
+      groupName: fullConversation.isGroup && fullConversation.groupName
+        ? fullConversation.groupName
+        : getOtherUserName(fullConversation.members),
+      avatar: fullConversation.isGroup && fullConversation.avatar
+        ? fullConversation.avatar
+        : getOtherUserAvatar(fullConversation.members),
+      unreadCount: 0,
     };
 
+    
     console.log('Selected conversationqweqweqweqwe:', conversation); // Kiểm tra cuộc trò chuyện đã chọn
     console.log('Updated conversation:', updateConversation); // Kiểm tra cuộc trò chuyện đã cập nhật
     dispatch(setSelectedConversation(updateConversation)); // Cập nhật cuộc trò chuyện đã chọn trong Redux

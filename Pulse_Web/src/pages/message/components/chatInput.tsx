@@ -31,14 +31,22 @@ const ChatInput: React.FC = () => {
     console.log('Socket ID hihi:', socket.id);
     // Lắng nghe sự kiện receiveMessage từ server
     socket.on('receiveMessage', (newMessage) => {
-      dispatch(addMessageToState(newMessage)); // Thêm tin nhắn vào Redux
+      console.log('checkvar:', newMessage.senderIdessage + "hahahahha  " + userDetail?.userId);
+      if (!userDetail?.userId) return;
+      if (newMessage.senderId === userDetail.userId) return;
+
+      // dispatch(addMessageToState(newMessage));
+      dispatch(addMessageToState({
+        message: newMessage,
+        currentUserId: userDetail.userId,
+      }));
     });
 
     // Dọn dẹp khi component unmount
     return () => {
       socket.off('receiveMessage');
     };
-  }, [dispatch]);
+  }, [dispatch, userDetail]);
 
   const handleSend = () => {
     if (!selectedConversation?._id) {
@@ -84,7 +92,11 @@ const ChatInput: React.FC = () => {
       socket.emit('sendMessage', newMessage);
 
       // Thêm tin nhắn vào Redux state
-      dispatch(addMessageToState(newMessage));
+      // dispatch(addMessageToState(newMessage));
+      dispatch(addMessageToState({
+        message: newMessage,
+        currentUserId: userDetail.userId,
+      }));
 
       setMessage(''); // Xóa nội dung sau khi gửi
     }
