@@ -1,6 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect  } from "react";
 import { ChatInput } from "./index";
 import { format, formatDistanceToNow } from "date-fns";
+import {  useSelector } from "react-redux";
+import { RootState } from "../../../redux/store";
+import { Conversation } from '../../../redux/slice/types';
 import {
   Phone,
   Search,
@@ -16,24 +19,18 @@ import {
   Trash2,
   LogOut,
 } from "lucide-react";
-interface Message {
-  conversationId: string;
-  senderId: string;
-  name: string; // Tên người gửi (nếu là nhóm)
-  content: string;
-  timestamp: string;
-  senderAvatar: string; // Nếu là chat nhóm, mỗi tin nhắn có avatar riêng
-  isSentByUser: boolean;
-}
+// interface Message {
+//   conversationId: string;
+//   senderId: string;
+//   name: string; // Tên người gửi (nếu là nhóm)
+//   content: string;
+//   timestamp: string;
+//   senderAvatar: string; // Nếu là chat nhóm, mỗi tin nhắn có avatar riêng
+//   isSentByUser: boolean;
+// }
 
 interface ConversationDetailProps {
-  selectedConversation: {
-    _id: string;
-    groupName: string;
-    avatar: string; // Avatar chung nếu là chat riêng
-    isGroup: boolean;
-    messages: Message[];
-  } | null;
+  selectedConversation: Conversation | null; // Thay đổi kiểu dữ liệu ở đây
 }
 
 const ConversationDetail: React.FC<ConversationDetailProps> = ({
@@ -41,6 +38,15 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 }) => {
   console.log("Selected conversationaaaaaa:", selectedConversation);
   console.log("ahahahha: ", selectedConversation?.messages);
+
+  // const dispatch = useDispatch();
+  const messages = useSelector(
+    (state: RootState) => state.chat.selectedConversation?.messages
+  );
+
+  useEffect(() => {
+    console.log("Messages updated:", messages); // Debugging log
+  }, [messages]);
 
   const [showSidebar, setShowSidebar] = useState(false);
   const [isToggled, setIsToggled] = useState(false);
@@ -115,7 +121,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
         {/* Chat Content */}
         <div className="flex-1 p-5 overflow-y-auto space-y-4">
-          {selectedConversation.messages.map((msg, index) => (
+          {messages?.map((msg, index) => (
             <div
               key={index}
               className={`flex items-start gap-3 ${msg.isSentByUser ? "flex-row-reverse" : ""

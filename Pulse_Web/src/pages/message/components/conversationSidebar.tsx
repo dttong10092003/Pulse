@@ -1,6 +1,8 @@
 import React from 'react';
 import { ConversationItem } from './index';
 import { ConversationSidebarProps } from '../../../redux/slice/types';
+import { RootState } from '../../../redux/store';
+import { useSelector } from 'react-redux';
 
 // interface Message {
 //   conversationId: string;
@@ -33,7 +35,8 @@ import { ConversationSidebarProps } from '../../../redux/slice/types';
 //   selectedConversationId: string;
 // }
 
-const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ conversations, onSelectConversation, selectedConversationId }) => {
+const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConversation, selectedConversationId }) => {
+  const conversations = useSelector((state: RootState) => state.chat.conversations);
   // Kiểm tra conversations có dữ liệu không
   if (!conversations || conversations.length === 0) {
     return <div className="text-white">No conversations available.</div>;

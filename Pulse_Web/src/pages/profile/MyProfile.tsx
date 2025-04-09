@@ -104,7 +104,7 @@ const MyProfile = () => {
                     <div className="flex items-center gap-6">
                         <span className="flex items-center gap-1 cursor-pointer"><MessageSquare size={18} /> {count} posts</span>
                         <span className="flex items-center gap-1 cursor-pointer"><Users size={18} /> 10  followers</span>
-                        <span className="flex items-center gap-1 cursor-pointer"><Share2 size={18} /> google</span>
+                        <span className="flex items-center gap-1 cursor-pointer"><Share2 size={18} /></span>
                     </div>
                     <button className="flex items-center gap-2 text-white px-4 py-2 rounded-md hover:bg-zinc-600 cursor-pointer" onClick={() => navigate("/home/edit-profile")}>
                         <UserRoundPen size={18} />

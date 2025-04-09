@@ -154,7 +154,7 @@ const Login = () => {
           })
           .catch((err) => {
             console.error("Google login failed: ", err);
-            setErrorText("Google login failed");
+            setErrorText("Your email is not a Google account");
           });
       } catch (error) {
         console.error("Error fetching Google user info:", error);
@@ -205,7 +205,7 @@ const Login = () => {
         <button
           onClick={handleLogin}
           className={`w-full mt-6 py-3 text-white font-bold rounded-full 
-          ${isBtnEnable ? "bg-green-400 hover:bg-green-700" : "bg-gray-600 cursor-not-allowed"}`}
+          ${isBtnEnable ? "bg-green-400 hover:bg-green-700 cursor-pointer" : "bg-gray-600 cursor-not-allowed"}`}
           disabled={!isBtnEnable}
         >
           {loading ? 'Logging in...' : 'Log in'}
@@ -213,7 +213,7 @@ const Login = () => {
 
         <button 
           onClick={() => handleGoogleLogin()}
-          className="w-full flex items-center justify-center mt-4 py-3 bg-gray-800 text-white rounded-full hover:bg-gray-700">
+          className="w-full flex items-center justify-center mt-4 py-3 bg-gray-800 text-white rounded-full hover:bg-gray-700 cursor-pointer">
           <img src={GoogleLogo} alt="Google" className="w-5 h-5 mr-2" />
           Sign in with Google
         </button>
