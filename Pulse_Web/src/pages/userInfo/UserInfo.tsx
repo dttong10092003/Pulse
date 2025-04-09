@@ -413,6 +413,7 @@ export default function UserProfileForm() {
                     type="date"
                     value={formData.dob}
                     onChange={handleChange}
+                    required
                     className="w-full pl-9 py-2 bg-slate-800/50 border border-slate-700 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500"
                   />
                 </div>
@@ -454,6 +455,7 @@ export default function UserProfileForm() {
                     placeholder="+84xxxxxxxxx or 0xxxxxxxxx"
                     readOnly={!!phoneNumber}
                     onChange={handleChange}
+                    required
                     className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.phoneNumber ? "border-red-500" : "border-slate-700"} rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
                   />
                 </div>
@@ -481,6 +483,7 @@ export default function UserProfileForm() {
                     placeholder="example@domain.com"
                     readOnly={!!email}
                     onChange={handleChange}
+                    required
                     className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.email ? "border-red-500" : "border-slate-700"} rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
                   />
                 </div>

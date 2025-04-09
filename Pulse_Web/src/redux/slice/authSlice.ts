@@ -454,6 +454,7 @@ const authSlice = createSlice({
       })
       .addCase(getUserProfile.rejected, (state, action) => {
         state.error = action.payload as string;
+
       })
       // Gửi OTP qua email
       .addCase(sendEmailOtp.pending, (state) => {
