@@ -16,13 +16,6 @@ const ChatInput: React.FC = () => {
   const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
   const dispatch = useDispatch();
 
-  // const handleSend = () => {
-  //   if (message.trim()) {
-  //     console.log('Message sent:', message);
-  //     setMessage('');
-  //   }
-  // };
-
   useEffect(() => {
     console.log('Socket ID haha:', socket.id);
   }, []);
@@ -47,6 +40,13 @@ const ChatInput: React.FC = () => {
       socket.off('receiveMessage');
     };
   }, [dispatch, userDetail]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
   const handleSend = () => {
     if (!selectedConversation?._id) {
@@ -121,6 +121,7 @@ const ChatInput: React.FC = () => {
           type="text"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="Type a message..."
           className="w-full p-2 pl-2 pr-10 rounded-xl bg-[#1212124C]/50 text-white focus:outline-none "
         />

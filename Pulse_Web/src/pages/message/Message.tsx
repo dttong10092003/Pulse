@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { ConversationSidebar, ConversationDetail } from './components';
 import { addMessageToState } from '../../redux/slice/chatSlice';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedConversation, getAllConversations } from '../../redux/slice/chatSlice';
+import { setSelectedConversation, getAllConversations, setUnreadToZero } from '../../redux/slice/chatSlice';
 import { RootState, AppDispatch } from '../../redux/store';
 import { Conversation, Member } from '../../redux/slice/types';
 import { io } from 'socket.io-client';
@@ -150,6 +150,8 @@ const Message: React.FC = () => {
     console.log('Selected conversationqweqweqweqwe:', conversation); // Kiểm tra cuộc trò chuyện đã chọn
     console.log('Updated conversation:', updateConversation); // Kiểm tra cuộc trò chuyện đã cập nhật
     dispatch(setSelectedConversation(updateConversation)); // Cập nhật cuộc trò chuyện đã chọn trong Redux
+
+    dispatch(setUnreadToZero(conversation._id));
   };
 
    // Lấy tên người còn lại trong cuộc trò chuyện (không phải user hiện tại)

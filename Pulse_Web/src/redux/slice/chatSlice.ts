@@ -535,6 +535,13 @@ const chatSlice = createSlice({
         state.messages = [];  // Đặt mảng messages rỗng nếu không có cuộc trò chuyện nào được chọn
       }
     },
+
+    setUnreadToZero: (state, action: PayloadAction<string>) => {
+      const convo = state.conversations.find(c => c._id === action.payload);
+      if (convo && convo.unreadCount && convo.unreadCount > 0) {
+        convo.unreadCount = 0;
+      }
+    }
     
   },
   extraReducers: (builder) => {
@@ -850,5 +857,5 @@ const chatSlice = createSlice({
   },
 });
 
-export const { addMessageToState, setSelectedConversation } = chatSlice.actions;
+export const { addMessageToState, setSelectedConversation, setUnreadToZero } = chatSlice.actions;
 export default chatSlice.reducer;
