@@ -510,7 +510,7 @@ const chatSlice = createSlice({
       if (conv) {
         conv.lastMessage = newMessage.content;
         conv.messages = [...(conv.messages || []), newMessage];
-        if (newMessage.senderId !== currentUserId) {
+        if (conv._id !== state.selectedConversation?._id && newMessage.senderId !== currentUserId) {
           conv.unreadCount = (conv.unreadCount || 0) + 1;
         }
       }
@@ -555,17 +555,26 @@ const chatSlice = createSlice({
         state.loading = false;
 
         const currentUserId = (action.meta.arg as string); // user._id
+
+        const unreadMap = new Map<string, number>();
+        state.conversations.forEach((conv) => {
+          if (conv._id && typeof conv.unreadCount === 'number') {
+            unreadMap.set(conv._id, conv.unreadCount);
+          }
+        });
+
         console.log('Fetched conversations:payloadadadadadad', action.payload); // Debugging log
         console.log('User ID:', currentUserId); // Debugging log
         state.conversations = action.payload.map((conv) => {
           if (!conv.isGroup) {
             const other = conv.members.find((m) => m.userId !== currentUserId);
-            return {
-              ...conv,
-              groupName: other?.name || 'Unknown',
-              avatar: other?.avatar || '',
-            };
+            conv.groupName = other?.name || 'Unknown';
+            conv.avatar = other?.avatar || '';
           }
+      
+          // ⚠️ Gán lại unreadCount nếu có
+          conv.unreadCount = unreadMap.get(conv._id) || 0;
+      
           return conv;
         });
 

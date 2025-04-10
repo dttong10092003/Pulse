@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Upload, SendHorizonal, Smile } from 'lucide-react';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addMessageToState } from '../../../redux/slice/chatSlice';
-import { io } from 'socket.io-client';
 import { RootState } from '../../../redux/store';
+import socket from '../../../utils/socket';
 
-
-const socket = io('http://localhost:5005');
 
 const ChatInput: React.FC = () => {
   const [message, setMessage] = useState('');
@@ -16,30 +14,30 @@ const ChatInput: React.FC = () => {
   const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    console.log('Socket ID haha:', socket.id);
-  }, []);
+  // useEffect(() => {
+  //   console.log('Socket ID haha:', socket.id);
+  // }, []);
 
-  useEffect(() => {
-    console.log('Socket ID hihi:', socket.id);
-    // Lắng nghe sự kiện receiveMessage từ server
-    socket.on('receiveMessage', (newMessage) => {
-      console.log('checkvar:', newMessage.senderIdessage + "hahahahha  " + userDetail?.userId);
-      if (!userDetail?.userId) return;
-      if (newMessage.senderId === userDetail.userId) return;
+  // useEffect(() => {
+  //   console.log('Socket ID hihi:', socket.id);
+  //   // Lắng nghe sự kiện receiveMessage từ server
+  //   socket.on('receiveMessage', (newMessage) => {
+  //     console.log('checkvar:', newMessage.senderIdessage + "hahahahha  " + userDetail?.userId);
+  //     if (!userDetail?.userId) return;
+  //     if (newMessage.senderId === userDetail.userId) return;
 
-      // dispatch(addMessageToState(newMessage));
-      dispatch(addMessageToState({
-        message: newMessage,
-        currentUserId: userDetail.userId,
-      }));
-    });
+  //     // dispatch(addMessageToState(newMessage));
+  //     dispatch(addMessageToState({
+  //       message: newMessage,
+  //       currentUserId: userDetail.userId,
+  //     }));
+  //   });
 
-    // Dọn dẹp khi component unmount
-    return () => {
-      socket.off('receiveMessage');
-    };
-  }, [dispatch, userDetail]);
+  //   // Dọn dẹp khi component unmount
+  //   return () => {
+  //     socket.off('receiveMessage');
+  //   };
+  // }, [dispatch, userDetail]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
