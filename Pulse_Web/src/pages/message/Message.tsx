@@ -1,14 +1,12 @@
 import React, { useEffect } from 'react';
 import { ConversationSidebar, ConversationDetail } from './components';
-import { addMessageToState } from '../../redux/slice/chatSlice';
+// import { addMessageToState } from '../../redux/slice/chatSlice';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedConversation, getAllConversations } from '../../redux/slice/chatSlice';
+import { setSelectedConversation, getAllConversations, setUnreadToZero } from '../../redux/slice/chatSlice';
 import { RootState, AppDispatch } from '../../redux/store';
 import { Conversation, Member } from '../../redux/slice/types';
-import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:5005');
-
+import socket from '../../utils/socket';
 // const initialConversations = [
 //   {
 //     conversationId: "61a1b2c3d4e5f6789abcde01",  // ID cuộc trò chuyện
@@ -110,25 +108,25 @@ const Message: React.FC = () => {
   //   unreadCount: conversation.unreadCount || 0,
   // }));
 
-  useEffect(() => {
-    console.log("Socket ID huhu:", socket.id);
-    // Lắng nghe sự kiện 'receiveMessage' và cập nhật tin nhắn trong Redux
-    socket.on('receiveMessage', (newMessage) => {
-      console.log('New message receivedddddd:', newMessage);
-      if (!user?._id) return;
-      if (newMessage.senderId === user._id) return;
-      // dispatch(addMessageToState(newMessage));
-      dispatch(addMessageToState({
-        message: newMessage,
-        currentUserId: user._id,
-      }));
-    });
+  // useEffect(() => {
+  //   console.log("Socket ID huhu:", socket.id);
+  //   // Lắng nghe sự kiện 'receiveMessage' và cập nhật tin nhắn trong Redux
+  //   socket.on('receiveMessage', (newMessage) => {
+  //     console.log('New message receivedddddd:', newMessage);
+  //     if (!user?._id) return;
+  //     if (newMessage.senderId === user._id) return;
+  //     // dispatch(addMessageToState(newMessage));
+  //     dispatch(addMessageToState({
+  //       message: newMessage,
+  //       currentUserId: user._id,
+  //     }));
+  //   });
 
-    // Dọn dẹp sự kiện khi component unmount
-    return () => {
-      socket.off('receiveMessage');
-    };
-  }, [dispatch, user]);
+  //   // Dọn dẹp sự kiện khi component unmount
+  //   return () => {
+  //     socket.off('receiveMessage');
+  //   };
+  // }, [dispatch, user]);
 
   const handleSelectConversation = (conversation: Conversation) => {
     // 🔥 Join room khi chọn conversation
@@ -150,6 +148,8 @@ const Message: React.FC = () => {
     console.log('Selected conversationqweqweqweqwe:', conversation); // Kiểm tra cuộc trò chuyện đã chọn
     console.log('Updated conversation:', updateConversation); // Kiểm tra cuộc trò chuyện đã cập nhật
     dispatch(setSelectedConversation(updateConversation)); // Cập nhật cuộc trò chuyện đã chọn trong Redux
+
+    dispatch(setUnreadToZero(conversation._id));
   };
 
    // Lấy tên người còn lại trong cuộc trò chuyện (không phải user hiện tại)

@@ -1,7 +1,7 @@
-import React, { useState, useEffect  } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ChatInput } from "./index";
 import { format, formatDistanceToNow } from "date-fns";
-import {  useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
 import { Conversation } from '../../../redux/slice/types';
 import {
@@ -19,15 +19,6 @@ import {
   Trash2,
   LogOut,
 } from "lucide-react";
-// interface Message {
-//   conversationId: string;
-//   senderId: string;
-//   name: string; // Tên người gửi (nếu là nhóm)
-//   content: string;
-//   timestamp: string;
-//   senderAvatar: string; // Nếu là chat nhóm, mỗi tin nhắn có avatar riêng
-//   isSentByUser: boolean;
-// }
 
 interface ConversationDetailProps {
   selectedConversation: Conversation | null; // Thay đổi kiểu dữ liệu ở đây
@@ -36,6 +27,7 @@ interface ConversationDetailProps {
 const ConversationDetail: React.FC<ConversationDetailProps> = ({
   selectedConversation,
 }) => {
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   console.log("Selected conversationaaaaaa:", selectedConversation);
   console.log("ahahahha: ", selectedConversation?.messages);
 
@@ -56,6 +48,12 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const toggleSwitch = () => {
     setIsToggled(!isToggled);
   };
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "auto" });
+    }
+  }, [selectedConversation]);
 
   if (!selectedConversation) {
     return (
@@ -176,6 +174,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
 
         <ChatInput />

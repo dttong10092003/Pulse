@@ -510,7 +510,7 @@ const chatSlice = createSlice({
       if (conv) {
         conv.lastMessage = newMessage.content;
         conv.messages = [...(conv.messages || []), newMessage];
-        if (newMessage.senderId !== currentUserId) {
+        if (conv._id !== state.selectedConversation?._id && newMessage.senderId !== currentUserId) {
           conv.unreadCount = (conv.unreadCount || 0) + 1;
         }
       }
@@ -535,6 +535,13 @@ const chatSlice = createSlice({
         state.messages = [];  // Đặt mảng messages rỗng nếu không có cuộc trò chuyện nào được chọn
       }
     },
+
+    setUnreadToZero: (state, action: PayloadAction<string>) => {
+      const convo = state.conversations.find(c => c._id === action.payload);
+      if (convo && convo.unreadCount && convo.unreadCount > 0) {
+        convo.unreadCount = 0;
+      }
+    }
     
   },
   extraReducers: (builder) => {
@@ -548,17 +555,26 @@ const chatSlice = createSlice({
         state.loading = false;
 
         const currentUserId = (action.meta.arg as string); // user._id
+
+        const unreadMap = new Map<string, number>();
+        state.conversations.forEach((conv) => {
+          if (conv._id && typeof conv.unreadCount === 'number') {
+            unreadMap.set(conv._id, conv.unreadCount);
+          }
+        });
+
         console.log('Fetched conversations:payloadadadadadad', action.payload); // Debugging log
         console.log('User ID:', currentUserId); // Debugging log
         state.conversations = action.payload.map((conv) => {
           if (!conv.isGroup) {
             const other = conv.members.find((m) => m.userId !== currentUserId);
-            return {
-              ...conv,
-              groupName: other?.name || 'Unknown',
-              avatar: other?.avatar || '',
-            };
+            conv.groupName = other?.name || 'Unknown';
+            conv.avatar = other?.avatar || '';
           }
+      
+          // ⚠️ Gán lại unreadCount nếu có
+          conv.unreadCount = unreadMap.get(conv._id) || 0;
+      
           return conv;
         });
 
@@ -850,5 +866,5 @@ const chatSlice = createSlice({
   },
 });
 
-export const { addMessageToState, setSelectedConversation } = chatSlice.actions;
+export const { addMessageToState, setSelectedConversation, setUnreadToZero } = chatSlice.actions;
 export default chatSlice.reducer;
