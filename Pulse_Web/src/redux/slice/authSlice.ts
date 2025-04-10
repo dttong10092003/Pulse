@@ -1,12 +1,13 @@
 // src/redux/slices/authSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { RootState } from '../store';
 
 const URI_API = 'http://localhost:3000/auth';
 
 // Define the type for the auth state
 interface AuthState {
-  user: { _id: string, username: string } | null;
+  user: { _id: string, username: string, googleId?: string } | null;
   token: string | null; // Lưu token từ localStorage
   loading: boolean;
   error: string | null;
@@ -79,6 +80,10 @@ interface UserDetail {
   avatar: string;
   backgroundAvatar: string;
 }
+interface ChangePasswordPayload {
+  oldPassword: string;
+  newPassword: string;
+}
 
 // Tạo thunk cho đăng nhập
 export const loginUser = createAsyncThunk(
@@ -125,55 +130,25 @@ export const registerUserWithPhone = createAsyncThunk(
   }
 );
 
-// export const loginWithGoogle = createAsyncThunk(
-//   'auth/loginWithGoogle',
-//   async (googleUserInfo: { email: string, googleId: string }, { rejectWithValue }) => {
-//     try {
-//       console.log('Google User Info:', googleUserInfo);
-//       console.log(`${URI_API}/login/google`);
-//       const response = await axios.post(`${URI_API}/login/google`, {
-//         email: googleUserInfo.email,
-//         googleId: googleUserInfo.googleId
-//       }, {
-//         headers: {
-//           'Content-Type': 'application/json',
-//         },
-//       });
-
-//       return response.data; // Response chứa token và user (hoặc thông tin cần thiết)
-//     } catch (error) {
-//       return rejectWithValue(error instanceof Error ? error.message : 'Google login failed');
-//     }
-//   }
-// );
 export const loginWithGoogleRegister = createAsyncThunk(
   'auth/loginWithGoogleRegister',
   async (googleUserInfo: { email: string, googleId: string }, { rejectWithValue }) => {
     try {
-      console.log('Google User Info:', googleUserInfo);
-      const response = await axios.post(`${URI_API}/register/google`, {
-        email: googleUserInfo.email,
-        googleId: googleUserInfo.googleId
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await axios.post(`${URI_API}/register/google`, googleUserInfo, {
+        headers: { 'Content-Type': 'application/json' },
       });
-
-      return response.data; // Response chứa token và user, isVerified
+      return response.data;
     } catch (error) {
-      // return rejectWithValue(error instanceof Error ? error.message : 'Google login failed');
-      if (axios.isAxiosError(error) && error.response?.data?.message) {
-        return rejectWithValue({
-          message: error.response.data.message,
-          status: error.response.status,
-        });
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status || 500;
+        const message = error.response?.data?.message || 'Google sign in failed';
+        return rejectWithValue({ message, status });
       }
-      return rejectWithValue({ message: 'Google sign in failed. Email already in use ', status: 500 });
-
+      return rejectWithValue({ message: 'Unknown error occurred', status: 500 });
     }
   }
 );
+
 
 export const loginWithGoogle = createAsyncThunk(
   'auth/loginWithGoogle',
@@ -320,7 +295,32 @@ export const verifyEmailOtp = createAsyncThunk(
     }
   }
 );
+export const changePassword = createAsyncThunk(
+  'auth/changePassword',
+  async (data: ChangePasswordPayload, { getState, rejectWithValue }) => {
+    const state = getState() as RootState;
+    const token = state.auth.token;
 
+    try {
+      const response = await axios.post(
+        `${URI_API}/change-password`,
+        data,
+        {
+          headers: {
+            Authorization: `${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      return response.data; // { message: 'Password changed successfully' }
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      }
+      return rejectWithValue('Cannot change password. Old password is incorrect.');
+    }
+  }
+);
 
 
 // Tạo slice cho auth
@@ -381,8 +381,14 @@ const authSlice = createSlice({
       })
       .addCase(loginWithGoogleRegister.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        if (typeof action.payload === "string") {
+          state.error = action.payload;
+        } else if (action.payload && typeof action.payload === "object") {
+          const payload = action.payload as { message?: string };
+          state.error = payload.message || "Đăng ký thất bại";
+        }
       })
+      
       .addCase(checkUserExists.pending, (state) => {
         state.checkStatus = 'loading';
         state.checkMessage = null;
@@ -493,6 +499,18 @@ const authSlice = createSlice({
         localStorage.setItem("token", action.payload.token);
       })
       .addCase(loginWithGoogle.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(changePassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(changePassword.fulfilled, (state, action: PayloadAction<{ message: string }>) => {
+        state.loading = false;
+        state.resetMessage = action.payload.message;
+      })
+      .addCase(changePassword.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
