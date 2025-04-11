@@ -107,7 +107,7 @@ export const getTop10Users = createAsyncThunk(
 
     try {
       const response = await axios.post(`${USER_SERVICE_URL}/top10-users`, {}, {
-        headers: { Authorization: `Bearer ${token}` }, // Gửi token đúng định dạng
+        headers: { Authorization: `${token}` }, // Gửi token đúng định dạng
       });
 
       return response.data; // Trả về dữ liệu người dùng

@@ -179,7 +179,7 @@ const RightSidebar = () => {
         navigate("/login");  // Điều hướng tới trang đăng nhập nếu token hết hạn
         return;  // Nếu token hết hạn, không thực hiện yêu cầu
       }
-
+        console.log("Token hợp lệ:", token);  // Token hợp lệ, thực hiện yêu cầu
       dispatch(getTop10Users());  // Gọi action getTop10Users khi component mount
     } catch (error) {
       console.error("Token không hợp lệ:", error);
