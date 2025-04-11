@@ -67,7 +67,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, onSel
       </div>
 
       {/* ✅ Badge tin nhắn chưa đọc nằm bên phải cạnh tên */}
-      {conversation.unreadCount && conversation.unreadCount > 0 && (
+      {typeof conversation.unreadCount === 'number' && conversation.unreadCount > 0 && (
         <div className="bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full text-[10px] border border-gray-700 ml-auto">
           {conversation.unreadCount}
         </div>
