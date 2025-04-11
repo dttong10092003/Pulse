@@ -115,7 +115,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
                 setShowMenu(false);
               }} 
               className="text-white px-2 py-1 hover:bg-gray-700 rounded cursor-pointer flex items-center">
-                <Users size={14} className="mr-2" /> Tạo nhóm
+                <Users size={14} className="mr-2" /> Create group
               </div>
               {/* Add more options here if needed */}
             </div>
