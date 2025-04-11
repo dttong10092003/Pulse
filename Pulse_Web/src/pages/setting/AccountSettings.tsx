@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   ChevronRight, Eye, Heart, Lock, Mail, Trash2, QrCode, ShieldCheck, MessageCircleQuestion,
-  X, Smartphone, Globe, Bell, Gift, Monitor, Moon, Sun, Loader, ImageUp, Play
+  X, Smartphone, Globe, Bell, Gift, Monitor, Moon, Sun, Loader, ImageUp, Play, EyeOff
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
@@ -25,6 +25,9 @@ export default function AccountSettings() {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
 
   const handleChangePassword = async () => {
@@ -32,15 +35,15 @@ export default function AccountSettings() {
       alert('Please fill in all information');
       return;
     }
-  
+
     if (newPassword !== confirmPassword) {
       alert('New password and confirmation do not match');
       return;
     }
-  
+
     try {
       const result = await dispatch(changePassword({ oldPassword, newPassword }));
-  
+
       if (changePassword.fulfilled.match(result)) {
         alert(result.payload.message || 'Password changed successfully');
         setOldPassword('');
@@ -49,7 +52,7 @@ export default function AccountSettings() {
         setShowPasswordForm(false);
       } else {
         const errorMsg = result.payload as string;
-  
+
         if (errorMsg.includes('Old password is incorrect')) {
           alert('Old password is incorrect');
         } else {
@@ -60,7 +63,7 @@ export default function AccountSettings() {
       alert('An error occurred while changing password.');
     }
   };
-  
+
 
   return (
     <div className="min-h-screen bg-[#1F1F1F] text-zinc-100 flex">
@@ -161,27 +164,61 @@ export default function AccountSettings() {
 
                       {showPasswordForm && (
                         <div className="p-4 space-y-3">
-                          <input
-                            type="password"
-                            placeholder="Old password"
-                            value={oldPassword}
-                            onChange={(e) => setOldPassword(e.target.value)}
-                            className="w-full p-2 rounded bg-zinc-800 text-white"
-                          />
-                          <input
-                            type="password"
-                            placeholder="New password"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            className="w-full p-2 rounded bg-zinc-800 text-white"
-                          />
-                          <input
-                            type="password"
-                            placeholder="Confirm new password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="w-full p-2 rounded bg-zinc-800 text-white"
-                          />
+                          {/* Old Password */}
+                          <div className="relative">
+                            <input
+                              type={showOldPassword ? "text" : "password"}
+                              placeholder="Old password"
+                              value={oldPassword}
+                              onChange={(e) => setOldPassword(e.target.value)}
+                              className="w-full p-2 rounded bg-zinc-800 text-white pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowOldPassword(!showOldPassword)}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-400 cursor-pointer"
+                            >
+                              {showOldPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                          </div>
+
+                          {/* New Password */}
+                          <div className="relative">
+                            <input
+                              type={showNewPassword ? "text" : "password"}
+                              placeholder="New password"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              className="w-full p-2 rounded bg-zinc-800 text-white pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowNewPassword(!showNewPassword)}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-400 cursor-pointer"
+                            >
+                              {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                          </div>
+
+                          {/* Confirm Password */}
+                          <div className="relative">
+                            <input
+                              type={showConfirmPassword ? "text" : "password"}
+                              placeholder="Confirm new password"
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              className="w-full p-2 rounded bg-zinc-800 text-white pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-400 cursor-pointer"
+                            >
+                              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                          </div>
+
+                          {/* Buttons */}
                           <div className="flex justify-end gap-2 mt-2">
                             <button
                               className="px-4 py-2 bg-zinc-700 rounded hover:bg-zinc-600 text-white cursor-pointer"
@@ -197,13 +234,14 @@ export default function AccountSettings() {
                             <button
                               className="px-4 py-2 bg-green-500 rounded hover:bg-green-400 text-black cursor-pointer"
                               onClick={handleChangePassword}
-
                             >
                               Change
                             </button>
                           </div>
                         </div>
                       )}
+
+
                     </>
                   )}
 

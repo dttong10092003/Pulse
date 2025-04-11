@@ -1,9 +1,13 @@
 // File: Posts.tsx
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Heart, MessageCircle, Bookmark, MoreHorizontal } from "lucide-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import ImageModal from "./ImageModal";
+import { useDispatch } from "react-redux";
+import { AppDispatch,RootState } from "../../../redux/store";
+import { deletePost, fetchUserPosts } from "../../../redux/slice/postProfileSlice";
+import { useSelector } from "react-redux";
 
 dayjs.extend(relativeTime);
 
@@ -30,6 +34,7 @@ const Posts = ({ posts, username, avatar }: { posts: any[]; username: string; av
       {posts.map((post, index) => (
         <PostCard
           key={index}
+          postId={post._id} // Ensure post.id exists in your data
           user={username}
           avatar={avatar}
           content={post.content}
@@ -45,6 +50,7 @@ const Posts = ({ posts, username, avatar }: { posts: any[]; username: string; av
 };
 
 const PostCard = ({
+  postId,
   user,
   avatar,
   content,
@@ -54,6 +60,7 @@ const PostCard = ({
   media,
   tags,
 }: {
+  postId: string;
   user: string;
   avatar: string;
   content: string;
@@ -65,7 +72,40 @@ const PostCard = ({
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const dispatch = useDispatch<AppDispatch>();
+  const userId = useSelector((state: RootState) => state.auth.user?._id);
 
+  // Ẩn menu khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleDeletePost = async () => {
+    try {
+      await dispatch(deletePost(postId)).unwrap();
+  
+      if (!userId) {
+        console.warn("No userId in auth state — skipping fetch.");
+        return;
+      }
+  
+      await dispatch(fetchUserPosts(userId));
+    } catch (err) {
+      alert("Delete post failed: " + err);
+    }
+  };
+  
+  
   return (
     <div className="p-4 hover:bg-zinc-900/50">
       <div className="flex items-start gap-3">
@@ -76,10 +116,37 @@ const PostCard = ({
               <h3 className="font-semibold">{user}</h3>
               <p className="text-xs text-zinc-500">{time}</p>
             </div>
-            <button className="text-zinc-500 cursor-pointer">
-              <MoreHorizontal size={20} />
-            </button>
+
+            {/* Bọc nút ba chấm và menu trong div relative */}
+            <div className="relative">
+              <button
+                className="text-zinc-500 cursor-pointer"
+                onClick={() => setShowMenu((prev) => !prev)}
+              >
+                <MoreHorizontal size={20} />
+              </button>
+
+              {showMenu && (
+                <div
+                  ref={menuRef}
+                  className="absolute right-0 mt-2 w-36 bg-zinc-800 shadow-lg rounded-lg z-50 py-2"
+                >
+                  <button className="flex justify-between items-center w-full px-4 py-2 hover:bg-zinc-700 text-white cursor-pointer">
+                    Edit
+                    <svg className="w-4 h-4 text-zinc-400" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM21.41 6.34a1.25 1.25 0 000-1.77l-2.98-2.98a1.25 1.25 0 00-1.77 0l-1.83 1.83 4.75 4.75 1.83-1.83z" /></svg>
+                  </button>
+                  <button className="flex justify-between items-center w-full px-4 py-2 hover:bg-zinc-700 text-red-400 cursor-pointer"
+                    onClick={handleDeletePost}>
+                    Delete
+                    <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12zm3-9h2v7H9V10zm4 0h2v7h-2v-7zm5-5h-3.5l-1-1h-5l-1 1H5v2h14V5z" /></svg>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
+
+
+
 
           <p className="mt-2">{content}</p>
 
@@ -143,15 +210,15 @@ const PostCard = ({
       </div>
 
       <ImageModal
-  isOpen={isModalOpen}
-  onClose={() => setIsModalOpen(false)}
-  mediaList={media}
-  startIndex={startIndex}
-  username={user}
-  avatar={avatar}
-  content={content}
-  fullView // <== cái này là mới thêm nè
-/>
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        mediaList={media}
+        startIndex={startIndex}
+        username={user}
+        avatar={avatar}
+        content={content}
+        fullView // <== cái này là mới thêm nè
+      />
 
     </div>
   );
