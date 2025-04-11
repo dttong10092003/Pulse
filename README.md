@@ -19,3 +19,5 @@ npm install redux-thunk
 npm install dayjs
 
 npm install date-fns
+
+npm install framer-motion
