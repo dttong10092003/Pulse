@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { ConversationSidebar, ConversationDetail } from './components';
 // import { addMessageToState } from '../../redux/slice/chatSlice';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedConversation, getAllConversations, setUnreadToZero } from '../../redux/slice/chatSlice';
+import { setSelectedConversation, setUnreadToZero } from '../../redux/slice/chatSlice';
 import { RootState, AppDispatch } from '../../redux/store';
 import { Conversation, Member } from '../../redux/slice/types';
 
@@ -92,14 +92,14 @@ const Message: React.FC = () => {
   // const [conversations, setConversations] = useState(initialConversations);
   //   const [selectedConversation, setSelectedConversation] = useState(conversations[0]);
   const dispatch = useDispatch<AppDispatch>();
-  const { user, token } = useSelector((state: RootState) => state.auth);
+  const { user } = useSelector((state: RootState) => state.auth);
   const conversations = useSelector((state: RootState) => state.chat.conversations);
   const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
-  useEffect(() => {
-    if (token && user) {
-      dispatch(getAllConversations(user._id)); // Lấy tất cả các cuộc trò chuyện của người dùng
-    }
-  }, [dispatch, user, token]); // Chỉ gọi lại khi user hoặc token thay đổi
+  // useEffect(() => {
+  //   if (token && user) {
+  //     dispatch(getAllConversations(user._id)); // Lấy tất cả các cuộc trò chuyện của người dùng
+  //   }
+  // }, [dispatch, user, token]); // Chỉ gọi lại khi user hoặc token thay đổi
 
   // const updatedConversations = conversations.map((conversation) => ({
   //   ...conversation,
