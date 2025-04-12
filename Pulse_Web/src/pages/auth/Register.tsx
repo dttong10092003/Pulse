@@ -29,6 +29,7 @@ const Register = () => {
     const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+    const [otpErrorText, setOtpErrorText] = useState("");
 
     useEffect(() => {
         setIsBtnEnable(
@@ -172,12 +173,14 @@ const Register = () => {
             const otpCode = otp.join("");
 
             if (!confirmationResult) {
-                setErrorText("OTP verification failed. Please request a new OTP.");
+                setOtpErrorText("OTP verification failed. Please request a new OTP.");
                 return;
             }
 
             await confirmationResult.confirm(otpCode);
             setIsOtpModalOpen(false);
+            setOtpErrorText("");
+
             dispatch(registerUserWithPhone(form))
                 .unwrap()
                 .then((response) => {
@@ -190,9 +193,10 @@ const Register = () => {
                 });
         } catch (error) {
             console.error("Invalid OTP:", error);
-            setErrorText("Invalid OTP! Please try again.");
+            setOtpErrorText("Invalid OTP! Please try again.");
         }
     };
+
 
     const handleGoogleRegister = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
@@ -340,6 +344,10 @@ const Register = () => {
                     <div className="bg-white p-6 rounded-lg w-96 text-center">
                         <h2 className="text-xl font-bold mb-4">Enter OTP</h2>
                         <p className="text-sm text-gray-500">We've sent a verification code to +84{form.phoneNumber.slice(1)}</p>
+                        {otpErrorText && (
+                            <p className="text-sm text-red-500 mt-2">{otpErrorText}</p>
+                        )}
+
                         <div className="flex justify-center gap-2 mt-4">
                             {otp.map((num, index) => (
                                 <input
@@ -365,18 +373,22 @@ const Register = () => {
                                 />
                             ))}
                         </div>
-                        <button
-                            onClick={handleVerifyOtp}
-                            className="bg-green-500 text-white px-4 py-2 mt-4 mr-4 rounded cursor-pointer"
-                        >
-                            Verify OTP
-                        </button>
-                        <button
-                            onClick={() => setIsOtpModalOpen(false)}
-                            className="text-red-500 mt-4 ml-4 cursor-pointer"
-                        >
-                            Cancel
-                        </button>
+
+                        <div className="flex justify-center gap-4 mt-6">
+                            <button
+                                onClick={() => setIsOtpModalOpen(false)}
+                                className="px-5 py-2 border border-red-500 text-red-500 rounded hover:bg-red-100 transition cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleVerifyOtp}
+                                className="px-5 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition cursor-pointer"
+                            >
+                                Verify OTP
+                            </button>
+                        </div>
+
                     </div>
                 </div>
             )}

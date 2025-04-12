@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { GoogleLogo } from "../../assets";
 import { InputField } from "./components";
 import { useGoogleLogin } from "@react-oauth/google";
-import { loginUser, loginWithGoogle,loginWithGoogleRegister, getUserProfile} from '../../redux/slice/authSlice';
+import { loginUser, loginWithGoogle,loginWithGoogleRegister, getUserProfile, getPhoneNumber} from '../../redux/slice/authSlice';
 import { RootState, AppDispatch } from '../../redux/store';
 import { useDispatch, useSelector } from 'react-redux';
 interface GoogleRegisterError {
@@ -79,65 +79,74 @@ const Login = () => {
     if (!isBtnEnable) return;
     
     dispatch(loginUser(form))
-    .unwrap()
-    .then((res) => {
-      localStorage.setItem('token', res.token);
-      console.log("Login successful, token:", res.token);
-      dispatch(getUserProfile(res.token)); // lấy profile
-      navigate('/home');
-    })
-  
+      .unwrap()
+      .then((res) => {
+        // Token đã được lưu vào localStorage trong reducer
+        console.log("Login successful, token:", res.token);
+        
+        // Gọi API để lấy thông tin chi tiết người dùng
+        dispatch(getUserProfile(res.token))
+          .unwrap()
+          .then((profileRes) => {
+            const userDetail = profileRes.userDetail;
+            
+            // Kiểm tra xem người dùng đã có thông tin chi tiết chưa
+            if (userDetail && userDetail.firstname && userDetail.lastname) {
+              // Đã có thông tin chi tiết, chuyển đến trang home
+              navigate('/home');
+            } else {
+              // Chưa có thông tin chi tiết, lấy số điện thoại từ API
+              dispatch(getPhoneNumber())
+                .unwrap()
+                .then((phoneRes) => {
+                  // Chuyển đến trang userinfo với số điện thoại từ API
+                  navigate('/userinfo', { 
+                    state: { 
+                      phoneNumber: phoneRes.phoneNumber || form.username,
+                      email: profileRes.user?.email || ""
+                    } 
+                  });
+                })
+                .catch((phoneErr) => {
+                  console.error('Error fetching phone number:', phoneErr);
+                  // Nếu không lấy được số điện thoại, sử dụng username làm phương án dự phòng
+                  navigate('/userinfo', {
+                    state: {
+                      phoneNumber: form.username
+                    }
+                  });
+                });
+            }
+          })
+          .catch((profileErr) => {
+            console.error('Error fetching user profile:', profileErr);
+            
+            // Cố gắng lấy số điện thoại nếu không lấy được profile
+            dispatch(getPhoneNumber())
+              .unwrap()
+              .then((phoneRes) => {
+                navigate('/userinfo', {
+                  state: {
+                    phoneNumber: phoneRes.phoneNumber || form.username
+                  }
+                });
+              })
+              .catch(() => {
+                // Nếu cả profile và số điện thoại đều không lấy được
+                navigate('/userinfo', {
+                  state: {
+                    phoneNumber: form.username
+                  }
+                });
+              });
+          });
+      })
       .catch((err) => {
-        console.error('Login Error: ', err);
-        setErrorText('Invalid username or password. Please try again');
+        console.error('Login Error:', err);
+        setErrorText('Invalid username or password. Please try again.');
       });
   };
 
-  // const handleGoogleLogin = useGoogleLogin({
-  //   onSuccess: async (tokenResponse) => {
-  //     try {
-  //       const res = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
-  //         headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-  //       });
-  //       const userInfo = await res.json();
-  //       console.log("Google User Info:", userInfo);
-  
-  //       // Gọi API đăng nhập với Google
-  //       dispatch(loginWithGoogle({ email: userInfo.email, googleId: userInfo.id }))
-  //         .unwrap()
-  //         .then((response) => {
-  //           const { token, isVerified, user } = response;
-            
-  //           // Thêm logging để debug
-  //           console.log("API Response:", response);
-  //           console.log("isVerified value:", isVerified);
-  //           console.log("User data:", user);
-            
-  //           // Lưu token trước bất kể trường hợp nào
-  //           localStorage.setItem('token', token);
-            
-  //           // Chỉ kiểm tra isVerified để quyết định điều hướng
-  //           if (isVerified) {
-  //             // Nếu đã xác thực đủ thông tin, chuyển hướng sang /home
-  //             console.log("User verified, navigating to /home");
-  //             navigate("/home");
-  //           } else {
-  //             // Nếu chưa xác thực đủ thông tin, chuyển hướng sang /userinfo
-  //             console.log("User not verified, navigating to /userinfo");
-  //             navigate("/userinfo", { state: { email: userInfo.email, googleId: userInfo.id } });
-  //           }
-  //         })
-  //         .catch((err) => {
-  //           console.error("Google login failed: ", err);
-  //           setErrorText("Your email is not a Google account");
-  //         });
-  //     } catch (error) {
-  //       console.error("Error fetching Google user info:", error);
-  //       setErrorText("Google login failed");
-  //     }
-  //   },
-  //   onError: () => setErrorText("Google login failed"),
-  // });
       const handleGoogleLogin = useGoogleLogin({
           onSuccess: async (tokenResponse) => {
               try {

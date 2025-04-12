@@ -5,34 +5,6 @@ import { Conversation, Message } from './types';
 
 const CHAT_SERVICE_URL = 'http://localhost:3000/chat';
 
-// interface Conversation {
-//   _id: string;
-//   members: { userId: string; name: string; avatar: string }[]; // Danh sách thành viên trong nhóm
-//   isGroup: boolean;
-//   groupName: string;
-//   adminId?: string;
-//   updatedAt?: string;
-//   createdAt?: string;
-//   messages: Message[];
-//   unreadCount?: number;
-//   avatar: string;
-//   lastMessage?: string; // Tin nhắn cuối cùng (có thể là tên người gửi + nội dung)
-//   isOnline?: boolean; // Trạng thái online của người dùng
-// }
-
-// interface Message {
-//   _id?: string;
-//   conversationId: string;
-//   name: string; // Tên người gửi (nếu là nhóm)
-//   senderId: string;
-//   type: 'text' | 'emoji' | 'image' | 'file';
-//   content: string;
-//   isDeleted: boolean;
-//   timestamp: string;
-//   isPinned: boolean;
-//   senderAvatar: string;
-//   isSentByUser: boolean; // Để xác định xem tin nhắn có phải do người dùng gửi hay không
-// }
 
 // Define the state for Chat
 interface ChatState {
@@ -443,8 +415,8 @@ export const unpinMessage = createAsyncThunk(
 );
 
 // 17️⃣ Cập nhật thông tin nhóm
-export const updateGroupConversation = createAsyncThunk(
-  'chat/updateGroupConversation',
+export const updateGroupInfo = createAsyncThunk(
+  'chat/updateGroupInfo',
   async (
     { conversationId, groupName, avatar }: { conversationId: string; groupName: string; avatar: string },
     { getState, rejectWithValue }
@@ -847,19 +819,23 @@ const chatSlice = createSlice({
       })
     // 17️⃣ Cập nhật thông tin nhóm
     builder
-      .addCase(updateGroupConversation.pending, (state) => {
+      .addCase(updateGroupInfo.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(updateGroupConversation.fulfilled, (state, action: PayloadAction<Conversation>) => {
+      .addCase(updateGroupInfo.fulfilled, (state, action: PayloadAction<Conversation>) => {
         state.loading = false;
         // Cập nhật thông tin nhóm trong state
-        const index = state.conversations.findIndex(conv => conv._id === action.payload._id);
+        const updatedConversation = action.payload;
+        const index = state.conversations.findIndex(conv => conv._id === updatedConversation._id);
         if (index !== -1) {
-          state.conversations[index] = action.payload; // Cập nhật thông tin nhóm trong danh sách cuộc trò chuyện
+          state.conversations[index] = updatedConversation; // Cập nhật thông tin nhóm trong danh sách cuộc trò chuyện
+        }
+        if (state.selectedConversation?._id === updatedConversation._id) {
+          state.selectedConversation = updatedConversation; // Cập nhật cuộc trò chuyện đã chọn
         }
       })
-      .addCase(updateGroupConversation.rejected, (state, action) => {
+      .addCase(updateGroupInfo.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
