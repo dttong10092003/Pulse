@@ -131,21 +131,29 @@ export default function UserProfileForm() {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
+  
+    // Regex chuẩn
+    const vietnamPhoneRegex = /^(0[35789])\d{8}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  
+    // Validate tên
     if (!formData.firstname.trim()) newErrors.firstname = "First name is required";
     if (!formData.lastname.trim()) newErrors.lastname = "Last name is required";
-
-    if (!email && formData.phoneNumber && !/^(\+84|0)[3|5|7|8|9]\d{8}$/.test(formData.phoneNumber)) {
-      newErrors.phoneNumber = "Invalid Vietnamese phone number format";
-    }
-
-    if (!phoneNumber && formData.email && !/^.+@.+\..+$/.test(formData.email)) {
+  
+    // Nếu chưa đăng ký bằng email thì cần validate email
+    if (!phoneNumber && formData.email && !emailRegex.test(formData.email)) {
       newErrors.email = "Invalid email format";
     }
-
+  
+    // Nếu chưa đăng ký bằng số điện thoại thì cần validate số điện thoại
+    if (!email && formData.phoneNumber && !vietnamPhoneRegex.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = "Invalid Vietnamese phone number format";
+    }
+  
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+  
 
   // const handleSubmit = (e: React.FormEvent) => {
   //   e.preventDefault();
@@ -168,70 +176,124 @@ export default function UserProfileForm() {
   // };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) return;
-
+  
+    // Gọi validate cơ bản trước
+    const isValid = validateForm();
+    if (!isValid) return;
+  
+    // Kiểm tra định dạng phone (nếu người dùng đăng ký bằng email)
+    if (!phoneNumber && !/^(0[35789])\d{8}$/.test(formData.phoneNumber)) {
+      setErrors((prev) => ({
+        ...prev,
+        phoneNumber: "Invalid Vietnamese phone number format",
+      }));
+      return;
+    }
+  
+    // Kiểm tra định dạng email (nếu đăng ký bằng phone)
+    if (!email && !/^.+@.+\..+$/.test(formData.email)) {
+      setErrors((prev) => ({
+        ...prev,
+        email: "Invalid email format",
+      }));
+      return;
+    }
+  
     try {
       if (phoneNumber) {
-        // Đăng ký bằng số điện thoại => xác thực email
+        // ✅ Đăng ký bằng số điện thoại => xác thực email
+  
+        // Kiểm tra email đã tồn tại chưa
+        const checkEmailResult = await dispatch(
+          checkEmailOrPhoneExists({ email: formData.email })
+        );
+  
+        if (checkEmailOrPhoneExists.fulfilled.match(checkEmailResult)) {
+          const message = checkEmailResult.payload?.message?.toLowerCase?.() || "";
+          if (message.includes("exists") || message.includes("already in use")) {
+            setErrors((prev) => ({
+              ...prev,
+              email: "Email already in use",
+            }));
+            return;
+          }
+        }
+  
+        // Nếu chưa tồn tại thì gửi OTP qua email
         await dispatch(sendEmailOtp({ email: formData.email })).unwrap();
         setOtpType("email");
         setIsOtpModalOpen(true);
         setOtpError("");
-      }
-      else if (email) {
-        // ✅ Kiểm tra phoneNumber có tồn tại không
-        const resultAction = await dispatch(checkEmailOrPhoneExists({ phoneNumber: formData.phoneNumber }));
-
-        // Nếu phone đã tồn tại thì resultAction.payload chứa message
+      } else if (email) {
+        // ✅ Đăng ký bằng email => xác thực số điện thoại
+  
+        // Kiểm tra số điện thoại đã tồn tại chưa
+        const resultAction = await dispatch(
+          checkEmailOrPhoneExists({ phoneNumber: formData.phoneNumber })
+        );
+  
         if (checkEmailOrPhoneExists.fulfilled.match(resultAction)) {
-          const message = resultAction.payload?.message || "";
-          if (message.toLowerCase().includes("exists")) {
+          const message = resultAction.payload?.message?.toLowerCase?.() || "";
+          if (message.includes("exists") || message.includes("already in use")) {
             setErrors((prev) => ({
               ...prev,
               phoneNumber: "Phone number already exists",
             }));
-            return; // ⛔ Dừng lại nếu đã tồn tại
+            return;
           }
         }
-
-        // ✅ Nếu không tồn tại → tiếp tục gửi OTP
+  
+        // Gửi OTP qua số điện thoại
         setOtpType("phone");
-
+  
         if (!window.recaptchaVerifier) {
-          window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-            size: "invisible",
-            callback: () => { },
-          });
+          window.recaptchaVerifier = new RecaptchaVerifier(
+            auth,
+            "recaptcha-container",
+            {
+              size: "invisible",
+              callback: () => {},
+            }
+          );
         }
-
+  
         const appVerifier = window.recaptchaVerifier;
         const result = await signInWithPhoneNumber(
           auth,
           "+84" + formData.phoneNumber.slice(1),
           appVerifier
         );
-
+  
         setConfirmationResult(result);
         setIsOtpModalOpen(true);
-      }
-      else {
-        // Fallback: không có phone/email
+      } else {
+        // fallback không có phone/email
         submitUserDetails();
       }
-    } catch (err) {
-      const errMsg = typeof err === "string" ? err : "OTP sending failed";
-
-      // Gán lỗi dưới ô nhập tương ứng
-      if (errMsg.toLowerCase().includes("email")) {
-        setErrors((prev) => ({ ...prev, email: errMsg }));
-      } else if (errMsg.toLowerCase().includes("phone")) {
-        setErrors((prev) => ({ ...prev, phoneNumber: errMsg }));
+    } catch (err: any) {
+      const errMsg =
+        err?.payload?.message?.toLowerCase?.() ||
+        err?.message?.toLowerCase?.() ||
+        "OTP sending failed";
+  
+      if (
+        errMsg.includes("already in use") ||
+        errMsg.includes("exists") ||
+        errMsg.includes("email đã tồn tại")
+      ) {
+        setErrors((prev) => ({ ...prev, email: "Email already in use" }));
+      } else if (errMsg.includes("email")) {
+        setErrors((prev) => ({ ...prev, email: "Invalid email" }));
+      } else if (errMsg.includes("phone")) {
+        setErrors((prev) => ({ ...prev, phoneNumber: "Phone number error" }));
       } else {
         setOtpError(errMsg);
       }
     }
   };
+  
+  
+  
 
 
 
@@ -459,12 +521,14 @@ export default function UserProfileForm() {
                     className={`w-full pl-9 py-2 bg-slate-800/50 border ${errors.phoneNumber ? "border-red-500" : "border-slate-700"} rounded-md text-white focus:outline-none focus:ring-1 focus:ring-green-500`}
                   />
                 </div>
-                {errors.phoneNumber && (
+                {errors.phoneNumber ? (
                   <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>
+                ) : (
+                  <p className="text-slate-500 text-xs mt-1">
+                    Vietnamese format: +84 or 0 followed by 9 digits
+                  </p>
                 )}
-                {!errors.phoneNumber && (
-                  <p className="text-slate-500 text-xs mt-1">Vietnamese format: +84 or 0 followed by 9 digits</p>
-                )}
+
 
               </div>
 
