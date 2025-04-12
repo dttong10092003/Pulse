@@ -16,6 +16,7 @@ interface AuthState {
   resetStatus?: 'idle' | 'loading' | 'succeeded' | 'failed';
   resetMessage?: string | null;
   userDetail?: UserDetail | null;
+  phoneNumber?: string | null;
 }
 
 
@@ -321,7 +322,27 @@ export const changePassword = createAsyncThunk(
     }
   }
 );
-
+export const getPhoneNumber = createAsyncThunk(
+  'auth/getPhoneNumber',
+  async (_, { getState, rejectWithValue }) => {
+    const state = getState() as RootState;
+    const token = state.auth.token;
+    
+    try {
+      const response = await axios.get(`${URI_API}/phone`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      }
+      return rejectWithValue('Failed to fetch phone number');
+    }
+  }
+);
 
 // Tạo slice cho auth
 const authSlice = createSlice({
@@ -511,6 +532,18 @@ const authSlice = createSlice({
         state.resetMessage = action.payload.message;
       })
       .addCase(changePassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(getPhoneNumber.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getPhoneNumber.fulfilled, (state, action: PayloadAction<{ phoneNumber: string }>) => {
+        state.loading = false;
+        state.phoneNumber = action.payload.phoneNumber;
+      })
+      .addCase(getPhoneNumber.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
