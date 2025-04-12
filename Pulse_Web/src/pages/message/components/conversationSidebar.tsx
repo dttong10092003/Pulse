@@ -36,11 +36,18 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
 
   const followedUsers = conversations.filter(c => !c.isGroup);
 
+  const normalizeText = (text: string): string => {
+    return text
+      .normalize("NFD")                    // tách dấu
+      .replace(/[\u0300-\u036f]/g, "")    // xóa dấu
+      .toLowerCase();                     // về thường
+  };
+
   const filteredConversations = conversations.filter((conversation) => {
     const target = conversation.isGroup
       ? conversation.groupName
       : getOtherUserName(conversation.members);
-    return target.toLowerCase().includes(searchTerm.toLowerCase().trim());
+    return normalizeText(target).includes(normalizeText(searchTerm.trim()));
   });
 
   const allUsers = Array.from(

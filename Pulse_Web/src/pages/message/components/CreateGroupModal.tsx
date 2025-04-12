@@ -15,8 +15,15 @@ const CreateGroupModal: React.FC<Props> = ({ users, onClose, onCreate }) => {
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+    const normalizeText = (text: string): string => {
+        return text
+          .normalize("NFD")                    // Tách dấu tiếng Việt
+          .replace(/[\u0300-\u036f]/g, "")    // Xóa dấu
+          .toLowerCase();                     // Viết thường
+      };
+
     const filteredUsers = users.filter((u) =>
-        u.name.toLowerCase().includes(searchTerm.toLowerCase().trim())
+        normalizeText(u.name).includes(normalizeText(searchTerm.trim()))
     );
 
     const toggleUser = (id: string) => {

@@ -5,34 +5,6 @@ import { Conversation, Message } from './types';
 
 const CHAT_SERVICE_URL = 'http://localhost:3000/chat';
 
-// interface Conversation {
-//   _id: string;
-//   members: { userId: string; name: string; avatar: string }[]; // Danh sách thành viên trong nhóm
-//   isGroup: boolean;
-//   groupName: string;
-//   adminId?: string;
-//   updatedAt?: string;
-//   createdAt?: string;
-//   messages: Message[];
-//   unreadCount?: number;
-//   avatar: string;
-//   lastMessage?: string; // Tin nhắn cuối cùng (có thể là tên người gửi + nội dung)
-//   isOnline?: boolean; // Trạng thái online của người dùng
-// }
-
-// interface Message {
-//   _id?: string;
-//   conversationId: string;
-//   name: string; // Tên người gửi (nếu là nhóm)
-//   senderId: string;
-//   type: 'text' | 'emoji' | 'image' | 'file';
-//   content: string;
-//   isDeleted: boolean;
-//   timestamp: string;
-//   isPinned: boolean;
-//   senderAvatar: string;
-//   isSentByUser: boolean; // Để xác định xem tin nhắn có phải do người dùng gửi hay không
-// }
 
 // Define the state for Chat
 interface ChatState {
