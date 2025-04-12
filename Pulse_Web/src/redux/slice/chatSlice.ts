@@ -415,8 +415,8 @@ export const unpinMessage = createAsyncThunk(
 );
 
 // 17️⃣ Cập nhật thông tin nhóm
-export const updateGroupConversation = createAsyncThunk(
-  'chat/updateGroupConversation',
+export const updateGroupInfo = createAsyncThunk(
+  'chat/updateGroupInfo',
   async (
     { conversationId, groupName, avatar }: { conversationId: string; groupName: string; avatar: string },
     { getState, rejectWithValue }
@@ -819,19 +819,23 @@ const chatSlice = createSlice({
       })
     // 17️⃣ Cập nhật thông tin nhóm
     builder
-      .addCase(updateGroupConversation.pending, (state) => {
+      .addCase(updateGroupInfo.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(updateGroupConversation.fulfilled, (state, action: PayloadAction<Conversation>) => {
+      .addCase(updateGroupInfo.fulfilled, (state, action: PayloadAction<Conversation>) => {
         state.loading = false;
         // Cập nhật thông tin nhóm trong state
-        const index = state.conversations.findIndex(conv => conv._id === action.payload._id);
+        const updatedConversation = action.payload;
+        const index = state.conversations.findIndex(conv => conv._id === updatedConversation._id);
         if (index !== -1) {
-          state.conversations[index] = action.payload; // Cập nhật thông tin nhóm trong danh sách cuộc trò chuyện
+          state.conversations[index] = updatedConversation; // Cập nhật thông tin nhóm trong danh sách cuộc trò chuyện
+        }
+        if (state.selectedConversation?._id === updatedConversation._id) {
+          state.selectedConversation = updatedConversation; // Cập nhật cuộc trò chuyện đã chọn
         }
       })
-      .addCase(updateGroupConversation.rejected, (state, action) => {
+      .addCase(updateGroupInfo.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
