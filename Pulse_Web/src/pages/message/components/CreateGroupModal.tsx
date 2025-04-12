@@ -5,24 +5,33 @@ import { Member } from '../../../redux/slice/types';
 interface Props {
     users: Member[];
     onClose: () => void;
-    onCreate: (groupName: string, members: string[], avatar?: File | null) => void;
+    onCreate: (groupName: string, members: Member[], avatar?: File | null) => void;
 }
 
 const CreateGroupModal: React.FC<Props> = ({ users, onClose, onCreate }) => {
     const [groupName, setGroupName] = useState('');
-    const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+    const [selectedUsers, setSelectedUsers] = useState<Member[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+    const normalizeText = (text: string): string => {
+        return text
+          .normalize("NFD")                    // Tách dấu tiếng Việt
+          .replace(/[\u0300-\u036f]/g, "")    // Xóa dấu
+          .toLowerCase();                     // Viết thường
+      };
+
     const filteredUsers = users.filter((u) =>
-        u.name.toLowerCase().includes(searchTerm.toLowerCase().trim())
+        normalizeText(u.name).includes(normalizeText(searchTerm.trim()))
     );
 
-    const toggleUser = (id: string) => {
-        setSelectedUsers((prev) =>
-            prev.includes(id) ? prev.filter((uid) => uid !== id) : [...prev, id]
-        );
+    const toggleUser = (user: Member) => {
+        setSelectedUsers((prev) => {
+            // Check if user exists by comparing userId
+            const exists = prev.some((u) => u.userId === user.userId);
+            return exists ? prev.filter((u) => u.userId !== user.userId) : [...prev, user];
+        });
     };
 
     return (
@@ -87,8 +96,8 @@ const CreateGroupModal: React.FC<Props> = ({ users, onClose, onCreate }) => {
                                 <input
                                     className='cursor-pointer'
                                     type="checkbox"
-                                    checked={selectedUsers.includes(user.userId)}
-                                    onChange={() => toggleUser(user.userId)}
+                                    checked={selectedUsers.some((u) => u.userId === user.userId)}
+                                    onChange={() => toggleUser(user)}
                                 />
                                 <img
                                     src={user.avatar}
