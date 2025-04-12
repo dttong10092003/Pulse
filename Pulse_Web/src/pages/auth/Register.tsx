@@ -5,10 +5,14 @@ import { InputField } from "./components";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../redux/store';
-import { registerUserWithPhone, loginWithGoogle, checkUserExists } from '../../redux/slice/authSlice';
+import { registerUserWithPhone, loginWithGoogleRegister, checkUserExists, loginWithGoogle } from '../../redux/slice/authSlice';
 
 import { auth } from "../../firebase/setup";
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
+interface GoogleRegisterError {
+    message: string;
+    status: number;
+}
 
 const Register = () => {
     const navigate = useNavigate();
@@ -190,64 +194,61 @@ const Register = () => {
         }
     };
 
-
-    // const handleGoogleRegister = useGoogleLogin({
-    //     onSuccess: async (tokenResponse) => {
-    //         try {
-    //             // Gọi API của Google để lấy thông tin user
-    //             const res = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
-    //                 headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-    //             });
-    //             const userInfo = await res.json();
-    //             console.log("Google User Info:", userInfo);
-
-    //             // Add data base
-
-    //             dispatch(loginWithGoogle({ email: userInfo.email, googleId: userInfo.id }))
-    //             .unwrap()
-    //             .then(() => {
-    //               // Chuyển đến UserProfileForm (không cần email nữa)
-    //               navigate("/userinfo", { state: { email: userInfo.email, googleId: userInfo.id } });
-    //             })
-    //             .catch((err) => {
-    //               console.error("Google login failed: ", err);
-    //               setErrorText("Google login failed");
-    //             });
-    //         } catch (error) {
-    //             console.error("Error fetching Google user info:", error);
-    //             setErrorText("Google registration failed");
-    //         }
-    //     },
-    //     onError: () => setErrorText("Google registration failed"),
-    // });
     const handleGoogleRegister = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
             try {
-                // Gọi API của Google để lấy thông tin user
                 const res = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
                     headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
                 });
                 const userInfo = await res.json();
-                console.log("Google User Info:", userInfo);
 
-                // Dispatch loginWithGoogle action
-                dispatch(loginWithGoogle({ email: userInfo.email, googleId: userInfo.id }))
+                // Gọi Register trước
+                dispatch(loginWithGoogleRegister({
+                    email: userInfo.email,
+                    googleId: userInfo.id
+                }))
                     .unwrap()
-                    .then(() => {
-                        // Nếu login thành công, kiểm tra người dùng đã có thông tin hay chưa
-                        navigate("/userinfo", { state: { email: userInfo.email, googleId: userInfo.id } });
+                    .then((response) => {
+                        const { token, isVerified } = response;
+                        localStorage.setItem("token", token);
+                        if (isVerified) navigate("/home");
+                        else navigate("/userinfo", { state: { email: userInfo.email, googleId: userInfo.id } });
                     })
-                    .catch((err) => {
-                        console.error("Google login failed: ", err);
-                        setErrorText("Google login failed");
+                    .catch((err: GoogleRegisterError) => {
+                        console.error("Register error:", err);
+
+                        if (err?.status === 409) {
+                            // Gọi login nếu đã tồn tại
+                            dispatch(loginWithGoogle({
+                                email: userInfo.email,
+                                googleId: userInfo.id
+                            }))
+                                .unwrap()
+                                .then((response) => {
+                                    const { token, isVerified } = response;
+                                    localStorage.setItem("token", token);
+                                    if (isVerified) navigate("/home");
+                                    else navigate("/userinfo", { state: { email: userInfo.email, googleId: userInfo.id } });
+                                })
+                                .catch((loginErr) => {
+                                    console.error("Google login failed. Email already in use:", loginErr);
+                                    setErrorText("Google login failed. Email already in use");
+                                });
+                        } else {
+                            setErrorText(err?.message || "Google register failed.");
+                        }
                     });
+
             } catch (error) {
                 console.error("Error fetching Google user info:", error);
-                setErrorText("Google registration failed");
+                setErrorText("Google login failed.");
             }
         },
-        onError: () => setErrorText("Google registration failed"),
+        onError: () => setErrorText("Google login failed"),
     });
+
+
+
 
     return (
         <div className="relative w-full h-screen flex items-center justify-center">
@@ -306,7 +307,7 @@ const Register = () => {
 
                 <button
                     onClick={handleSignUp}
-                    className={`w-full mt-6 py-3 text-white font-bold rounded-full ${isBtnEnable ? "bg-blue-500 hover:bg-blue-700" : "bg-gray-600 cursor-not-allowed"
+                    className={`w-full mt-6 py-3 text-white font-bold rounded-full ${isBtnEnable ? "bg-blue-500 hover:bg-blue-700 cursor-pointer" : "bg-gray-600 cursor-not-allowed "
                         }`}
                     disabled={!isBtnEnable}
                 >
@@ -315,7 +316,7 @@ const Register = () => {
 
                 <button
                     onClick={() => handleGoogleRegister()}
-                    className="w-full flex items-center justify-center mt-4 py-3 bg-gray-800 text-white rounded-full hover:bg-gray-700">
+                    className="w-full flex items-center justify-center mt-4 py-3 bg-gray-800 text-white rounded-full hover:bg-gray-700 cursor-pointer">
                     <img src={GoogleLogo} alt="Google" className="w-5 h-5 mr-2" />
                     Sign up with Google
                 </button>

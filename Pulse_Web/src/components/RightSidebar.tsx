@@ -135,20 +135,18 @@
 
 // export default RightSidebar;
 
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";  // Import useDispatch và useSelector
-import { AppDispatch } from "../redux/store";  // Import AppDispatch
-import { getTop10Users } from "../redux/slice/userSlice";  // Import thunk getTop10Users
-import { RootState } from "../redux/store";  // Import RootState
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../redux/store";
+import { getTop10Users } from "../redux/slice/userSlice";
 import { motion } from "framer-motion";
-import { jwtDecode } from "jwt-decode";
 
-// Define the type for the users
+// 👇 Sửa lại interface cho đúng với dữ liệu từ backend
 interface User {
   _id: string;
-  name: string;
+  firstname: string;
+  lastname: string;
   username: string;
   avatar: string;
 }
@@ -158,37 +156,19 @@ const RightSidebar = () => {
   const [activeTab, setActiveTab] = useState("whoToFollow");
   const navigate = useNavigate();
 
-  // Lấy dữ liệu từ Redux store
-  const { userDetails, loading, error } = useSelector((state: RootState) => state.user);
+  const userState = useSelector((state: RootState) => state.user);
+  const top10Users = (userState as RootState["user"] & { top10Users: User[] }).top10Users;
+  const loading = userState.loading;
+  const error = userState.error;
 
-  // Fetch users when the component mounts
   useEffect(() => {
-    const token = localStorage.getItem("token");  // Lấy token từ localStorage
-    if (!token) {
-      console.log("Token không hợp lệ hoặc không có token.");
-      navigate("/login"); // Điều hướng tới trang đăng nhập nếu không có token
-      return;  // Nếu không có token, không thực hiện yêu cầu
-    }
-
-    try {
-      // Kiểm tra thời gian hết hạn của token
-      const decodedToken: { exp: number } = jwtDecode(token); // Giải mã token và lấy thời gian hết hạn
-      const currentTime = Date.now() / 1000; // Thời gian hiện tại tính theo giây
-      if (decodedToken.exp < currentTime) {
-        console.log("Token đã hết hạn.");
-        navigate("/login");  // Điều hướng tới trang đăng nhập nếu token hết hạn
-        return;  // Nếu token hết hạn, không thực hiện yêu cầu
-      }
-        console.log("Token hợp lệ:", token);  // Token hợp lệ, thực hiện yêu cầu
-      dispatch(getTop10Users());  // Gọi action getTop10Users khi component mount
-    } catch (error) {
-      console.error("Token không hợp lệ:", error);
-      navigate("/login"); // Điều hướng tới trang đăng nhập nếu token không hợp lệ
-    }
-  }, [dispatch, navigate]);
+    dispatch(getTop10Users()).then((res) => {
+      console.log("👀 top10Users response:", res);
+    });
+  }, [dispatch]);
 
   const handleUserClick = (userId: string) => {
-    navigate(`/home/user-info/${userId}`); // Điều hướng tới trang thông tin người dùng
+    navigate(`/home/user-info/${userId}`);
   };
 
   return (
@@ -220,17 +200,22 @@ const RightSidebar = () => {
       <div className="space-y-4">
         {activeTab === "whoToFollow" && (
           loading ? (
-            <p>Loading...</p>  // Hiển thị khi đang tải
+            <p>Loading...</p>
           ) : error ? (
-            <p className="text-red-500">Error: {error}</p>  // Hiển thị lỗi nếu có
+            <p className="text-red-500">Error: {error}</p>
+          ) : top10Users && top10Users.length > 0 ? (
+            top10Users.map((user: User) => (
+              <UserSuggestion
+                key={user._id}
+                firstname={user.firstname}
+                lastname={user.lastname}
+                username={user.username}
+                avatar={user.avatar}
+                onClick={() => handleUserClick(user._id)}
+              />
+            ))
           ) : (
-            userDetails && userDetails.length > 0 ? (
-              userDetails.map((user: User) => (
-                <UserSuggestion key={user._id} {...user} onClick={() => handleUserClick(user._id)} />
-              ))
-            ) : (
-              <p className="text-gray-500">No users to follow</p>  // Hiển thị khi không có người dùng
-            )
+            <p className="text-gray-500">No users to follow</p>
           )
         )}
 
@@ -241,7 +226,7 @@ const RightSidebar = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 10 }}
           >
-            {/* Render Trending posts if any */}
+            {/* Render Trending posts here */}
           </motion.div>
         )}
       </div>
@@ -249,22 +234,29 @@ const RightSidebar = () => {
   );
 };
 
+// 👇 Component đã sửa để hiển thị fullname + avatar + username
 const UserSuggestion = ({
-  name,
+  firstname,
+  lastname,
   username,
   avatar,
   onClick,
 }: {
-  name: string;
+  firstname: string;
+  lastname: string;
   username: string;
   avatar: string;
   onClick: () => void;
 }) => {
+  const fullName = `${firstname} ${lastname}`;
   return (
-    <div className="bg-[#282828] p-3 rounded-lg flex items-center gap-3 cursor-pointer" onClick={onClick}>
-      <img src={avatar} alt={name} className="w-16 h-16 rounded-full object-cover" />
+    <div
+      className="bg-[#282828] p-3 rounded-lg flex items-center gap-3 cursor-pointer hover:bg-[#333] transition"
+      onClick={onClick}
+    >
+      <img src={avatar} alt={fullName} className="w-16 h-16 rounded-full object-cover" />
       <div>
-        <h4 className="font-medium">{name}</h4>
+        <h4 className="font-medium">{fullName}</h4>
         <p className="text-zinc-500 text-sm">@{username}</p>
       </div>
     </div>
@@ -272,5 +264,3 @@ const UserSuggestion = ({
 };
 
 export default RightSidebar;
-
-

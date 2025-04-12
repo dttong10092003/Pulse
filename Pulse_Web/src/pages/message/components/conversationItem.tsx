@@ -1,4 +1,5 @@
 import React from 'react';
+import { Conversation } from '../../../redux/slice/types'; 
 
 // interface Conversation {
 //   _id: string;
@@ -10,46 +11,34 @@ import React from 'react';
 //   lastMessage?: string;
 // }
 
-interface Message {
-  conversationId: string;
-  senderId: string;
-  name: string; // Tên người gửi
-  content: string;
-  timestamp: string;
-  senderAvatar?: string; // Nếu là chat nhóm, mỗi tin nhắn có avatar riêng
-  isSentByUser?: boolean;
-  type: string; // Loại tin nhắn (text, emoji, image, v.v.)
-  isDeleted: boolean; // Nếu tin nhắn đã bị xóa
-  isPinned?: boolean; // Nếu tin nhắn đã được ghim
-}
-interface Conversation {
-  _id: string; // ID của cuộc trò chuyện
-  groupName: string;
-  avatar: string;
-  isOnline?: boolean;
-  isGroup?: boolean;
-  unreadCount: number;
-  adminId?: string; // Nếu là nhóm, ID của người quản trị nhóm
-  members: { userId: string; name: string; avatar: string }[]; // Danh sách thành viên trong nhóm
-  messages: Message[]; // Danh sách tin nhắn trong cuộc trò chuyện
-  lastMessage?: string;
-}
+// interface Message {
+//   conversationId: string;
+//   senderId: string;
+//   name: string; // Tên người gửi
+//   content: string;
+//   timestamp: string;
+//   senderAvatar: string; // Nếu là chat nhóm, mỗi tin nhắn có avatar riêng
+//   isSentByUser: boolean;
+//   type: string; // Loại tin nhắn (text, emoji, image, v.v.)
+//   isDeleted: boolean; // Nếu tin nhắn đã bị xóa
+//   isPinned: boolean; // Nếu tin nhắn đã được ghim
+// }
+// interface Conversation {
+//   _id: string; // ID của cuộc trò chuyện
+//   groupName: string;
+//   avatar: string;
+//   isOnline?: boolean;
+//   isGroup: boolean;
+//   unreadCount?: number;
+//   adminId?: string; // Nếu là nhóm, ID của người quản trị nhóm
+//   members: { userId: string; name: string; avatar: string }[]; // Danh sách thành viên trong nhóm
+//   messages: Message[]; // Danh sách tin nhắn trong cuộc trò chuyện
+//   lastMessage?: string;
+// }
 
 interface ConversationItemProps {
-  // conversation: {
-  //   _id: string;
-  //   groupName: string;
-  //   avatar: string;
-  //   isOnline?: boolean;
-  //   isGroup?: boolean;
-  //   unreadCount: number;
-  //   lastMessage?: string; // Tin nhắn cuối cùng (có thể là tên người gửi + nội dung)
-  // };
-  // onSelectConversation: (conversation: any) => void;
-
   conversation: Conversation;
   onSelectConversation: (conversation: Conversation) => void;
-  
   isSelected: boolean;
 }
 
@@ -78,7 +67,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, onSel
       </div>
 
       {/* ✅ Badge tin nhắn chưa đọc nằm bên phải cạnh tên */}
-      {conversation.unreadCount > 0 && (
+      {typeof conversation.unreadCount === 'number' && conversation.unreadCount > 0 && (
         <div className="bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full text-[10px] border border-gray-700 ml-auto">
           {conversation.unreadCount}
         </div>

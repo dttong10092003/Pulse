@@ -1,13 +1,12 @@
 import React, { useEffect } from 'react';
 import { ConversationSidebar, ConversationDetail } from './components';
-import { addMessageToState } from '../../redux/slice/chatSlice';
+// import { addMessageToState } from '../../redux/slice/chatSlice';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedConversation, getAllConversations } from '../../redux/slice/chatSlice';
+import { setSelectedConversation, getAllConversations, setUnreadToZero } from '../../redux/slice/chatSlice';
 import { RootState, AppDispatch } from '../../redux/store';
-import { io } from 'socket.io-client';
+import { Conversation, Member } from '../../redux/slice/types';
 
-const socket = io('http://localhost:5005');
-
+import socket from '../../utils/socket';
 // const initialConversations = [
 //   {
 //     conversationId: "61a1b2c3d4e5f6789abcde01",  // ID cuộc trò chuyện
@@ -88,6 +87,7 @@ const socket = io('http://localhost:5005');
 
 
 
+
 const Message: React.FC = () => {
   // const [conversations, setConversations] = useState(initialConversations);
   //   const [selectedConversation, setSelectedConversation] = useState(conversations[0]);
@@ -95,36 +95,76 @@ const Message: React.FC = () => {
   const { user, token } = useSelector((state: RootState) => state.auth);
   const conversations = useSelector((state: RootState) => state.chat.conversations);
   const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
-  console.log('Useraaaaaaaaaaaaaaa:', user); // Kiểm tra xem user đã được lấy chưa
-  console.log('Tokenaaaaaa:', token); // Kiểm tra xem token đã được lấy chưa
   useEffect(() => {
     if (token && user) {
-      console.log('Tokenbbbbb:', token);  // Kiểm tra token có hợp lệ không
-      console.log('User ID:', user._id);  // Kiểm tra user._id có hợp lệ không
       dispatch(getAllConversations(user._id)); // Lấy tất cả các cuộc trò chuyện của người dùng
     }
   }, [dispatch, user, token]); // Chỉ gọi lại khi user hoặc token thay đổi
 
-  console.log('Conversations:', conversations); // Kiểm tra xem conversations đã được lấy chưa
-  console.log('Selected Conversation:', selectedConversation); // Kiểm tra xem cuộc trò chuyện đã được chọn chưa
+  // const updatedConversations = conversations.map((conversation) => ({
+  //   ...conversation,
+  //   groupName: conversation.isGroup && conversation.groupName ? conversation.groupName : getOtherUserName(conversation.members),
+  //   avatar: conversation.isGroup && conversation.avatar ? conversation.avatar : getOtherUserAvatar(conversation.members),
+  //   unreadCount: conversation.unreadCount || 0,
+  // }));
 
-  useEffect(() => {
-    // Lắng nghe sự kiện 'receiveMessage' và cập nhật tin nhắn trong Redux
-    socket.on('receiveMessage', (newMessage) => {
-      dispatch(addMessageToState(newMessage));
-    });
+  // useEffect(() => {
+  //   console.log("Socket ID huhu:", socket.id);
+  //   // Lắng nghe sự kiện 'receiveMessage' và cập nhật tin nhắn trong Redux
+  //   socket.on('receiveMessage', (newMessage) => {
+  //     console.log('New message receivedddddd:', newMessage);
+  //     if (!user?._id) return;
+  //     if (newMessage.senderId === user._id) return;
+  //     // dispatch(addMessageToState(newMessage));
+  //     dispatch(addMessageToState({
+  //       message: newMessage,
+  //       currentUserId: user._id,
+  //     }));
+  //   });
 
-    // Dọn dẹp sự kiện khi component unmount
-    return () => {
-      socket.off('receiveMessage');
+  //   // Dọn dẹp sự kiện khi component unmount
+  //   return () => {
+  //     socket.off('receiveMessage');
+  //   };
+  // }, [dispatch, user]);
+
+  const handleSelectConversation = (conversation: Conversation) => {
+    // 🔥 Join room khi chọn conversation
+    socket.emit("joinRoom", conversation._id);
+    const fullConversation = conversations.find((c) => c._id === conversation._id);
+    if (!fullConversation) return;
+    const updateConversation = {
+      ...fullConversation,
+      groupName: fullConversation.isGroup && fullConversation.groupName
+        ? fullConversation.groupName
+        : getOtherUserName(fullConversation.members),
+      avatar: fullConversation.isGroup && fullConversation.avatar
+        ? fullConversation.avatar
+        : getOtherUserAvatar(fullConversation.members),
+      unreadCount: 0,
     };
-  }, [dispatch]);
 
-  const handleSelectConversation = (conversation: any) => {
+    
     console.log('Selected conversationqweqweqweqwe:', conversation); // Kiểm tra cuộc trò chuyện đã chọn
-    dispatch(setSelectedConversation(conversation)); // Cập nhật cuộc trò chuyện đã chọn trong Redux
+    console.log('Updated conversation:', updateConversation); // Kiểm tra cuộc trò chuyện đã cập nhật
+    dispatch(setSelectedConversation(updateConversation)); // Cập nhật cuộc trò chuyện đã chọn trong Redux
+
+    dispatch(setUnreadToZero(conversation._id));
   };
 
+   // Lấy tên người còn lại trong cuộc trò chuyện (không phải user hiện tại)
+   const getOtherUserName = (members: Member[]) => {
+    if (!user) return '';
+    const otherMember = members.find((member) => member.userId !== user._id);
+    return otherMember ? otherMember.name : '';
+  };
+
+  // Lấy avatar người còn lại trong cuộc trò chuyện
+  const getOtherUserAvatar = (members: Member[]) => {
+    if (!user) return '';
+    const otherMember = members.find((member) => member.userId !== user._id);
+    return otherMember ? otherMember.avatar : '';
+  };
 
   return (
     <div className="flex h-screen">

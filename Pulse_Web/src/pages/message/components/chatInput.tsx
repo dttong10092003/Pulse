@@ -1,41 +1,50 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Upload, SendHorizonal, Smile } from 'lucide-react';
-import EmojiPicker from 'emoji-picker-react';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addMessageToState } from '../../../redux/slice/chatSlice';
-import { io } from 'socket.io-client';
 import { RootState } from '../../../redux/store';
+import socket from '../../../utils/socket';
 
-const socket = io('http://localhost:5005');
 
 const ChatInput: React.FC = () => {
   const [message, setMessage] = useState('');
   const [isEmojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const userDetail = useSelector((state: RootState) => state.auth.userDetail);
   const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
   const dispatch = useDispatch();
 
-  // const handleSend = () => {
-  //   if (message.trim()) {
-  //     console.log('Message sent:', message);
-  //     setMessage('');
-  //   }
-  // };
+  // useEffect(() => {
+  //   console.log('Socket ID haha:', socket.id);
+  // }, []);
 
-  useEffect(() => {
-    console.log('Socket ID:', socket.id);
-  }, []);
+  // useEffect(() => {
+  //   console.log('Socket ID hihi:', socket.id);
+  //   // Lắng nghe sự kiện receiveMessage từ server
+  //   socket.on('receiveMessage', (newMessage) => {
+  //     console.log('checkvar:', newMessage.senderIdessage + "hahahahha  " + userDetail?.userId);
+  //     if (!userDetail?.userId) return;
+  //     if (newMessage.senderId === userDetail.userId) return;
 
-  useEffect(() => {
-    // Lắng nghe sự kiện receiveMessage từ server
-    socket.on('receiveMessage', (newMessage) => {
-      dispatch(addMessageToState(newMessage)); // Thêm tin nhắn vào Redux
-    });
+  //     // dispatch(addMessageToState(newMessage));
+  //     dispatch(addMessageToState({
+  //       message: newMessage,
+  //       currentUserId: userDetail.userId,
+  //     }));
+  //   });
 
-    // Dọn dẹp khi component unmount
-    return () => {
-      socket.off('receiveMessage');
-    };
-  }, [dispatch]);
+  //   // Dọn dẹp khi component unmount
+  //   return () => {
+  //     socket.off('receiveMessage');
+  //   };
+  // }, [dispatch, userDetail]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
   const handleSend = () => {
     if (!selectedConversation?._id) {
@@ -45,28 +54,53 @@ const ChatInput: React.FC = () => {
 
     if (message.trim()) {
       // Tạo tin nhắn mới
+      // const newMessage = {
+      //   conversationId: selectedConversation._id, // Sử dụng _id thay vì conversationId
+      //   senderId: "userId", // Cập nhật với userId thực tế từ Redux
+      //   name: "User", // Tên người gửi (có thể lấy từ Redux hoặc props)
+      //   content: message,
+      //   type: 'text' as const,
+      //   timestamp: new Date().toISOString(),
+      //   isDeleted: false,
+      //   isSentByUser: true,
+      //   isPinned: false,
+      //   senderAvatar: "", // Cập nhật với avatar thực tế từ Redux
+      // };
+
+      if(!userDetail) {
+        console.error('No user detail found');
+        return; // Không gửi tin nhắn nếu không có thông tin người dùng
+      }
+
+
       const newMessage = {
         conversationId: selectedConversation._id, // Sử dụng _id thay vì conversationId
-        senderId: "userId1", // Cập nhật với userId thực tế từ Redux
-        name: "Tòng", // Tên người gửi (có thể lấy từ Redux hoặc props)
+        senderId: userDetail.userId, // Cập nhật với userId thực tế từ Redux
+        name: `${userDetail.firstname} ${userDetail.lastname}`, // Tên người gửi (có thể lấy từ Redux hoặc props)
         content: message,
         type: 'text' as const,
         timestamp: new Date().toISOString(),
         isDeleted: false,
         isSentByUser: true,
+        isPinned: false,
+        senderAvatar: userDetail?.avatar, // Cập nhật với avatar thực tế từ Redux
       };
 
       // Gửi tin nhắn qua Socket.IO
       socket.emit('sendMessage', newMessage);
 
       // Thêm tin nhắn vào Redux state
-      dispatch(addMessageToState(newMessage));
+      // dispatch(addMessageToState(newMessage));
+      dispatch(addMessageToState({
+        message: newMessage,
+        currentUserId: userDetail.userId,
+      }));
 
       setMessage(''); // Xóa nội dung sau khi gửi
     }
   };
 
-  const handleEmojiClick = (emojiObject: any) => {
+  const handleEmojiClick = (emojiObject: EmojiClickData) => {
     setMessage((prevMessage) => prevMessage + emojiObject.emoji);
     setEmojiPickerOpen(false);
   };
@@ -85,6 +119,7 @@ const ChatInput: React.FC = () => {
           type="text"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="Type a message..."
           className="w-full p-2 pl-2 pr-10 rounded-xl bg-[#1212124C]/50 text-white focus:outline-none "
         />

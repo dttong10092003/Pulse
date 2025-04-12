@@ -4,9 +4,17 @@ import { RootState } from '../store';
 
 const USER_SERVICE_URL = 'http://localhost:3000/users'; // Cập nhật URL nếu cần
 
+interface User {
+  _id: string;
+  name: string;
+  username: string;
+  avatar: string;
+}
+
 // Define the type for the user state
 interface UserState {
   userDetails: any | null; // Thông tin chi tiết người dùng
+  top10Users: User[];
   loading: boolean;
   error: string | null;
 }
@@ -14,6 +22,7 @@ interface UserState {
 // Define the initial state
 const initialState: UserState = {
   userDetails: null,
+  top10Users: [],
   loading: false,
   error: null,
 };
@@ -99,27 +108,24 @@ export const updateUserDetail = createAsyncThunk(
 export const getTop10Users = createAsyncThunk(
   'user/getTop10Users',
   async (_, { getState, rejectWithValue }) => {
-    const token = (getState() as RootState).auth?.token; // Lấy token từ Redux store
-
-    if (!token) {
-      return rejectWithValue('No token provided'); // Nếu không có token, trả về lỗi
-    }
+    const userId = (getState() as RootState).auth.user?._id; // ID người dùng hiện tại
 
     try {
-      const response = await axios.post(`${USER_SERVICE_URL}/top10-users`, {}, {
-        headers: { Authorization: `${token}` }, // Gửi token đúng định dạng
+      const response = await axios.get(`${USER_SERVICE_URL}/top10-users`, {
+        params: { excludeUserId: userId }, // gửi lên backend để loại trừ
       });
 
-      return response.data; // Trả về dữ liệu người dùng
+      return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.error("Error response:", error.response?.data); // Log thêm lỗi nếu có
         return rejectWithValue(error.response?.data?.message || error.message);
       }
       return rejectWithValue('An unknown error occurred');
     }
   }
 );
+
+
 
 // User slice
 const userSlice = createSlice({
@@ -182,7 +188,7 @@ const userSlice = createSlice({
       })
       .addCase(getTop10Users.fulfilled, (state, action: PayloadAction<any>) => {
         state.loading = false;
-        state.userDetails = action.payload; // Lưu danh sách top 10 người dùng vào state
+        state.top10Users = action.payload; // Lưu danh sách top 10 người dùng vào state
       })
       .addCase(getTop10Users.rejected, (state, action) => {
         state.loading = false;

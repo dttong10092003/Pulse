@@ -45,7 +45,7 @@ const InputField: React.FC<InputFieldProps> = ({
                 <button
                     type="button"
                     onClick={onTogglePasswordVisibility}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    className="absolute cursor-pointer right-4 top-1/2 transform -translate-y-1/2 text-gray-400"
                 >
                     {showPassword ? <MdVisibilityOff /> : <MdVisibility />}
                 </button>
