@@ -31,7 +31,7 @@ const initialState: UserState = {
 export const getUserDetails = createAsyncThunk(
   'user/getUserDetails',
   async (userId: string, { getState, rejectWithValue }) => {
-    const token = (getState() as RootState ).auth?.token; // Lấy token từ Redux store
+    const token = (getState() as RootState).auth?.token; // Lấy token từ Redux store
     try {
       const response = await axios.get(`${USER_SERVICE_URL}/${userId}`, {
         headers: { Authorization: `${token}` },
@@ -48,74 +48,15 @@ export const getUserDetails = createAsyncThunk(
 
 // Thunk to create a new user detail
 export const createUserDetail = createAsyncThunk(
-    'user/createUserDetail',
-    async (userData: any, { getState, rejectWithValue }) => {
-      const token = (getState() as RootState ).auth?.token; // Lấy token từ Redux store
-      try {
-        console.log("Data sent to API:", userData); // Debug: Kiểm tra dữ liệu gửi đi
-        const response = await axios.post(`${USER_SERVICE_URL}`, userData, {
-          headers: { Authorization: `${token}` },
-        });
-        return response.data; // Trả về dữ liệu người dùng mới
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          return rejectWithValue(error.response?.data?.message || error.message);
-        }
-        return rejectWithValue('An unknown error occurred');
-      }
-    }
-  );
-// Thunk to update user details
-export const updateUserDetail = createAsyncThunk(
-    'user/updateUserDetail',
-    async (userData: any, { getState, rejectWithValue }) => {
-      const token = (getState() as RootState ).auth?.token; // Lấy token từ Redux store
-      try {
-        console.log("Data sent to API:", userData); // Debug: Kiểm tra dữ liệu gửi đi
-        const response = await axios.put(`${USER_SERVICE_URL}/${userData.id}`, userData, {
-          headers: { Authorization: `${token}` },
-        });
-        return response.data; // Trả về dữ liệu người dùng đã cập nhật
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          return rejectWithValue(error.response?.data?.message || error.message);
-        }
-        return rejectWithValue('An unknown error occurred');
-      }
-    }
-  );
-
-  export const getUserDetailsByIds = createAsyncThunk(
-    'user/getUserDetailsByIds',
-    async (userIds: string[], { getState, rejectWithValue }) => {
-      const token = (getState() as RootState ).auth?.token; // Lấy token từ Redux store
-      try {
-        // Gửi yêu cầu POST đến API Gateway với mảng userIds
-        const response = await axios.post(`${USER_SERVICE_URL}/user-details-by-ids`, { userIds }, {
-          headers: { Authorization: `${token}` },
-        });
-        return response.data; // Trả về dữ liệu người dùng
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          return rejectWithValue(error.response?.data?.message || error.message);
-        }
-        return rejectWithValue('An unknown error occurred');
-      }
-    }
-  );
-
-// Thunk to get top 10 users from the API
-export const getTop10Users = createAsyncThunk(
-  "user/getTop10Users",
-  async (_, { getState, rejectWithValue }) => {
-    const userId = (getState() as RootState).auth.user?._id; // Get current user ID
-
+  'user/createUserDetail',
+  async (userData: any, { getState, rejectWithValue }) => {
+    const token = (getState() as RootState).auth?.token; // Lấy token từ Redux store
     try {
-      const response = await axios.get(`${USER_SERVICE_URL}/top10-users`, {
-        params: { excludeUserId: userId }, // Pass current userId to exclude
+      console.log("Data sent to API:", userData); // Debug: Kiểm tra dữ liệu gửi đi
+      const response = await axios.post(`${USER_SERVICE_URL}`, userData, {
+        headers: { Authorization: `${token}` },
       });
-
-      return response.data; // Return fetched data
+      return response.data; // Trả về dữ liệu người dùng mới
     } catch (error) {
       if (axios.isAxiosError(error)) {
         return rejectWithValue(error.response?.data?.message || error.message);
@@ -124,6 +65,84 @@ export const getTop10Users = createAsyncThunk(
     }
   }
 );
+// Thunk to update user details
+export const updateUserDetail = createAsyncThunk(
+  'user/updateUserDetail',
+  async (userData: any, { getState, rejectWithValue }) => {
+    const token = (getState() as RootState).auth?.token; // Lấy token từ Redux store
+    try {
+      console.log("Data sent to API:", userData); // Debug: Kiểm tra dữ liệu gửi đi
+      const response = await axios.put(`${USER_SERVICE_URL}/${userData.id}`, userData, {
+        headers: { Authorization: `${token}` },
+      });
+      return response.data; // Trả về dữ liệu người dùng đã cập nhật
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || error.message);
+      }
+      return rejectWithValue('An unknown error occurred');
+    }
+  }
+);
+
+export const getUserDetailsByIds = createAsyncThunk(
+  'user/getUserDetailsByIds',
+  async (userIds: string[], { getState, rejectWithValue }) => {
+    const token = (getState() as RootState).auth?.token; // Lấy token từ Redux store
+    try {
+      // Gửi yêu cầu POST đến API Gateway với mảng userIds
+      const response = await axios.post(`${USER_SERVICE_URL}/user-details-by-ids`, { userIds }, {
+        headers: { Authorization: `${token}` },
+      });
+      return response.data; // Trả về dữ liệu người dùng
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || error.message);
+      }
+      return rejectWithValue('An unknown error occurred');
+    }
+  }
+);
+
+// Thunk to get top 10 users from the API
+// export const getTop10Users = createAsyncThunk(
+//   "user/getTop10Users",
+//   async (excludeUserId: string, { rejectWithValue }) => {
+//     try {
+//       console.log("📤 axios gửi với excludeUserId:", excludeUserId);
+//       const response = await axios.get(`${USER_SERVICE_URL}/top10-users`, {
+//         params: { excludeUserId },
+//       });
+
+//       return response.data;
+//     } catch (error) {
+//       if (axios.isAxiosError(error)) {
+//         return rejectWithValue(error.response?.data?.message || error.message);
+//       }
+//       return rejectWithValue("An unknown error occurred");
+//     }
+//   }
+// );
+
+export const getTop10Users = createAsyncThunk(
+  "user/getTop10Users",
+  async (excludeUserId: string, { rejectWithValue }) => {
+    try {
+      const url = `${USER_SERVICE_URL}/top10-users?excludeUserId=${excludeUserId}`;
+      console.log("🚀 Final URL:", url); // 🧩 In ra URL đầy đủ để debug
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      console.log("✅ fetch result:", data); // 🧩 In ra kết quả
+      return data;
+    } catch (error) {
+      console.error("❌ fetch failed:", error);
+      return rejectWithValue("Fetch failed");
+    }
+  }
+);
+
 
 // User slice
 const userSlice = createSlice({

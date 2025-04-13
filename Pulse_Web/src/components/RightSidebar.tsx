@@ -5,13 +5,12 @@ import { AppDispatch, RootState } from "../redux/store";
 import { getTop10Users } from "../redux/slice/userSlice";
 import { motion } from "framer-motion";
 
-// 👇 Định nghĩa kiểu dữ liệu của User từ backend
 interface User {
   _id: string;
   firstname: string;
   lastname: string;
   avatar: string;
-  username: string; // Đảm bảo có username
+  username: string;
 }
 
 const RightSidebar = () => {
@@ -21,24 +20,16 @@ const RightSidebar = () => {
 
   const userState = useSelector((state: RootState) => state.user);
   const top10Users = (userState as RootState["user"] & { top10Users: User[] }).top10Users;
-  const authUser = useSelector((state: RootState) => state.auth?.user); // 👈 Lấy username từ auth
+  const authUser = useSelector((state: RootState) => state.auth.user);
   const loading = userState.loading;
   const error = userState.error;
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]); // To store filtered users
 
   useEffect(() => {
-    dispatch(getTop10Users()); // Fetch top 10 users
-  }, [dispatch]);
-
-  useEffect(() => {
-    // Kiểm tra khi top10Users và authUser đã có dữ liệu
-    if (top10Users.length > 0 && authUser?._id) {
-      // Lọc user đang đăng nhập ra khỏi danh sách top 10
-      const filtered = top10Users.filter((user: User) => user._id !== authUser._id); 
-      setFilteredUsers(filtered); // Cập nhật filteredUsers để render lại giao diện
-      console.log("Filtered users after filtering: ", filtered); // Debug: Kiểm tra dữ liệu sau khi lọc
+    if (authUser?._id) {
+      console.log("✅ Gửi excludeUserId:", authUser._id); // kiểm tra trước
+      dispatch(getTop10Users(authUser._id)); // ✅ PHẢI truyền _id vào đây
     }
-  }, [top10Users, authUser]); // Dependency array: lọc lại khi top10Users hoặc authUser thay đổi
+  }, [authUser, dispatch]);
 
   const handleUserClick = (userId: string) => {
     navigate(`/home/user-info/${userId}`);
@@ -78,16 +69,9 @@ const RightSidebar = () => {
             <p>Loading...</p>
           ) : error ? (
             <p className="text-red-500">Error: {error}</p>
-          ) : filteredUsers.length > 0 ? (
-            filteredUsers.map((user: User) => {
+          ) : top10Users.length > 0 ? (
+            top10Users.map((user: User) => {
               const fullName = `${user.firstname} ${user.lastname}`;
-              const avatar = user.avatar;
-
-              // Kiểm tra xem user hiện tại có phải là user đăng nhập không
-              const handle = user._id === authUser?._id
-                ? ""  // Không hiển thị username cho user đang đăng nhập
-                : `@${user.username}`;
-
               return (
                 <div
                   key={user._id}
@@ -95,14 +79,14 @@ const RightSidebar = () => {
                   onClick={() => handleUserClick(user._id)}
                 >
                   <img
-                    src={avatar}
+                    src={user.avatar}
                     alt={fullName}
                     className="w-16 h-16 rounded-full object-cover"
                   />
                   <div>
                     <h4 className="font-medium">{fullName}</h4>
                     <p className="text-zinc-500 text-sm">
-                      {handle || <span className="text-gray-500">No username</span>}
+                      @{user.username}
                     </p>
                   </div>
                 </div>
@@ -129,4 +113,3 @@ const RightSidebar = () => {
 };
 
 export default RightSidebar;
-
