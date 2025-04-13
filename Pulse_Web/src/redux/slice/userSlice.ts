@@ -106,16 +106,16 @@ export const updateUserDetail = createAsyncThunk(
 
 // Thunk to get top 10 users from the API
 export const getTop10Users = createAsyncThunk(
-  'user/getTop10Users',
+  "user/getTop10Users",
   async (_, { getState, rejectWithValue }) => {
-    const userId = (getState() as RootState).auth.user?._id; // ID người dùng hiện tại
+    const userId = (getState() as RootState).auth.user?._id; // Get current user ID
 
     try {
       const response = await axios.get(`${USER_SERVICE_URL}/top10-users`, {
-        params: { excludeUserId: userId }, // gửi lên backend để loại trừ
+        params: { excludeUserId: userId }, // Pass current userId to exclude
       });
 
-      return response.data;
+      return response.data; // Return fetched data
     } catch (error) {
       if (axios.isAxiosError(error)) {
         return rejectWithValue(error.response?.data?.message || error.message);
@@ -124,8 +124,6 @@ export const getTop10Users = createAsyncThunk(
     }
   }
 );
-
-
 
 // User slice
 const userSlice = createSlice({
