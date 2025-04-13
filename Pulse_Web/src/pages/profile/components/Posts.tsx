@@ -28,7 +28,17 @@ const timeAgo = (dateString: string): string => {
   return `${diffInYears}y ago`;
 };
 
-const Posts = ({ posts, username, avatar }: { posts: any[]; username: string; avatar: string }) => {
+interface Post {
+  _id: string;
+  content: string;
+  createdAt: string;
+  likes?: number;
+  comments?: number;
+  media?: string[];
+  tags?: string[];
+}
+
+const Posts = ({ posts, username, avatar }: { posts: Post[]; username: string; avatar: string }) => {
   return (
     <div className="divide-zinc-800">
       {posts.map((post, index) => (
@@ -144,9 +154,6 @@ const PostCard = ({
               )}
             </div>
           </div>
-
-
-
 
           <p className="mt-2">{content}</p>
 
