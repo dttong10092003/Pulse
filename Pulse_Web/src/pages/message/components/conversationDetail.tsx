@@ -18,6 +18,7 @@ import {
   TriangleAlert,
   Trash2,
   LogOut,
+  MessageCircle,
 } from "lucide-react";
 
 interface ConversationDetailProps {
@@ -55,11 +56,22 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     }
   }, [selectedConversation]);
 
+  // if (!selectedConversation) {
+  //   return (
+  //     <div className="p-5 text-white">
+  //       No conversation selected. Please select a conversation to start
+  //       chatting.
+  //     </div>
+  //   );
+  // }
   if (!selectedConversation) {
     return (
-      <div className="p-5 text-white">
-        No conversation selected. Please select a conversation to start
-        chatting.
+      <div className="flex flex-col w-full items-center justify-center p-5 text-white h-screen">
+        {/* Hiển thị icon hoặc hình ảnh thích hợp */}
+        <MessageCircle size={200} className="text-gray-500 mb-4" />
+        <p className="text-center text-lg">
+          Select a conversation to start messaging.
+        </p>
       </div>
     );
   }
@@ -212,7 +224,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
               </h2>
               {selectedConversation.isGroup && (
                 <p className="text-gray-400 text-sm">
-                  Group · {selectedConversation.messages.length} message
+                  Group · {selectedConversation.messages?.length} message
                 </p>
               )}
             </div>
