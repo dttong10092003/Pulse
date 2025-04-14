@@ -146,25 +146,14 @@ export const getTop10Users = createAsyncThunk(
 // userSlice.ts
 export const fetchUserDetailById = createAsyncThunk(
   "user/fetchUserDetailById",
-  async (userId: string, { getState }) => {
-    // Lấy token từ state hoặc localStorage
-    const state = getState() as RootState; // Lấy state của Redux
-    const token = state.auth.token || localStorage.getItem("token"); // Lấy token từ Redux hoặc localStorage
-
-    // Kiểm tra xem có token không
-    if (!token) {
-      throw new Error("No token found, please login again.");
+  async (id: string) => {
+    try {
+      const response = await axios.get(`${USER_SERVICE_URL}/${id}`);
+      return response.data;  // Trả về dữ liệu người dùng từ API
+    } catch (error) {
+      console.error("Error fetching user details", error);
+      throw error;  // Nếu có lỗi, ném ra để Redux xử lý
     }
-
-    // Gửi request đến backend với token trong headers
-    const response = await axios.get(`${USER_SERVICE_URL}/${userId}`, {
-      headers: {
-        Authorization: `${token}`, // Thêm token vào header
-      },
-    });
-    
-    console.log("User data from API:", response.data);
-    return response.data; // Trả về dữ liệu người dùng từ backend
   }
 );
 

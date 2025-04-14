@@ -9,43 +9,45 @@ import {
   unfollowUser,
   getFollowers,
 } from "../../redux/slice/followSlice";
-import { fetchUserPosts } from "../../redux/slice/postProfileSlice";
+// import { fetchUserPosts } from "../../redux/slice/postProfileSlice";
 import { fetchUserDetailById } from "../../redux/slice/userSlice";
-
+import { fetchUserPosts } from "../../redux/slice/postProfileSlice";
 const UserInfo_Follow = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { id } = useParams<{ id: string }>();  // Lấy ID từ URL
-  const userDetail = useSelector((state: RootState) => state.auth.userDetail);
-  const auth = useSelector((state: RootState) => state.auth);
+  const { id } = useParams<{ id: string }>();  // Lấy ID người dùng từ URL
+  const userDetail = useSelector((state: RootState) => state.user.userDetails);
+  const user = useSelector((state: RootState) => state.user);
   const { posts: userPosts } = useSelector((state: RootState) => state.postProfile);
   const { followers } = useSelector((state: RootState) => state.follow);
   const [activeTab, setActiveTab] = useState("Posts");
   const [isFollowing, setIsFollowing] = useState(false);
 
+  console.log("ID từ URL:", id); // Kiểm tra ID trong URL
   useEffect(() => {
     if (id) {
       dispatch(fetchUserPosts(id));  // Lấy bài viết của người dùng
-      dispatch(fetchUserDetailById(id)); // Lấy chi tiết người dùng từ backend
+      dispatch(fetchUserDetailById(id));  // Lấy chi tiết người dùng từ backend
     }
   }, [dispatch, id]);
+  console.log("Dữ liệu người dùng từ Redux:", userDetail);
   
   useEffect(() => {
-    if (auth.user?._id && id) {
+    if (user.userDetails?._id && id) {
       dispatch(getFollowers(id)).then((res) => {
         const list = (res.payload ?? []) as { followerId: string }[];
-        const alreadyFollow = list.some((f) => f.followerId === auth.user?._id);
+        const alreadyFollow = list.some((f) => f.followerId === user.userDetails?._id);
         setIsFollowing(alreadyFollow);
       });
     }
-  }, [auth.user?._id, id, dispatch]);
+  }, [user.userDetails?._id, id, dispatch]);
   
   const handleFollowToggle = async () => {
-    if (!auth.token || !id) return;
+    if (!user.userDetails || !id) return;
   
     const payload = {
       followingId: id,
-      token: auth.token,
+      token: user.userDetails,
     };
   
     if (isFollowing) {
@@ -63,9 +65,7 @@ const UserInfo_Follow = () => {
     window.dispatchEvent(new Event("storage"));
     navigate("/home");
   };
-
-  if (!userDetail) return <p className="text-white p-4">Loading user info...</p>;
-
+  if (!userDetail) return <p className="text-white p-4">Đang tải thông tin người dùng...</p>;
   const fullName = `${userDetail.firstname} ${userDetail.lastname}`;
   const handle = `@${userDetail.username}`;
   const avatar = userDetail.avatar?.trim() || "https://i.pravatar.cc/300";
@@ -73,6 +73,7 @@ const UserInfo_Follow = () => {
 
   return (
     <main className="bg-[#1F1F1F] text-white">
+      {/* Header của trang hồ sơ */}
       <div
         className="relative w-full h-48 bg-cover bg-center"
         style={{ backgroundImage: `url(${background})` }}
@@ -109,7 +110,7 @@ const UserInfo_Follow = () => {
         <div className="mt-4 flex items-center justify-between w-full text-zinc-400">
           <div className="flex items-center gap-6">
             <span className="flex items-center gap-1 cursor-pointer">
-              <MessageSquare size={18} /> {userPosts.length} posts
+              <MessageSquare size={18} /> {userPosts.length} bài viết
             </span>
             <span className="flex items-center gap-1 cursor-pointer">
               <Users size={18} /> {followers.length} followers
@@ -127,6 +128,7 @@ const UserInfo_Follow = () => {
         </div>
       </div>
 
+      {/* Các tab: Bài viết, Nổi bật, Media */}
       <div className="flex mt-4 bg-[#181818] p-1 rounded-full">
         {["Posts", "Featured", "Media"].map((tab) => (
           <button
@@ -141,9 +143,10 @@ const UserInfo_Follow = () => {
         ))}
       </div>
 
+      {/* Nội dung */}
       <div className="mt-4">
         {activeTab === "Posts" && (
-          <Posts posts={userPosts} username={fullName}  />
+          <Posts posts={userPosts} username={fullName} />
         )}
         {activeTab === "Featured" && <Featured />}
         {activeTab === "Media" && <Media />}
