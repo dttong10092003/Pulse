@@ -1,86 +1,62 @@
 import { Share2, MessageSquare, Users, UserRoundPen, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Posts, Featured, Media } from "./components";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from "../../redux/store"; // Thêm RootState và AppDispatch
+import { AppDispatch, RootState } from "../../redux/store";
 import {
   followUser,
   unfollowUser,
   getFollowers,
 } from "../../redux/slice/followSlice";
 import { fetchUserPosts } from "../../redux/slice/postProfileSlice";
-
-// Định nghĩa các kiểu dữ liệu trong Redux
-interface RootState {
-  auth: {
-    user: {
-      _id: string;
-      username: string;
-    } | null;
-    token: string | null;
-    userDetail: {
-      _id: string;
-      firstname: string;
-      lastname: string;
-      bio: string;
-      avatar: string;
-      backgroundAvatar: string;
-    } | null;
-  };
-  postProfile: {
-    posts: { content: string; time: string; likes: number; comments: number }[];
-    count: number;
-  };
-  follow: {
-    followers: { followerId: string }[];
-    followings: { followingId: string }[];
-  };
-}
+import { fetchUserDetailById } from "../../redux/slice/userSlice";
 
 const UserInfo_Follow = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();  // Sử dụng AppDispatch cho dispatch
-  const { followers } = useSelector((state: RootState) => state.follow); // Lấy dữ liệu từ Redux
+  const dispatch = useDispatch<AppDispatch>();
+  const { id } = useParams<{ id: string }>();  // Lấy ID từ URL
+  const userDetail = useSelector((state: RootState) => state.auth.userDetail);
   const auth = useSelector((state: RootState) => state.auth);
-  const { posts: userPosts } = useSelector(
-    (state: RootState) => state.postProfile
-  );  
-
+  const { posts: userPosts } = useSelector((state: RootState) => state.postProfile);
+  const { followers } = useSelector((state: RootState) => state.follow);
   const [activeTab, setActiveTab] = useState("Posts");
   const [isFollowing, setIsFollowing] = useState(false);
 
-  // Dữ liệu người dùng
-  const profileData = {
-    _id: "6611e1a93ad4eeb6a123456", // ID người được xem profile
-    username: "200Lab Guest",
-    handle: "@guest",
-    bio: "Hello",
-    stats: {
-      posts: 170,
-      status: "sad",
-    },
-  };
-
-  // Fetch bài đăng của người dùng khi ID người dùng thay đổi
   useEffect(() => {
-    if (auth.user?._id) {
-      dispatch(fetchUserPosts(auth.user._id)); // Gọi action lấy bài đăng của người dùng
+    if (id) {
+      dispatch(fetchUserPosts(id));  // Lấy bài viết của người dùng
+      dispatch(fetchUserDetailById(id)); // Lấy chi tiết người dùng từ backend
     }
-  }, [dispatch, auth.user?._id]);
-
-  // Kiểm tra xem người dùng có đang theo dõi hay không
+  }, [dispatch, id]);
+  
   useEffect(() => {
-    if (auth.user?._id && profileData._id) {
-      dispatch(getFollowers(profileData._id)).then((res) => {
+    if (auth.user?._id && id) {
+      dispatch(getFollowers(id)).then((res) => {
         const list = (res.payload ?? []) as { followerId: string }[];
-        const alreadyFollow = list.some(
-          (f) => f.followerId === auth.user?._id
-        );
+        const alreadyFollow = list.some((f) => f.followerId === auth.user?._id);
         setIsFollowing(alreadyFollow);
       });
     }
-  }, [auth.user?._id, profileData._id, dispatch]);
+  }, [auth.user?._id, id, dispatch]);
+  
+  const handleFollowToggle = async () => {
+    if (!auth.token || !id) return;
+  
+    const payload = {
+      followingId: id,
+      token: auth.token,
+    };
+  
+    if (isFollowing) {
+      await dispatch(unfollowUser(payload));
+    } else {
+      await dispatch(followUser(payload));
+    }
+  
+    dispatch(getFollowers(id));
+    setIsFollowing(!isFollowing);
+  };
 
   const handleBack = () => {
     localStorage.setItem("activeItem", "Home");
@@ -88,31 +64,18 @@ const UserInfo_Follow = () => {
     navigate("/home");
   };
 
-  const handleFollowToggle = async () => {
-    if (!auth.token || !profileData._id) return;
+  if (!userDetail) return <p className="text-white p-4">Loading user info...</p>;
 
-    const payload = {
-      followingId: profileData._id,
-      token: auth.token,
-    };
-
-    if (isFollowing) {
-      await dispatch(unfollowUser(payload));
-    } else {
-      await dispatch(followUser(payload));
-    }
-
-    // Cập nhật lại followers
-    dispatch(getFollowers(profileData._id));
-    setIsFollowing(!isFollowing);
-  };
+  const fullName = `${userDetail.firstname} ${userDetail.lastname}`;
+  const handle = `@${userDetail.username}`;
+  const avatar = userDetail.avatar?.trim() || "https://i.pravatar.cc/300";
+  const background = userDetail.backgroundAvatar || "https://picsum.photos/200";
 
   return (
     <main className="bg-[#1F1F1F] text-white">
-      {/* Header */}
       <div
         className="relative w-full h-48 bg-cover bg-center"
-        style={{ backgroundImage: "url('https://picsum.photos/200')" }}
+        style={{ backgroundImage: `url(${background})` }}
       >
         <div className="absolute inset-0 bg-black/50 " />
         <button
@@ -123,21 +86,16 @@ const UserInfo_Follow = () => {
         </button>
       </div>
 
-      {/* Avatar & Info */}
       <div className="relative px-4 -mt-16 flex flex-col items-start">
         <div className="flex items-center gap-4">
-          <img
-            src="https://i.pravatar.cc/300"
-            alt="Avatar"
-            className="w-24 h-24 rounded-full"
-          />
+          <img src={avatar} alt="Avatar" className="w-24 h-24 rounded-full object-cover" />
         </div>
 
         <div className="mt-4 flex items-center justify-between w-full">
           <div>
-            <h2 className="text-2xl font-bold">{profileData.username}</h2>
-            <p className="text-zinc-500">{profileData.handle}</p>
-            <p className="text-zinc-400 mt-2">{profileData.bio}</p>
+            <h2 className="text-2xl font-bold">{fullName}</h2>
+            <p className="text-zinc-500">{handle}</p>
+            <p className="text-zinc-400 mt-2">{userDetail.bio}</p>
           </div>
 
           <button
@@ -148,17 +106,16 @@ const UserInfo_Follow = () => {
           </button>
         </div>
 
-        {/* Stats */}
         <div className="mt-4 flex items-center justify-between w-full text-zinc-400">
           <div className="flex items-center gap-6">
             <span className="flex items-center gap-1 cursor-pointer">
-              <MessageSquare size={18} /> {profileData.stats.posts} posts
+              <MessageSquare size={18} /> {userPosts.length} posts
             </span>
             <span className="flex items-center gap-1 cursor-pointer">
               <Users size={18} /> {followers.length} followers
             </span>
             <span className="flex items-center gap-1 cursor-pointer">
-              <Share2 size={18} /> {profileData.stats.status}
+              <Share2 size={18} />
             </span>
           </div>
           <button
@@ -170,7 +127,6 @@ const UserInfo_Follow = () => {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex mt-4 bg-[#181818] p-1 rounded-full">
         {["Posts", "Featured", "Media"].map((tab) => (
           <button
@@ -185,10 +141,9 @@ const UserInfo_Follow = () => {
         ))}
       </div>
 
-      {/* Tab Content */}
       <div className="mt-4">
         {activeTab === "Posts" && (
-          <Posts posts={userPosts} username={profileData.username} />
+          <Posts posts={userPosts} username={fullName}  />
         )}
         {activeTab === "Featured" && <Featured />}
         {activeTab === "Media" && <Media />}

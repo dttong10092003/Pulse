@@ -143,6 +143,30 @@ export const getTop10Users = createAsyncThunk(
   }
 );
 
+// userSlice.ts
+export const fetchUserDetailById = createAsyncThunk(
+  "user/fetchUserDetailById",
+  async (userId: string, { getState }) => {
+    // Lấy token từ state hoặc localStorage
+    const state = getState() as RootState; // Lấy state của Redux
+    const token = state.auth.token || localStorage.getItem("token"); // Lấy token từ Redux hoặc localStorage
+
+    // Kiểm tra xem có token không
+    if (!token) {
+      throw new Error("No token found, please login again.");
+    }
+
+    // Gửi request đến backend với token trong headers
+    const response = await axios.get(`${USER_SERVICE_URL}/${userId}`, {
+      headers: {
+        Authorization: `${token}`, // Thêm token vào header
+      },
+    });
+    
+    console.log("User data from API:", response.data);
+    return response.data; // Trả về dữ liệu người dùng từ backend
+  }
+);
 
 // User slice
 const userSlice = createSlice({
@@ -210,7 +234,20 @@ const userSlice = createSlice({
       .addCase(getTop10Users.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(fetchUserDetailById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserDetailById.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.userDetails = action.payload; // Lưu dữ liệu trả về từ API
+      })
+      .addCase(fetchUserDetailById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
+      
   },
 });
 
