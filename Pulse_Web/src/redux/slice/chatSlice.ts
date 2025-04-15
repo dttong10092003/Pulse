@@ -440,6 +440,21 @@ export const updateGroupInfo = createAsyncThunk(
   }
 );
 
+const getLastMessageContent = (message: Message): string => {
+  switch (message.type) {
+    case 'image':
+      return '[Image]';
+    case 'video':
+      return '[Video]';
+    case 'file':
+      return '[File]';
+    case 'audio':
+      return '[Audio]';
+    default:
+      return typeof message.content === 'string' ? message.content : '[Message]';
+  }
+};
+
 const chatSlice = createSlice({
   name: 'chat',
   initialState,
@@ -459,7 +474,6 @@ const chatSlice = createSlice({
     // },
     addMessageToState: (state, action: PayloadAction<{ message: Message; currentUserId: string }>) => {
       const { message: newMessage, currentUserId } = action.payload;
-      // const newMessage = action.payload;
       const conversation = state.selectedConversation;
     
       // Cập nhật tin nhắn vào selectedConversation
@@ -467,8 +481,6 @@ const chatSlice = createSlice({
         if (!conversation.messages) {
           conversation.messages = [];
         }
-        // conversation.messages.push(newMessage);
-        // conversation.lastMessage = newMessage.content; // Cập nhật lastMessage
         conversation.messages = [
           ...(conversation.messages || []),
           newMessage,
@@ -480,7 +492,7 @@ const chatSlice = createSlice({
       );
 
       if (conv) {
-        conv.lastMessage = newMessage.content;
+        conv.lastMessage = getLastMessageContent(newMessage);
         conv.messages = [...(conv.messages || []), newMessage];
         if (conv._id !== state.selectedConversation?._id && newMessage.senderId !== currentUserId) {
           conv.unreadCount = (conv.unreadCount || 0) + 1;

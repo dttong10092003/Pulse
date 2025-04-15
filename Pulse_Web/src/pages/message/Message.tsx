@@ -95,6 +95,10 @@ const Message: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const conversations = useSelector((state: RootState) => state.chat.conversations);
   const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
+
+  for(const conversation of conversations) {
+    console.log('Conversation aaaaaaa:', conversation); // Kiểm tra từng cuộc trò chuyện
+  }
   // useEffect(() => {
   //   if (token && user) {
   //     dispatch(getAllConversations(user._id)); // Lấy tất cả các cuộc trò chuyện của người dùng

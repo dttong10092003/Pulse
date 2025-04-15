@@ -121,8 +121,8 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
             <Columns2
               size={20}
               className={`cursor-pointer transition duration-200 ${showSidebar
-                  ? "text-green-400"
-                  : "text-white hover:text-gray-400"
+                ? "text-green-400"
+                : "text-white hover:text-gray-400"
                 }`}
               onClick={toggleSidebar}
             />
@@ -156,11 +156,32 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                   <p className="text-xs text-gray-400 mb-1">{msg.name}</p>
                 )}
 
-                <div
+                {/* <div
                   className={`p-3 rounded-lg text-white ${msg.isSentByUser ? "bg-green-600" : "bg-gray-600"
                     } break-words`}
                 >
                   {msg.content}
+                </div> */}
+
+                <div className={`p-3 rounded-lg text-white ${msg.isSentByUser ? "bg-green-600" : "bg-gray-600"} break-words`}>
+                  {/* Kiểm tra nếu msg.content là string */}
+                  {typeof msg.content === 'string' ? (
+                    msg.type === "image" ? (
+                      <img
+                        src={typeof msg.content === 'string' ? msg.content : URL.createObjectURL(new Blob([msg.content]))}
+                        alt="Image message"
+                        className="w-full max-h-[499px] object-cover rounded-lg"
+                      />
+                    ) : msg.type === "file" || msg.type === "video" || msg.type === "audio" ? (
+                      <a href={msg.content as string} target="_blank" rel="noopener noreferrer" className="text-blue-400">
+                        View File
+                      </a>
+                    ) : (
+                      <p>{msg.content}</p>
+                    )
+                  ) : (
+                    <p>Invalid content type</p> // Trường hợp nếu không phải string
+                  )}
                 </div>
 
                 {/* Hiển thị thời gian */}
