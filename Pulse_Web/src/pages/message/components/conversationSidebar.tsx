@@ -6,6 +6,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Search, MoreVertical, Users } from 'lucide-react';
 import CreateGroupModal from './CreateGroupModal';
 import { createGroupConversation, getAllConversations } from '../../../redux/slice/chatSlice';
+import { Message } from '../../../redux/slice/types';
 
 const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConversation, selectedConversationId }) => {
   const conversations = useSelector((state: RootState) => state.chat.conversations);
@@ -173,17 +174,51 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
           {filteredConversations.map((conversation) => {
             let lastMessage = "No messages yet";
 
+            const getShortMessagePreview = (msg: Message): string => {
+              let contentPreview = '';
+        
+              switch (msg.type) {
+                case 'image':
+                  contentPreview = '[Image]';
+                  break;
+                case 'video':
+                  contentPreview = '[Video]';
+                  break;
+                case 'audio':
+                  contentPreview = '[Audio]';
+                  break;
+                case 'file':
+                  contentPreview = '[File]';
+                  break;
+                default:
+                  contentPreview = typeof msg.content === 'string' ? msg.content : '[Message]';
+              }
+        
+              if (msg.isSentByUser) {
+                return `You: ${contentPreview}`;
+              } else {
+                return conversation.isGroup
+                  ? `${msg.name}: ${contentPreview}`
+                  : contentPreview;
+              }
+            };
+        
             if (conversation.messages?.length > 0) {
               const lastMsg = conversation.messages[conversation.messages.length - 1];
-
-              if (lastMsg.isSentByUser) {
-                lastMessage = `You: ${lastMsg.content}`;
-              } else {
-                lastMessage = conversation.isGroup
-                  ? `${lastMsg.name}: ${lastMsg.content}`
-                  : lastMsg.content;
-              }
+              lastMessage = getShortMessagePreview(lastMsg);
             }
+
+            // if (conversation.messages?.length > 0) {
+            //   const lastMsg = conversation.messages[conversation.messages.length - 1];
+
+            //   if (lastMsg.isSentByUser) {
+            //     lastMessage = `You: ${lastMsg.content}`;
+            //   } else {
+            //     lastMessage = conversation.isGroup
+            //       ? `${lastMsg.name}: ${lastMsg.content}`
+            //       : lastMsg.content;
+            //   }
+            // }
 
             return (
               <ConversationItem
