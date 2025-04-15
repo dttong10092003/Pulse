@@ -17,9 +17,10 @@ const MyProfile = () => {
     const inputRef = useRef<HTMLDivElement>(null);
     const [mediaFiles, setMediaFiles] = useState<File[]>([]);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [isPosting, setIsPosting] = useState(false);
 
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => { 
+        const handleClickOutside = (event: MouseEvent) => {
             if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
                 if (!postContent.trim()) setIsExpanded(false);
             }
@@ -63,7 +64,6 @@ const MyProfile = () => {
             reader.onerror = reject;
         });
     };
-
     const handleCreatePost = async () => {
         try {
             const token = localStorage.getItem("token");
@@ -71,6 +71,8 @@ const MyProfile = () => {
                 alert("You are not logged in!");
                 return;
             }
+
+            setIsPosting(true); // 🟢 Bắt đầu loading
 
             const base64Media = await Promise.all(
                 mediaFiles.map((file) => convertToBase64(file))
@@ -87,8 +89,11 @@ const MyProfile = () => {
             setIsExpanded(false);
         } catch (err) {
             alert("Posting failed: " + err);
+        } finally {
+            setIsPosting(false); // 🔴 Kết thúc loading
         }
     };
+
 
 
 
@@ -178,7 +183,7 @@ const MyProfile = () => {
                                             }
                                             className="absolute top-2 right-2 bg-black/60 text-white rounded-full px-2 py-1 text-sm z-10 hover:bg-black/80 cursor-pointer"
                                         >
-                                            <X size={16}  />
+                                            <X size={16} />
                                         </button>
 
                                         {file.type.startsWith("image/") ? (
@@ -234,17 +239,16 @@ const MyProfile = () => {
                             </div>
                         </div>
                         <button
-                            className={`px-5 py-2 rounded-3xl transition ${postContent.trim()
-                                ? "bg-green-500 hover:bg-green-400 text-white cursor-pointer"
-                                : "bg-zinc-600 text-white opacity-50 cursor-not-allowed"
+                            className={`px-5 py-2 rounded-3xl transition ${postContent.trim() && !isPosting
+                                    ? "bg-green-500 hover:bg-green-400 text-white cursor-pointer"
+                                    : "bg-zinc-600 text-white opacity-50 cursor-not-allowed"
                                 }`}
-                            disabled={!postContent.trim()}
+                            disabled={!postContent.trim() || isPosting}
                             onClick={handleCreatePost}
-
-
                         >
-                            Post
+                            {isPosting ? "Posting..." : "Post"}
                         </button>
+
                     </div>
                 )}
             </div>

@@ -257,7 +257,7 @@ export const getUserProfile = createAsyncThunk(
     try {
       const res = await axios.get(`${URI_API}/me`, {
         headers: {
-          Authorization: `${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       return res.data;
