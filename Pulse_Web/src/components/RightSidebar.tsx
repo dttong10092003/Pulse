@@ -26,7 +26,6 @@ const RightSidebar = () => {
 
   useEffect(() => {
     if (authUser?._id) {
-      console.log("✅ Gửi excludeUserId:", authUser._id); // kiểm tra trước
       dispatch(getTop10Users(authUser._id)); // ✅ PHẢI truyền _id vào đây
     }
   }, [authUser, dispatch]);

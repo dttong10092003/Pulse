@@ -4,10 +4,16 @@ import axios from 'axios';
 
 const FOLLOW_API = 'http://localhost:3000/follow';
 
+interface UserBasicInfo {
+  _id: string;
+  firstname:string;
+  lastname:string;
+  avatar?: string;
+}
+
 interface FollowItem {
   _id: string;
-  followerId: string;
-  followingId: string;
+  user: UserBasicInfo; // ← Thay vì followerId / followingId
   createdAt?: string;
   updatedAt?: string;
 }
@@ -33,6 +39,8 @@ const initialState: FollowState = {
   successMessage: null,
 };
 
+// Follow user
+// followUser
 export const followUser = createAsyncThunk(
   'follow/followUser',
   async ({ followingId, token }: FollowPayload, { rejectWithValue }) => {
@@ -41,7 +49,7 @@ export const followUser = createAsyncThunk(
         `${FOLLOW_API}`,
         { followingId },
         {
-          headers: { 'x-user-id': token }
+          headers: { 'x-user-id': token },
         }
       );
       return response.data.message;
@@ -55,6 +63,7 @@ export const followUser = createAsyncThunk(
   }
 );
 
+// unfollowUser
 export const unfollowUser = createAsyncThunk(
   'follow/unfollowUser',
   async ({ followingId, token }: FollowPayload, { rejectWithValue }) => {
@@ -63,7 +72,7 @@ export const unfollowUser = createAsyncThunk(
         `${FOLLOW_API}/unfollow`,
         { followingId },
         {
-          headers: { 'x-user-id': token }
+          headers: { 'x-user-id': token },
         }
       );
       return response.data.message;
@@ -77,33 +86,41 @@ export const unfollowUser = createAsyncThunk(
   }
 );
 
+// Get followers
 export const getFollowers = createAsyncThunk(
   'follow/getFollowers',
   async (userId: string, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${FOLLOW_API}/followers/${userId}`);
-      return response.data.data as FollowItem[];
-    } catch (error: unknown) {
-        if (axios.isAxiosError(error) && error.response?.data?.message) {
-          return rejectWithValue(error.response.data.message);
-        }
-        return rejectWithValue('Failed to fetch followers');
-      }      
+      
+      // Kiểm tra dữ liệu trả về
+      if (!response.data.data || response.data.data.length === 0) {
+        return [];
+      }
+      
+      // Trả về dữ liệu theo đúng định dạng
+      return response.data.data;
+    } catch {
+      return rejectWithValue('Failed to fetch followers');
+    }
   }
 );
 
+// Redux slice - Thêm logic vào để gọi API lấy followings
 export const getFollowings = createAsyncThunk(
   'follow/getFollowings',
   async (userId: string, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${FOLLOW_API}/followings/${userId}`);
-      return response.data.data as FollowItem[];
-    } catch (error: unknown) {
-        if (axios.isAxiosError(error) && error.response?.data?.message) {
-          return rejectWithValue(error.response.data.message);
-        }
-        return rejectWithValue('Failed to fetch followings');
-      }      
+      
+      if (!response.data.data || response.data.data.length === 0) {
+        return [];
+      }
+      
+      return response.data.data;
+    } catch {
+      return rejectWithValue('Failed to fetch followings');
+    }
   }
 );
 
@@ -115,10 +132,11 @@ const followSlice = createSlice({
       state.loading = false;
       state.error = null;
       state.successMessage = null;
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
+      // Follow user
       .addCase(followUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -131,7 +149,7 @@ const followSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-
+      // Unfollow user
       .addCase(unfollowUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -144,7 +162,7 @@ const followSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-
+      // Get followers
       .addCase(getFollowers.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -157,7 +175,7 @@ const followSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-
+      // Get followings
       .addCase(getFollowings.pending, (state) => {
         state.loading = true;
         state.error = null;

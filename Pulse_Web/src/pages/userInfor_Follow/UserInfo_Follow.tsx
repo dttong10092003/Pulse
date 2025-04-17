@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { Share2, MessageSquare, Users, UserRoundPen, ArrowLeft } from "lucide-react";
+import { Share2, MessageSquare, Users, ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Posts, Featured, Media } from "./components";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../redux/store";
+import { toast } from "react-toastify";
+
 import {
   followUser,
   unfollowUser,
@@ -26,42 +28,70 @@ const UserInfo_Follow = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false); // State điều khiển việc hiển thị modal
 
-  console.log("ID từ URL:", id); // Kiểm tra ID trong URL
   useEffect(() => {
     if (id) {
       dispatch(fetchUserPosts(id));  // Lấy bài viết của người dùng
       dispatch(fetchUserDetailById(id));  // Lấy chi tiết người dùng từ backend
-      dispatch(getFollowers(id)); // Lấy followers
-      dispatch(getFollowings(id)); // Lấy followings
+      dispatch(getFollowers(id)); // Lấy thông tin followers
+      dispatch(getFollowings(id)); // Lấy thông tin followings
     }
   }, [dispatch, id]);
 
   useEffect(() => {
     if (user.userDetails?._id && id) {
+      // Kiểm tra lại nếu đã follow hoặc unfollow
       dispatch(getFollowers(id)).then((res) => {
-        const list = (res.payload ?? []) as { followerId: string }[];
+        console.log("Dữ liệu followers:", res.payload);
+        const list = Array.isArray(res.payload) ? res.payload : [];
+        const alreadyFollow = list.some((f) => f.user._id === user.userDetails?._id);
+        setIsFollowing(alreadyFollow);
+      }).catch((error) => {
+        console.error("Error fetching followers:", error);
+      });
+
+      dispatch(getFollowings(id)).then((res) => {
+        const list = Array.isArray(res.payload) ? res.payload : [];
         const alreadyFollow = list.some((f) => f.followerId === user.userDetails?._id);
         setIsFollowing(alreadyFollow);
+      }).catch((error) => {
+        console.error("Error fetching followings:", error);
       });
     }
   }, [user.userDetails?._id, id, dispatch]);
 
   const handleFollowToggle = async () => {
     if (!user.userDetails || !id) return;
-
+    console.log("Dữ liệu followers trước khi follow:", followers);
     const payload = {
       followingId: id,
-      token: user.userDetails,
+      token: user.userDetails._id,
     };
 
     if (isFollowing) {
-      await dispatch(unfollowUser(payload));
-    } else {
-      await dispatch(followUser(payload));
-    }
+      const confirmUnfollow = window.confirm("Are you sure you want to unfollow this user?");
+      if (!confirmUnfollow) return;
 
-    dispatch(getFollowers(id));
-    setIsFollowing(!isFollowing);
+      const result = await dispatch(unfollowUser(payload));
+      if (unfollowUser.fulfilled.match(result)) {
+        toast.success("Unfollowed successfully");
+        setIsFollowing(false);  // Cập nhật trạng thái sau khi unfollow
+        dispatch(getFollowers(id));  // Cập nhật lại danh sách followers
+        dispatch(getFollowings(id)); // Cập nhật lại danh sách followings
+      } else {
+        toast.error("Failed to unfollow");
+      }
+    } else {
+      const result = await dispatch(followUser(payload));
+      if (followUser.fulfilled.match(result)) {
+        toast.success("Followed successfully");
+        setIsFollowing(true);  // Cập nhật trạng thái sau khi follow
+        dispatch(getFollowers(id));  // Cập nhật lại danh sách followers
+        dispatch(getFollowings(id)); // Cập nhật lại danh sách followings
+      } else {
+        toast.error("Failed to follow");
+      }
+    }
+    console.log("Dữ liệu followers sau khi follow:", followers);
   };
 
   const handleBack = () => {
@@ -72,12 +102,12 @@ const UserInfo_Follow = () => {
 
   if (!userDetail) return <p className="text-white p-4">Đang tải thông tin người dùng...</p>;
   const fullName = `${userDetail.firstname} ${userDetail.lastname}`;
-  const handle = `@${userDetail.username}`;
   const avatar = userDetail.avatar?.trim() || "https://i.pravatar.cc/300";
   const background = userDetail.backgroundAvatar || "https://picsum.photos/200";
 
   // Hàm mở modal khi bấm vào số lượng followers
   const handleFollowersClick = () => {
+    setActiveTab("followers"); // Đặt tab mặc định là "followers"
     setIsModalOpen(true);
   };
 
@@ -105,7 +135,6 @@ const UserInfo_Follow = () => {
         <div className="mt-4 flex items-center justify-between w-full">
           <div>
             <h2 className="text-2xl font-bold">{fullName}</h2>
-            <p className="text-zinc-500">{handle}</p>
             <p className="text-zinc-400 mt-2">{userDetail.bio}</p>
           </div>
 
@@ -129,39 +158,44 @@ const UserInfo_Follow = () => {
               <Share2 size={18} />
             </span>
           </div>
-          <button className="flex items-center gap-2 text-white px-4 py-2 rounded-md hover:bg-zinc-600 cursor-pointer" onClick={() => navigate("/home/edit-profile")}>
-            <UserRoundPen size={18} />
-          </button>
         </div>
       </div>
 
       {/* Modal hiển thị followers */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
-          <div className="bg-black p-6 rounded-lg max-w-sm w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">{fullName}</h2>
-              <button onClick={closeModal} className="text-white">
-                <X size={24} /> {/* Icon X có kích thước 24 */}
-              </button>
+          <div className="bg-black p-6 rounded-lg max-w-sm w-full relative">
+            {/* Nút đóng (icon X) ở góc trên bên phải */}
+            <button
+              onClick={closeModal}
+              className="absolute top-4 right-4 text-white cursor-pointer"
+            >
+              <X size={24} />
+            </button>
+
+            {/* Tiêu đề ở chính giữa */}
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold text-center text-white">{fullName}</h2>
             </div>
+
             {/* Các nút "Followers" và "Following" */}
             <div className="flex justify-between items-center mb-4">
               <button
                 onClick={() => setActiveTab("followers")}
-                className={`font-semibold flex-1 py-2 text-center text-sm rounded-full cursor-pointer ${activeTab === "followers" ? " text-white" : " text-gray-400"
+                className={`font-semibold flex-1 py-2 text-center text-sm cursor-pointer ${activeTab === "followers" ? "text-white border-b-2 border-white" : "text-gray-400"
                   }`}
               >
                 Followers
               </button>
               <button
                 onClick={() => setActiveTab("following")}
-                className={`font-semibold flex-1 py-2 text-center text-sm rounded-full cursor-pointer ${activeTab === "following" ? "text-white" : "text-gray-400"
+                className={`font-semibold flex-1 py-2 text-center text-sm cursor-pointer ${activeTab === "following" ? "text-white border-b-2 border-white" : "text-gray-400"
                   }`}
               >
                 Following
               </button>
             </div>
+
 
             {/* Hiển thị dữ liệu tùy theo tab được chọn */}
             {activeTab === "followers" ? (
@@ -171,8 +205,14 @@ const UserInfo_Follow = () => {
                 <ul>
                   {followers.map((follower, index) => (
                     <li key={index} className="flex justify-between items-center py-2">
-                      <span className="text-white">{follower.followerId}</span> {/* Hiển thị tên hoặc id của follower */}
-                      <button className="text-blue-500">Bạn bè</button>
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={follower.user.avatar || "https://i.pravatar.cc/150"}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                        <span>{`${follower.user.firstname} ${follower.user.lastname}`}</span>
+                      </div>
+                      <button className="text-blue-500">Friend</button>
                     </li>
                   ))}
                 </ul>
@@ -184,8 +224,14 @@ const UserInfo_Follow = () => {
                 <ul>
                   {followings.map((following, index) => (
                     <li key={index} className="flex justify-between items-center py-2">
-                      <span className="text-white">{following.followingId}</span> {/* Hiển thị tên hoặc id của following */}
-                      <button className="text-blue-500">Bạn bè</button>
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={following.user.avatar || "https://i.pravatar.cc/150"}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                        <span>{`${following.user.firstname} ${following.user.lastname}`}</span>
+                      </div>
+                      <button className="text-blue-500">Friend</button>
                     </li>
                   ))}
                 </ul>
