@@ -85,15 +85,31 @@ export const updateUserDetail = createAsyncThunk(
   }
 );
 
+// export const getUserDetailsByIds = createAsyncThunk(
+//   'user/getUserDetailsByIds',
+//   async (userIds: string[], { getState, rejectWithValue }) => {
+//     const token = (getState() as RootState).auth?.token; // Lấy token từ Redux store
+//     try {
+//       // Gửi yêu cầu POST đến API Gateway với mảng userIds
+//       const response = await axios.post(`${USER_SERVICE_URL}/user-details-by-ids`, { userIds }, {
+//         headers: { Authorization: `${token}` },
+//       });
+//       return response.data; // Trả về dữ liệu người dùng
+//     } catch (error) {
+//       if (axios.isAxiosError(error)) {
+//         return rejectWithValue(error.response?.data?.message || error.message);
+//       }
+//       return rejectWithValue('An unknown error occurred');
+//     }
+//   }
+// );
+
 export const getUserDetailsByIds = createAsyncThunk(
   'user/getUserDetailsByIds',
-  async (userIds: string[], { getState, rejectWithValue }) => {
-    const token = (getState() as RootState).auth?.token; // Lấy token từ Redux store
+  async (userIds: string[], { rejectWithValue }) => {
     try {
       // Gửi yêu cầu POST đến API Gateway với mảng userIds
-      const response = await axios.post(`${USER_SERVICE_URL}/user-details-by-ids`, { userIds }, {
-        headers: { Authorization: `${token}` },
-      });
+      const response = await axios.post(`${USER_SERVICE_URL}/user-details-by-ids`, { userIds });
       return response.data; // Trả về dữ liệu người dùng
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -104,37 +120,14 @@ export const getUserDetailsByIds = createAsyncThunk(
   }
 );
 
-// Thunk to get top 10 users from the API
-// export const getTop10Users = createAsyncThunk(
-//   "user/getTop10Users",
-//   async (excludeUserId: string, { rejectWithValue }) => {
-//     try {
-//       console.log("📤 axios gửi với excludeUserId:", excludeUserId);
-//       const response = await axios.get(`${USER_SERVICE_URL}/top10-users`, {
-//         params: { excludeUserId },
-//       });
-
-//       return response.data;
-//     } catch (error) {
-//       if (axios.isAxiosError(error)) {
-//         return rejectWithValue(error.response?.data?.message || error.message);
-//       }
-//       return rejectWithValue("An unknown error occurred");
-//     }
-//   }
-// );
 
 export const getTop10Users = createAsyncThunk(
   "user/getTop10Users",
   async (excludeUserId: string, { rejectWithValue }) => {
     try {
       const url = `${USER_SERVICE_URL}/top10-users?excludeUserId=${excludeUserId}`;
-      console.log("🚀 Final URL:", url); // 🧩 In ra URL đầy đủ để debug
-
       const response = await fetch(url);
       const data = await response.json();
-
-      console.log("✅ fetch result:", data); // 🧩 In ra kết quả
       return data;
     } catch (error) {
       console.error("❌ fetch failed:", error);
@@ -143,6 +136,18 @@ export const getTop10Users = createAsyncThunk(
   }
 );
 
+export const fetchUserDetailById = createAsyncThunk(
+  "user/fetchUserDetailById",
+  async (id: string) => {
+    try {
+      const response = await axios.get(`${USER_SERVICE_URL}/${id}`);
+      return response.data;  // Trả về dữ liệu người dùng từ API
+    } catch (error) {
+      console.error("Error fetching user details", error);
+      throw error;  // Nếu có lỗi, ném ra để Redux xử lý
+    }
+  }
+);
 
 // User slice
 const userSlice = createSlice({
@@ -210,7 +215,20 @@ const userSlice = createSlice({
       .addCase(getTop10Users.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(fetchUserDetailById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserDetailById.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.userDetails = action.payload; // Lưu dữ liệu trả về từ API
+      })
+      .addCase(fetchUserDetailById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
+      
   },
 });
 

@@ -37,7 +37,7 @@ const Home = () => {
           <Route path="/explore" element={<Explore />} />
           <Route path="/setting" element={<Setting />} />
           <Route path="/notifications" element={<Notification />} />
-          <Route path="/user-info" element={<UserInfo_Follow />} />
+          <Route path="/user-info/:id" element={<UserInfo_Follow />} />
         </Routes>
       </div>
 

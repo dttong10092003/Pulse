@@ -26,13 +26,13 @@ const RightSidebar = () => {
 
   useEffect(() => {
     if (authUser?._id) {
-      console.log("✅ Gửi excludeUserId:", authUser._id); // kiểm tra trước
       dispatch(getTop10Users(authUser._id)); // ✅ PHẢI truyền _id vào đây
     }
   }, [authUser, dispatch]);
 
-  const handleUserClick = (userId: string) => {
-    navigate(`/home/user-info/${userId}`);
+  const handleUserClick = (id: string) => {
+    // Điều hướng đến trang UserInfo_Follow và truyền ID của user
+    navigate(`/home/user-info/${id}`);
   };
 
   return (
@@ -63,7 +63,7 @@ const RightSidebar = () => {
       </div>
 
       {/* Content */}
-      <div className="space-y-4">
+      <div className="space-y-4 max-h-[calc(100vh-100px)] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900">
         {activeTab === "whoToFollow" && (
           loading ? (
             <p>Loading...</p>
@@ -76,7 +76,7 @@ const RightSidebar = () => {
                 <div
                   key={user._id}
                   className="bg-[#282828] p-3 rounded-lg flex items-center gap-3 cursor-pointer hover:bg-[#333] transition"
-                  onClick={() => handleUserClick(user._id)}
+                  onClick={() => handleUserClick(user._id)} // Truyền userId vào URL
                 >
                   <img
                     src={user.avatar}
