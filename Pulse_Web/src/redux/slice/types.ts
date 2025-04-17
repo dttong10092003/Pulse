@@ -8,14 +8,16 @@ export interface Member {
     _id?: string;
     conversationId: string;
     senderId: string;
-    content: string;
+    content: string; // Nội dung tin nhắn (có thể là text hoặc binary data)
     timestamp: string;
     name: string; // Tên người gửi (nếu là nhóm)
     senderAvatar: string;
     isSentByUser: boolean;
-    type: 'text' | 'emoji' | 'image' | 'file';
+    type: 'text' | 'emoji' | 'image' | 'file' | 'video' | 'audio';
     isDeleted: boolean;
     isPinned: boolean;
+    fileName?: string; // Tên file (nếu có)
+    fileType?: string; // Kiểu file (nếu có)
   }
   
   export interface Conversation {
