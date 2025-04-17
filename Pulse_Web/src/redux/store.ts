@@ -4,6 +4,7 @@ import userReducer from './slice/userSlice';
 import chatReducer from './slice/chatSlice';
 import postProfileReducer from './slice/postProfileSlice';
 import followReducer from './slice/followSlice';
+import notificationReducer from './slice/notificationSlice';
 export const store = configureStore({
   reducer: {
     auth: authReducer, 
@@ -11,6 +12,7 @@ export const store = configureStore({
     chat: chatReducer,
     postProfile: postProfileReducer,
     follow: followReducer,
+    notification: notificationReducer,
   },
 });
 
