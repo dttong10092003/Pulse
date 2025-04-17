@@ -20,6 +20,7 @@ import {
   LogOut,
   MessageCircle,
 } from "lucide-react";
+import { fileIcons } from '../../../assets';
 
 interface ConversationDetailProps {
   selectedConversation: Conversation | null; // Thay đổi kiểu dữ liệu ở đây
@@ -82,6 +83,51 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   ) {
     return <div className="p-5 text-white">No messages available.</div>;
   }
+
+  const getFileNameFromUrl = (url: string) => {
+    try {
+      const parsedUrl = new URL(url);
+      const fullName = parsedUrl.pathname.split('/').pop() || 'file';
+      return decodeURIComponent(fullName.split('.')[0]) + '.' + fullName.split('.').pop();
+    } catch {
+      return "file";
+    }
+  };
+
+  const getFileIcon = (fileName: string = '') => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+  
+    if (!ext) return fileIcons.doc; // fallback
+  
+    switch (ext) {
+      case 'pdf':
+        return fileIcons.pdf;
+      case 'doc':
+      case 'docx':
+        return fileIcons.doc;
+      case 'xls':
+      case 'xlsx':
+        return fileIcons.xls;
+      case 'zip':
+      case 'rar':
+        return fileIcons.zip;
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'gif':
+        return fileIcons.image;
+      case 'mp4':
+      case 'mov':
+      case 'avi':
+        return fileIcons.video;
+      case 'mp3':
+      case 'wav':
+        return fileIcons.sound;
+      default:
+        return fileIcons.doc;
+    }
+  };
+
 
   return (
     <div className={`flex ${showSidebar ? "w-full" : "w-3/4"}`}>
@@ -173,9 +219,29 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                         className="w-full max-h-[499px] object-cover rounded-lg"
                       />
                     ) : msg.type === "file" || msg.type === "video" || msg.type === "audio" ? (
-                      <a href={msg.content as string} target="_blank" rel="noopener noreferrer" className="text-blue-400">
-                        View File
-                      </a>
+                      <div className="flex items-center gap-3 bg-white p-3 rounded-lg shadow text-black max-w-[300px]">
+                        <img
+                          src={getFileIcon(msg.fileName || getFileNameFromUrl(msg.content))}
+                          alt="file-icon"
+                          className="w-10 h-10 object-contain"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate font-medium text-sm">
+                            {msg.fileName || getFileNameFromUrl(msg.content)}
+                          </p>
+                          <a
+                            href={msg.content as string}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download={msg.fileName}
+                            className="text-xs text-gray-600 hover:text-black"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+                            </svg>
+                          </a>
+                        </div>
+                      </div>
                     ) : (
                       <p>{msg.content}</p>
                     )
