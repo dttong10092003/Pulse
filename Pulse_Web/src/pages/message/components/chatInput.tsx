@@ -22,116 +22,81 @@ const ChatInput: React.FC = () => {
     }
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!selectedConversation?._id) {
       console.error('No conversation selected');
-      return; // Không gửi tin nhắn nếu không có selectedConversation
+      return;
+    }
+  
+    if (!userDetail) {
+      console.error('No user detail found');
+      return;
     }
 
-    if (message.trim() || selectedFiles.length > 0) {
-      if (!userDetail) {
-        console.error('No user detail found');
-        return; // Không gửi tin nhắn nếu không có userDetail
-      }
-
-      let messageType: "text" | "emoji" | "image" | "file" | "video" | "audio" = "text";
-      let content: string | ArrayBuffer = message.trim();
-
-      if (selectedFiles.length > 0) {
-        selectedFiles.forEach((file) => {
-          const fileType = file.type.split('/')[0];  // Lấy kiểu file (image, video, etc.)
-          if (fileType === "image") {
-            messageType = "image";
-          } else if (fileType === "video") {
-            messageType = "video";
-          } else if (fileType === "audio") {
-            messageType = "audio";
-          } else {
-            messageType = "file"; // Nếu không phải hình ảnh hay video, mặc định là file
-          }
-
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-
-          reader.onloadend = () => {
-            content = reader.result as string;
-
-            const newMessage: Message = {
-              conversationId: selectedConversation._id,
-              senderId: userDetail.userId,
-              name: `${userDetail.firstname} ${userDetail.lastname}`,
-              content: content,  // Gửi file dưới dạng binary data
-              type: messageType,
-              timestamp: new Date().toISOString(),
-              isDeleted: false,
-              isSentByUser: true,
-              isPinned: false,
-              senderAvatar: userDetail?.avatar,
-              fileName: file.name,
-              fileType: file.type,
-            };
-
-            socket.emit('sendMessage', newMessage);
-
-            dispatch(addMessageToState({
-              message: newMessage,
-              currentUserId: userDetail.userId,
-            }));
-          }
-        });
-
-        setMessage('');
-        setSelectedFiles([]);
-      } else {
-        const newMessage: Message = {
-          conversationId: selectedConversation._id,
-          senderId: userDetail.userId,
-          type: "text", // Đây là tin nhắn văn bản
-          content: message.trim(),
-          timestamp: new Date().toISOString(),
-          isDeleted: false,
-          isPinned: false,
-          senderAvatar: userDetail?.avatar,
-          name: `${userDetail.firstname} ${userDetail.lastname}`,
-          isSentByUser: true,
-        };
-
-        socket.emit('sendMessage', newMessage);
-
-        dispatch(addMessageToState({
-          message: newMessage,
-          currentUserId: userDetail.userId,
-        }));
-
-        setMessage('');
-      }
-
-      // const newMessage = {
-      //   conversationId: selectedConversation._id, // Sử dụng _id thay vì conversationId
-      //   senderId: userDetail.userId, // Cập nhật với userId thực tế từ Redux
-      //   name: `${userDetail.firstname} ${userDetail.lastname}`, // Tên người gửi (có thể lấy từ Redux hoặc props)
-      //   content: message,
-      //   type: 'text' as const,
-      //   timestamp: new Date().toISOString(),
-      //   isDeleted: false,
-      //   isSentByUser: true,
-      //   isPinned: false,
-      //   senderAvatar: userDetail?.avatar, // Cập nhật với avatar thực tế từ Redux
-      // };
-
-      // // Gửi tin nhắn qua Socket.IO
-      // socket.emit('sendMessage', newMessage);
-
-      // // Thêm tin nhắn vào Redux state
-      // // dispatch(addMessageToState(newMessage));
-      // dispatch(addMessageToState({
-      //   message: newMessage,
-      //   currentUserId: userDetail.userId,
-      // }));
-
-      // setMessage(''); // Xóa nội dung sau khi gửi
+    if (message.trim()) {
+      const textMessage: Message = {
+        conversationId: selectedConversation._id,
+        senderId: userDetail.userId,
+        name: `${userDetail.firstname} ${userDetail.lastname}`,
+        content: message.trim(),
+        type: "text",
+        timestamp: new Date().toISOString(),
+        isDeleted: false,
+        isSentByUser: true,
+        isPinned: false,
+        senderAvatar: userDetail?.avatar,
+      };
+  
+      socket.emit('sendMessage', textMessage);
+      dispatch(addMessageToState({
+        message: textMessage,
+        currentUserId: userDetail.userId,
+      }));
     }
+  
+    // Gửi từng file theo thứ tự
+    for (const file of selectedFiles) {
+      const fileType = file.type.split('/')[0];
+      let messageType: "image" | "video" | "audio" | "file" = "file";
+  
+      if (fileType === "image") messageType = "image";
+      else if (fileType === "video") messageType = "video";
+      else if (fileType === "audio") messageType = "audio";
+  
+      const fileContent = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+      });
+  
+      const fileMessage: Message = {
+        conversationId: selectedConversation._id,
+        senderId: userDetail.userId,
+        name: `${userDetail.firstname} ${userDetail.lastname}`,
+        content: fileContent,
+        type: messageType,
+        timestamp: new Date().toISOString(),
+        isDeleted: false,
+        isSentByUser: true,
+        isPinned: false,
+        senderAvatar: userDetail?.avatar,
+        fileName: file.name,
+        fileType: file.type,
+      };
+  
+      socket.emit('sendMessage', fileMessage);
+      dispatch(addMessageToState({
+        message: fileMessage,
+        currentUserId: userDetail.userId,
+      }));
+    }
+  
+    // Xoá nội dung sau khi gửi xong
+    setMessage('');
+    setSelectedFiles([]);
   };
+  
 
   const handleEmojiClick = (emojiObject: EmojiClickData) => {
     setMessage((prevMessage) => prevMessage + emojiObject.emoji);
