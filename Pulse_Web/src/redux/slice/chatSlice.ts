@@ -371,7 +371,7 @@ export const getPinnedMessages = createAsyncThunk(
 // 15️⃣ Thu hồi tin nhắn
 export const revokeMessage = createAsyncThunk(
   'chat/revokeMessage',
-  async ({ messageId }: { messageId: string }, { getState, rejectWithValue }) => {
+  async ({ messageId, senderId }: { messageId: string, senderId: string }, { getState, rejectWithValue }) => {
     const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
@@ -380,7 +380,7 @@ export const revokeMessage = createAsyncThunk(
     try {
       const response = await axios.post(
         `${CHAT_SERVICE_URL}/messages/revoke`,
-        { messageId },
+        { messageId, senderId },
         { headers: { Authorization: `${token}` } }
       );
       return response.data;
@@ -455,10 +455,51 @@ const getLastMessageContent = (message: Message): string => {
   }
 };
 
+// 15️⃣ Xóa tin nhắn
+export const deleteMessage = createAsyncThunk(
+  'chat/deleteMessage',
+  async ({ messageId, senderId }: { messageId: string, senderId: string }, { getState, rejectWithValue }) => {
+    const token = (getState() as RootState).auth?.token;
+    if (!token) {
+      return rejectWithValue('No token found');
+    }
+
+    try {
+      const response = await axios.post(
+        `${CHAT_SERVICE_URL}/messages/delete`,
+        { messageId, senderId },
+        { headers: { Authorization: `${token}` } }
+      );
+      return response.data; // Trả về dữ liệu phản hồi từ server
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      return rejectWithValue('Failed to delete message');
+    }
+  }
+);
+
+
 const chatSlice = createSlice({
   name: 'chat',
   initialState,
   reducers: {
+    revokeMessageLocal: (state, action: PayloadAction<{ messageId: string }>) => {
+      if (state.selectedConversation) {
+        state.selectedConversation.messages = state.selectedConversation.messages.map((msg) =>
+          msg._id === action.payload.messageId
+            ? { ...msg, content: 'Message revoked', isDeleted: true, type: 'text', isPinned: false }
+            : msg
+        );
+      }
+    },
+    
+    deleteMessageLocal: (state, action: PayloadAction<{ messageId: string }>) => {
+      if (state.selectedConversation) {
+        state.selectedConversation.messages = state.selectedConversation.messages.filter(
+          (msg) => msg._id !== action.payload.messageId
+        );
+      }
+    },
     // addMessageToState: (state, action: PayloadAction<Message>) => {
     //   if (state.selectedConversation) {
     //     const conversation = state.selectedConversation;
@@ -478,35 +519,28 @@ const chatSlice = createSlice({
     
       // Cập nhật tin nhắn vào selectedConversation
       if (conversation && conversation._id === newMessage.conversationId) {
-        if (!conversation.messages) {
-          conversation.messages = [];
+        const isExisted = conversation.messages?.some((msg) => msg._id === newMessage._id);
+        if (!isExisted) {
+          conversation.messages = [...(conversation.messages || []), newMessage];
         }
-        conversation.messages = [
-          ...(conversation.messages || []),
-          newMessage,
-        ];
       }
-
-      const conv = state.conversations.find(
-        (c) => c._id === newMessage.conversationId
-      );
-
+    
+      const conv = state.conversations.find((c) => c._id === newMessage.conversationId);
+    
       if (conv) {
         conv.lastMessage = getLastMessageContent(newMessage);
-        conv.messages = [...(conv.messages || []), newMessage];
+    
+        const isExisted = conv.messages?.some((msg) => msg._id === newMessage._id);
+        if (!isExisted) {
+          conv.messages = [...(conv.messages || []), newMessage];
+        }
+    
         if (conv._id !== state.selectedConversation?._id && newMessage.senderId !== currentUserId) {
           conv.unreadCount = (conv.unreadCount || 0) + 1;
         }
       }
-    
-      // Cập nhật lastMessage và unreadCount cho tất cả các cuộc trò chuyện
-      // state.conversations.forEach((conv) => {
-      //   if (conv._id === newMessage.conversationId) {
-      //     conv.lastMessage = newMessage.content;
-      //     conv.unreadCount = conv.unreadCount ? conv.unreadCount + 1 : 1;
-      //   }
-      // });
     },
+    
     // Action để cập nhật cuộc trò chuyện đã chọn
     setSelectedConversation: (state, action: PayloadAction<Conversation | null>) => {
       state.selectedConversation = action.payload;
@@ -526,9 +560,27 @@ const chatSlice = createSlice({
         convo.unreadCount = 0;
       }
     }
-    
+
   },
   extraReducers: (builder) => {
+
+    builder
+      .addCase(deleteMessage.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteMessage.fulfilled, (state, action: PayloadAction<{ messageId: string }>) => {
+        // Xóa tin nhắn khỏi selectedConversation.messages
+        if (state.selectedConversation) {
+          state.selectedConversation.messages = state.selectedConversation.messages.filter(
+            (msg) => msg._id !== action.payload.messageId // Loại bỏ tin nhắn đã xóa khỏi messages
+          );
+        }
+      })
+      .addCase(deleteMessage.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
     // 1️⃣ Kiểm tra trạng thái online của người dùng
     builder
       .addCase(getAllConversations.pending, (state) => {
@@ -555,10 +607,10 @@ const chatSlice = createSlice({
             conv.groupName = other?.name || 'Unknown';
             conv.avatar = other?.avatar || '';
           }
-      
+
           // ⚠️ Gán lại unreadCount nếu có
           conv.unreadCount = unreadMap.get(conv._id) || 0;
-      
+
           return conv;
         });
 
@@ -798,14 +850,14 @@ const chatSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(revokeMessage.fulfilled, (state, action: PayloadAction<Message>) => {
-        state.loading = false;
-        if (state.messages) {
-          const message = state.messages.find(msg => msg._id === action.payload._id);
-          if (message) {
-            message.isDeleted = true;
-            message.content = "Message revoked";
-          }
+      .addCase(revokeMessage.fulfilled, (state, action: PayloadAction<{ messageId: string }>) => {
+        // Cập nhật state: tìm và cập nhật tin nhắn đã thu hồi
+        if (state.selectedConversation) {
+          state.selectedConversation.messages = state.selectedConversation.messages.map(msg =>
+            msg._id === action.payload.messageId
+              ? { ...msg, content: 'Message revoked', isDeleted: true, type: 'text', isPinned: false }
+              : msg
+          );
         }
       })
       .addCase(revokeMessage.rejected, (state, action) => {
@@ -854,5 +906,5 @@ const chatSlice = createSlice({
   },
 });
 
-export const { addMessageToState, setSelectedConversation, setUnreadToZero } = chatSlice.actions;
+export const { addMessageToState, setSelectedConversation, setUnreadToZero, revokeMessageLocal, deleteMessageLocal } = chatSlice.actions;
 export default chatSlice.reducer;
