@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChatInput } from "./index";
 import { format, formatDistanceToNow } from "date-fns";
-import { useSelector } from "react-redux";
-import { RootState } from "../../../redux/store";
-import { Conversation } from '../../../redux/slice/types';
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "../../../redux/store";
+import { deleteMessageLocal, revokeMessageLocal } from "../../../redux/slice/chatSlice";
+import { Conversation, Message } from '../../../redux/slice/types';
+import socket from '../../../utils/socket';
 import {
   Phone,
   Search,
@@ -33,6 +35,11 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   console.log("Selected conversationaaaaaa:", selectedConversation);
   console.log("ahahahha: ", selectedConversation?.messages);
 
+  const [showMenu, setShowMenu] = useState<Message | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const dispatch = useDispatch<AppDispatch>();
+  const currentUser = useSelector((state: RootState) => state.auth.user);
+
   // const dispatch = useDispatch();
   const messages = useSelector(
     (state: RootState) => state.chat.selectedConversation?.messages
@@ -57,14 +64,59 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     }
   }, [selectedConversation]);
 
-  // if (!selectedConversation) {
-  //   return (
-  //     <div className="p-5 text-white">
-  //       No conversation selected. Please select a conversation to start
-  //       chatting.
-  //     </div>
-  //   );
-  // }
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (showMenu) setShowMenu(null);
+    };
+  
+    window.addEventListener("click", handleClickOutside);
+  
+    return () => {
+      window.removeEventListener("click", handleClickOutside);
+    };
+  }, [showMenu]);
+
+  const handleMessageRightClick = (event: React.MouseEvent, message: Message | undefined) => {
+    event.preventDefault();
+    if (message) {
+      const bubbleWidth = 200;
+      const { clientX, clientY } = event;
+      const adjustedLeft = message.isSentByUser ? clientX - bubbleWidth : clientX;
+      setMenuPosition({ top: clientY, left: adjustedLeft  });
+      setShowMenu(message); // chỉ setShowMenu nếu có messageId
+    } else {
+      console.warn("Message ID is undefined");
+    }
+  };
+
+
+  if (!currentUser) {
+    return <div className="text-white">Loading user...</div>;
+  }
+
+  const currentUserId = currentUser._id;
+
+  const handleDeleteMessage = (messageId: string) => {
+    socket.emit('deleteMessage', { messageId, senderId: currentUserId, conversationId: selectedConversation?._id });
+    dispatch(deleteMessageLocal({ messageId }));
+
+    setShowMenu(null); // Close menu after action
+  };
+
+  const handleRevokeMessage = (messageId: string) => {
+    socket.emit('revokeMessage', { messageId, senderId: currentUserId, conversationId: selectedConversation?._id });
+    dispatch(revokeMessageLocal({ messageId }));
+
+    setShowMenu(null); // Close menu after action
+  };
+
+  const handleForwardMessage = (message: Message) => {
+    console.log("🔁 Forwarding message:", message);
+
+    // TODO: Bạn có thể mở modal chọn người nhận hoặc gán tin nhắn sang khung chat khác
+    // Ví dụ: dispatch(setForwardingMessage(message)); hoặc mở modal forward
+  };
+
   if (!selectedConversation) {
     return (
       <div className="flex flex-col w-full items-center justify-center p-5 text-white h-screen">
@@ -96,9 +148,9 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
   const getFileIcon = (fileName: string = '') => {
     const ext = fileName.split('.').pop()?.toLowerCase();
-  
+
     if (!ext) return fileIcons.doc; // fallback
-  
+
     switch (ext) {
       case 'pdf':
         return fileIcons.pdf;
@@ -209,7 +261,9 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                   {msg.content}
                 </div> */}
 
-                <div className={`p-3 rounded-lg text-white ${msg.isSentByUser ? "bg-green-600" : "bg-gray-600"} break-words`}>
+                <div className={`p-3 rounded-lg text-white ${msg.isSentByUser ? "bg-green-600" : "bg-gray-600"} break-words`}
+                  onContextMenu={(event) => handleMessageRightClick(event, msg)}
+                >
                   {/* Kiểm tra nếu msg.content là string */}
                   {typeof msg.content === 'string' ? (
                     msg.type === "image" ? (
@@ -278,6 +332,32 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
         <ChatInput />
       </div>
+
+      {/* Menu context */}
+      {showMenu && (
+        <div
+          className="absolute bg-gray-800 text-white p-2 rounded-lg shadow-lg"
+          style={{ top: menuPosition.top, left: menuPosition.left, zIndex: 999 }}
+        >
+          {showMenu.senderId === currentUserId && (
+            <>
+              <div onClick={() => handleDeleteMessage(showMenu._id!)} className="cursor-pointer p-1 hover:bg-gray-700">
+                Delete Message
+              </div>
+              <div onClick={() => handleRevokeMessage(showMenu._id!)} className="cursor-pointer p-1 hover:bg-gray-700">
+                Revoke Message
+              </div>
+            </>
+          )}
+          {/* 👉 Luôn hiển thị với mọi tin nhắn */}
+          <div
+            onClick={() => handleForwardMessage(showMenu)}
+            className="cursor-pointer p-1 hover:bg-gray-700"
+          >
+            Forward Message
+          </div>
+        </div>
+      )}
 
       {/* Right Sidebar */}
       {showSidebar && (
