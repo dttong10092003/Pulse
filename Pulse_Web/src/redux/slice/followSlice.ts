@@ -93,7 +93,6 @@ export const getFollowers = createAsyncThunk(
   async (userId: string, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${FOLLOW_API}/followers/${userId}`);
-      console.log("Dữ liệu followers từ API:", response.data);
       // Kiểm tra dữ liệu trả về
       if (!response.data.data || response.data.data.length === 0) {
         return [];
@@ -113,7 +112,6 @@ export const getFollowings = createAsyncThunk(
   async (userId: string, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${FOLLOW_API}/followings/${userId}`);
-      console.log("Dữ liệu followers từ API:", response.data);
       if (!response.data.data || response.data.data.length === 0) {
         return [];
       }

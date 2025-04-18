@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../redux/store";
-import { getTop10Users } from "../redux/slice/userSlice";
+import { getTopUsersExcludingFollowed } from "../redux/slice/userSlice";
 import { motion } from "framer-motion";
 
 interface User {
@@ -26,7 +26,7 @@ const RightSidebar = () => {
 
   useEffect(() => {
     if (authUser?._id) {
-      dispatch(getTop10Users(authUser._id)); // ✅ PHẢI truyền _id vào đây
+      dispatch(getTopUsersExcludingFollowed (authUser._id)); // ✅ PHẢI truyền _id vào đây
     }
   }, [authUser, dispatch]);
 
