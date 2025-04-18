@@ -149,6 +149,24 @@ export const fetchUserDetailById = createAsyncThunk(
   }
 );
 
+export const getTopUsersExcludingFollowed = createAsyncThunk(
+  "user/getTopUsersExcludingFollowed",
+  async (excludeUserId: string, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${USER_SERVICE_URL}/top-users`, {
+        params: { excludeUserId }
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || error.message);
+      }
+      return rejectWithValue("An unknown error occurred");
+    }
+  }
+);
+
+
 // User slice
 const userSlice = createSlice({
   name: 'user',
@@ -227,8 +245,19 @@ const userSlice = createSlice({
       .addCase(fetchUserDetailById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(getTopUsersExcludingFollowed.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getTopUsersExcludingFollowed.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.top10Users = action.payload;
+      })
+      .addCase(getTopUsersExcludingFollowed.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
-      
   },
 });
 

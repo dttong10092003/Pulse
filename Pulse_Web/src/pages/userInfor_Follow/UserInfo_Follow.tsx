@@ -4,7 +4,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Posts, Featured, Media } from "./components";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../redux/store";
-import { toast } from "react-toastify";
 
 import {
   followUser,
@@ -40,32 +39,25 @@ const UserInfo_Follow = () => {
   }, [dispatch, id]);
 
   useEffect(() => {
-    if (user.userDetails?._id && id) {
-      // Kiểm tra lại nếu đã follow hoặc unfollow
-      dispatch(getFollowers(id)).then((res) => {
-        const list = Array.isArray(res.payload) ? res.payload : [];
-        const alreadyFollow = list.some((f) => f.user._id === user.userDetails?._id);
-        setIsFollowing(alreadyFollow);
-      }).catch((error) => {
-        console.error("Error fetching followers:", error);
-      });
-
-      dispatch(getFollowings(id)).then((res) => {
-        const list = Array.isArray(res.payload) ? res.payload : [];
-        const alreadyFollow = list.some((f) => f.followerId === user.userDetails?._id);
-        setIsFollowing(alreadyFollow);
-      }).catch((error) => {
-        console.error("Error fetching followings:", error);
-      });
+    if (currentUser && id) {
+      dispatch(getFollowers(id))
+        .then((res) => {
+          const list = Array.isArray(res.payload) ? res.payload : [];
+          const alreadyFollow = list.some((f) => f.user._id === currentUser);
+          setIsFollowing(alreadyFollow);
+        })
+        .catch((error) => {
+          console.error("❌ Error fetching followers:", error);
+        });
     }
-  }, [user.userDetails?._id, id, dispatch]);
+  }, [currentUser, id, dispatch]);
 
   // Xử lý khi nhấn nút follow/unfollow
   const handleFollowToggle = async () => {
     if (!user.userDetails || !id) return;
 
     const payload = {
-      followingId: userDetail._id,  // ID người bạn muốn theo dõi hoặc bỏ theo dõi
+      followingId: userDetail.userId,  // ID người bạn muốn theo dõi hoặc bỏ theo dõi
       followerId: currentUser!,  // ID người đang thực hiện hành động
     };
 
@@ -73,31 +65,41 @@ const UserInfo_Follow = () => {
     if (isFollowing) {
       const confirmUnfollow = window.confirm("Are you sure you want to unfollow this user?");
       if (!confirmUnfollow) return;
-  
+
       // Dispatch action unfollowUser
       const result = await dispatch(unfollowUser(payload));
       if (unfollowUser.fulfilled.match(result)) {
-        toast.success("Unfollowed successfully");
+        alert("Unfollowed successfully");
         setIsFollowing(false);  // Cập nhật trạng thái sau khi unfollow
         dispatch(getFollowers(id));  // Làm mới danh sách followers
         dispatch(getFollowings(id)); // Làm mới danh sách followings
       } else {
-        toast.error("Failed to unfollow");
+        alert("Failed to unfollow");
       }
     } else {
       // Dispatch action followUser
       const result = await dispatch(followUser(payload));
       if (followUser.fulfilled.match(result)) {
-        toast.success("Followed successfully");
+        alert("Followed successfully");
         setIsFollowing(true);  // Cập nhật trạng thái sau khi follow
         dispatch(getFollowers(id));  // Làm mới danh sách followers
         dispatch(getFollowings(id)); // Làm mới danh sách followings
       } else {
-        toast.error("Failed to follow");
+        alert("Failed to follow");
       }
     }
   };
-  
+
+  const handleUserClickInModal = (userId: string) => {
+    if (userId === currentUser) {
+      localStorage.setItem("activeItem", "My Profile"); // ✅ Update sidebar
+      window.dispatchEvent(new Event("storage"));        // ✅ Kích hoạt cập nhật sidebar
+      navigate("/home/my-profile");
+    } else {
+      navigate(`/home/user-info/${userId}`);
+    }
+  };
+
 
   // Hàm quay lại trang trước
   const handleBack = () => {
@@ -144,7 +146,6 @@ const UserInfo_Follow = () => {
             <h2 className="text-2xl font-bold">{fullName}</h2>
             <p className="text-zinc-400 mt-2">{userDetail.bio}</p>
           </div>
-
           <button className="text-white px-4 py-2 bg-zinc-700 rounded-full hover:bg-zinc-800 cursor-pointer" onClick={handleFollowToggle}>
             {isFollowing ? "Unfollow" : "Follow"}
           </button>
@@ -170,8 +171,11 @@ const UserInfo_Follow = () => {
 
       {/* Modal hiển thị followers */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
-          <div className="bg-black p-6 rounded-lg max-w-sm w-full relative">
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50" onClick={closeModal}>
+          <div
+            className="bg-black p-6 rounded-lg max-w-sm w-full relative"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={closeModal}
               className="absolute top-4 right-4 text-white cursor-pointer"
@@ -179,7 +183,8 @@ const UserInfo_Follow = () => {
               <X size={24} />
             </button>
 
-            <div className="mb-4">
+            {/* Tiêu đề */}
+            <div className="mb-4 mt-8">
               <h2 className="text-xl font-semibold text-center text-white">{fullName}</h2>
             </div>
 
@@ -201,33 +206,41 @@ const UserInfo_Follow = () => {
               </button>
             </div>
 
-            {/* Hiển thị dữ liệu tùy theo tab được chọn */}
-            {activeTab === "followers" ? (
-              followers.length === 0 ? (
-                <p className="text-center text-gray-500">Không có followers nào.</p>
-              ) : (
-                <ul>
-                  {followers.map((follower, index) => (
-                    <li key={index} className="flex justify-between items-center py-2">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={follower.user.avatar || "https://i.pravatar.cc/150"}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                        <span>{`${follower.user.firstname} ${follower.user.lastname}`}</span>
-                      </div>
-                      <button className="text-blue-500">Friend</button>
-                    </li>
-                  ))}
-                </ul>
-              )
-            ) : (
-              followings.length === 0 ? (
+            {/* ✅ DANH SÁCH CÓ SCROLL */}
+            <div className="max-h-[25vh] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900">
+              {activeTab === "followers" ? (
+                followers.length === 0 ? (
+                  <p className="text-center text-gray-500">Không có followers nào.</p>
+                ) : (
+                  <ul>
+                    {followers.map((follower, index) => (
+                      <li
+                        key={index}
+                        onClick={() => handleUserClickInModal(follower.user._id)}
+                        className="flex justify-between items-center py-2 cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={follower.user.avatar || "https://i.pravatar.cc/150"}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                          <span>{`${follower.user.firstname} ${follower.user.lastname}`}</span>
+                        </div>
+                        <button className="text-blue-500">Friend</button>
+                      </li>
+                    ))}
+                  </ul>
+                )
+              ) : followings.length === 0 ? (
                 <p className="text-center text-gray-500">Không có following nào.</p>
               ) : (
                 <ul>
                   {followings.map((following, index) => (
-                    <li key={index} className="flex justify-between items-center py-2">
+                    <li
+                      key={index}
+                      onClick={() => handleUserClickInModal(following.user._id)}
+                      className="flex justify-between items-center py-2 cursor-pointer"
+                    >
                       <div className="flex items-center gap-3">
                         <img
                           src={following.user.avatar || "https://i.pravatar.cc/150"}
@@ -239,8 +252,8 @@ const UserInfo_Follow = () => {
                     </li>
                   ))}
                 </ul>
-              )
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}
