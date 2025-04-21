@@ -5,13 +5,16 @@ import { RootState, AppDispatch } from '../../../redux/store';
 import { useSelector, useDispatch } from 'react-redux';
 import { Search, MoreVertical, Users } from 'lucide-react';
 import CreateGroupModal from './CreateGroupModal';
-import { createGroupConversation, getAllConversations } from '../../../redux/slice/chatSlice';
+import { createGroupConversation, getAllConversations, setSelectedConversation } from '../../../redux/slice/chatSlice';
+import { getFollowings } from "../../../redux/slice/followSlice";
 import { Message } from '../../../redux/slice/types';
+import socket from '../../../utils/socket';
 
 const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConversation, selectedConversationId }) => {
   const conversations = useSelector((state: RootState) => state.chat.conversations);
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const followings = useSelector((state: RootState) => state.follow.followings);
+  const userDetail = useSelector((state: RootState) => state.auth.userDetail);
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -21,6 +24,13 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
 
   const menuRef = useRef<HTMLDivElement | null>(null);
 
+
+  useEffect(() => {
+    if (currentUser?._id) {
+
+      dispatch(getFollowings(currentUser._id)); // Lấy danh sách người theo dõi
+    }
+  }, [currentUser, dispatch]);
 
 
   useEffect(() => {
@@ -55,7 +65,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
       .replace(/[\u0300-\u036f]/g, "")    // xóa dấu
       .toLowerCase();                     // về thường
   };
-  console.log('Conversations:', conversations);
+  console.log('Conversations filllllllll:', conversations);
   const filteredConversations = conversations?.filter((conversation) => {
     const target = conversation.isGroup
       ? conversation.groupName
@@ -115,7 +125,38 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
     console.log('Group created:', name, members);
     setShowCreateGroup(false);
   };
-  
+
+  if (!userDetail) return;
+
+  const me: Member = {
+    userId: userDetail.userId,
+    name: `${userDetail.firstname} ${userDetail.lastname}`,
+    avatar: userDetail.avatar
+  }
+
+  const handleStartPrivateChat = (userA: Member, userB: Member) => {
+
+    const membersIds = [userA.userId, userB.userId].sort();
+
+    const existingConversation = conversations.find(conversation =>
+      conversation.isGroup === false &&
+      conversation.members.every(member => membersIds.includes(member.userId)) // Kiểm tra nếu 2 user này có trong conversation
+    );
+
+    if (existingConversation) {
+      // Nếu cuộc trò chuyện đã tồn tại, chỉ cần chọn cuộc trò chuyện đó
+      dispatch(setSelectedConversation(existingConversation));
+    } else {
+      const conversationData = {
+        members: [
+          { userId: userA.userId, name: userA.name, avatar: userA.avatar },
+          { userId: userB.userId, name: userB.name, avatar: userB.avatar }
+        ],
+        isGroup: false,
+      };
+      socket.emit('createPrivateConversation', conversationData); // Phát sự kiện lên server để tạo conversation
+    }
+  };
 
   return (
     <>
@@ -143,27 +184,36 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
           ))}
         </div> */}
 
-<div className="overflow-x-auto scrollbar-hidden mb-4 pb-2 scroll-smooth">
-  <div className="flex space-x-2 px-1 w-max whitespace-nowrap">
-    {followings
-      .filter((user) => {
-        const fullName = `${user.user.firstname} ${user.user.lastname}`;
-        return normalizeText(fullName).includes(normalizeText(searchTerm.trim()));
-      })
-      .map((user) => (
-        <div key={user._id} className="flex flex-col items-center w-[82px] cursor-pointer">
-          <img
-            src={user.user.avatar}
-            alt={user.user._id}
-            className="w-12 h-12 rounded-full object-cover"
-          />
-          <p className="text-xs mt-1 text-center leading-tight truncate">
-            {user.user.firstname} {user.user.lastname}
-          </p>
+        <div className="overflow-x-auto scrollbar-hidden mb-4 pb-2 scroll-smooth">
+          <div className="flex space-x-2 px-1 w-max whitespace-nowrap">
+            {followings
+              .filter((user) => {
+                const fullName = `${user.user.firstname} ${user.user.lastname}`;
+                return normalizeText(fullName).includes(normalizeText(searchTerm.trim()));
+              })
+              .map((user) => {
+                const userMember: Member = {
+                  userId: user.user._id,
+                  name: `${user.user.firstname} ${user.user.lastname}`,
+                  avatar: user.user.avatar || '',
+                };
+
+                return (
+                  <div key={user._id} className="flex flex-col items-center w-[82px] cursor-pointer">
+                    <img
+                      src={user.user.avatar}
+                      alt={user.user._id}
+                      className="w-12 h-12 rounded-full object-cover"
+                      onClick={() => handleStartPrivateChat(me, userMember)}
+                    />
+                    <p className="text-xs mt-1 text-center leading-tight truncate">
+                      {user.user.firstname} {user.user.lastname}
+                    </p>
+                  </div>
+                );
+              })}
+          </div>
         </div>
-      ))}
-  </div>
-</div>
 
 
 

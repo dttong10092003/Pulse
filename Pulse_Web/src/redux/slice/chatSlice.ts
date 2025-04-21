@@ -559,7 +559,12 @@ const chatSlice = createSlice({
       if (convo && convo.unreadCount && convo.unreadCount > 0) {
         convo.unreadCount = 0;
       }
-    }
+    },
+
+    addConversation: (state, action: PayloadAction<Conversation>) => {
+      console.log("conversation mới: ", action.payload);
+      state.conversations = [action.payload, ...state.conversations]; // Tạo mảng mới với cuộc trò chuyện mới
+   }
 
   },
   extraReducers: (builder) => {
@@ -645,6 +650,7 @@ const chatSlice = createSlice({
       .addCase(createOrGetPrivateConversation.fulfilled, (state, action: PayloadAction<Conversation>) => {
         state.loading = false;
         state.conversations = state.conversations ? [action.payload, ...state.conversations] : [action.payload];
+        state.selectedConversation = action.payload; 
       })
       .addCase(createOrGetPrivateConversation.rejected, (state, action) => {
         state.loading = false;
@@ -906,5 +912,5 @@ const chatSlice = createSlice({
   },
 });
 
-export const { addMessageToState, setSelectedConversation, setUnreadToZero, revokeMessageLocal, deleteMessageLocal } = chatSlice.actions;
+export const { addMessageToState, setSelectedConversation, setUnreadToZero, revokeMessageLocal, deleteMessageLocal, addConversation } = chatSlice.actions;
 export default chatSlice.reducer;

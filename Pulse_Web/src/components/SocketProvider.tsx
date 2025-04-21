@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import socket from '../utils/socket';
 import { RootState, AppDispatch } from '../redux/store';
-import { addMessageToState, getAllConversations, revokeMessageLocal, deleteMessageLocal } from '../redux/slice/chatSlice';
-import { Message } from '../redux/slice/types'; 
+import { addMessageToState, getAllConversations, revokeMessageLocal, deleteMessageLocal, addConversation, setSelectedConversation } from '../redux/slice/chatSlice';
+import { Message, Member } from '../redux/slice/types';
 
 const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -35,6 +35,28 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
     socket.on('receiveMessage', handleReceiveMessage);
 
+    // Lắng nghe cuộc trò chuyện mới từ socket
+    socket.on('newConversation', (newConversation) => {
+      console.log('📩 New conversation received:', newConversation);
+
+      if (!newConversation.isGroup) {
+        // Tìm người còn lại trong cuộc trò chuyện
+        const otherMember = newConversation.members.find((member: Member) => member.userId !== user._id);
+
+        // Nếu tìm thấy người còn lại, cập nhật groupName và avatar
+        if (otherMember) {
+          newConversation.groupName = otherMember.name; // Lưu tên người còn lại
+          newConversation.avatar = otherMember.avatar || ''; // Lưu avatar của người còn lại
+        }
+      }
+
+      dispatch(addConversation(newConversation)); // Cập nhật cuộc trò chuyện mới vào Redux
+
+      if (newConversation.members[0].userId === user._id) {
+        dispatch(setSelectedConversation(newConversation));
+      }
+    });
+
     socket.on('messageRevoked', ({ messageId, senderId }) => {
       console.log(`❌ Message ${messageId} was revoked`);
       if (senderId !== user._id) {
@@ -51,6 +73,7 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
     return () => {
       socket.off('receiveMessage', handleReceiveMessage);
+      socket.off('newConversation');
       socket.off('messageRevoked');
       socket.off('messageDeleted');
       socket.disconnect();
