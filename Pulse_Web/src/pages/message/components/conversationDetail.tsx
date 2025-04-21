@@ -23,7 +23,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { fileIcons } from '../../../assets';
-
+import { startCall } from '../../../redux/slice/callSlice';
 interface ConversationDetailProps {
   selectedConversation: Conversation | null; // Thay đổi kiểu dữ liệu ở đây
 }
@@ -39,6 +39,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const dispatch = useDispatch<AppDispatch>();
   const currentUser = useSelector((state: RootState) => state.auth.user);
+  const userDetails = useSelector((state: RootState) => state.user.userDetails);
 
   // const dispatch = useDispatch();
   const messages = useSelector(
@@ -68,9 +69,9 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     const handleClickOutside = () => {
       if (showMenu) setShowMenu(null);
     };
-  
+
     window.addEventListener("click", handleClickOutside);
-  
+
     return () => {
       window.removeEventListener("click", handleClickOutside);
     };
@@ -82,7 +83,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
       const bubbleWidth = 200;
       const { clientX, clientY } = event;
       const adjustedLeft = message.isSentByUser ? clientX - bubbleWidth : clientX;
-      setMenuPosition({ top: clientY, left: adjustedLeft  });
+      setMenuPosition({ top: clientY, left: adjustedLeft });
       setShowMenu(message); // chỉ setShowMenu nếu có messageId
     } else {
       console.warn("Message ID is undefined");
@@ -207,11 +208,69 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
             <Phone
               size={20}
               className="text-white cursor-pointer hover:text-gray-400 transition duration-200"
+              onClick={() => {
+                if (selectedConversation && currentUser) {
+                  const isGroup = selectedConversation.isGroup;
+                  const otherUser = selectedConversation.members.find(m => m.userId !== currentUser._id);
+
+                  const calleeName = isGroup ? selectedConversation.groupName : otherUser?.name || "Unknown";
+                  const calleeAvatar = isGroup ? selectedConversation.avatar : otherUser?.avatar || "";
+                  const toUserId = otherUser?.userId;
+
+                  dispatch(startCall({
+                    isVideo: false,
+                    calleeName,
+                    calleeAvatar,
+                  }));
+
+                  // Gửi socket thông báo cuộc gọi đến
+                  if (!isGroup && toUserId) {
+                    socket.emit("incomingCall", {
+                      toUserId,
+                      fromUserId: currentUser._id,
+                      fromName: userDetails?.firstName + " " + userDetails?.lastName,
+                      fromAvatar: userDetails?.avatar || "",
+                      isVideo: false,
+                    });
+                  }
+                }
+              }}
+
             />
+
             <Video
               size={20}
               className="text-white cursor-pointer hover:text-gray-400 transition duration-200"
+              onClick={() => {
+                if (selectedConversation && currentUser) {
+                  const isGroup = selectedConversation.isGroup;
+                  const otherUser = selectedConversation.members.find(m => m.userId !== currentUser._id);
+
+                  const calleeName = isGroup ? selectedConversation.groupName : otherUser?.name || "Unknown";
+                  const calleeAvatar = isGroup ? selectedConversation.avatar : otherUser?.avatar || "";
+                  const toUserId = otherUser?.userId;
+
+                  dispatch(startCall({
+                    isVideo: true,
+                    calleeName,
+                    calleeAvatar,
+                  }));
+
+                  if (!isGroup && toUserId) {
+                    socket.emit("incomingCall", {
+                      toUserId,
+                      fromUserId: currentUser._id,
+                      fromName: userDetails?.firstName + " " + userDetails?.lastName,
+                      fromAvatar: userDetails?.avatar || "",
+                      isVideo: true, // hoặc false tùy nơi
+                    });
+
+                  }
+                }
+              }}
+
             />
+
             <Search
               size={20}
               className="text-white cursor-pointer hover:text-gray-400 transition duration-200"
