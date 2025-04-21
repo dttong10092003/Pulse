@@ -10,7 +10,7 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import { Provider } from 'react-redux';
 import { store } from './redux/store';
-import './App.css';
+import './global.css';
 
 import PrivateRoute from './pages/PrivateRoute';
 import SocketProvider from './components/SocketProvider';
