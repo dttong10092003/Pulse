@@ -11,6 +11,8 @@ import { Message } from '../../../redux/slice/types';
 const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConversation, selectedConversationId }) => {
   const conversations = useSelector((state: RootState) => state.chat.conversations);
   const currentUser = useSelector((state: RootState) => state.auth.user);
+  const followings = useSelector((state: RootState) => state.follow.followings);
+
   const dispatch = useDispatch<AppDispatch>();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,7 +47,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
     return otherMember ? otherMember.name : '';
   };
 
-  const followedUsers = conversations.filter(c => !c.isGroup);
+  // const followedUsers = conversations.filter(c => !c.isGroup);
 
   const normalizeText = (text: string): string => {
     return text
@@ -61,14 +63,20 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
     return normalizeText(target).includes(normalizeText(searchTerm.trim()));
   }) || [];
 
-  const allUsers: Member[] = Array.from(
-    new Map(
-      conversations
-        .flatMap(c => c.members)
-        .filter(m => m.userId !== currentUserId)
-        .map(m => [m.userId, m])
-    ).values()
-  );
+  // const allUsers: Member[] = Array.from(
+  //   new Map(
+  //     followings
+  //       .map(follow => follow.user)
+  //       .filter(user => user._id !== currentUserId)
+  //       .map(user => [user._id, user])
+  //   ).values()
+  // );
+
+  const allUsers: Member[] = followings.map(follow => ({
+    userId: follow.user._id,
+    name: `${follow.user.firstname} ${follow.user.lastname}`,
+    avatar: follow.user.avatar || '',
+  }));
 
   const handleCreateGroup = async (name: string, members: Member[], avatar?: File | null) => {
     if (!currentUserId) return;
@@ -107,6 +115,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
     console.log('Group created:', name, members);
     setShowCreateGroup(false);
   };
+  
 
   return (
     <>
@@ -125,14 +134,43 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
       </div> */}
 
         {/* Menu ngang: danh sách user đã follow */}
-        <div className="flex space-x-4 overflow-x-auto mb-4 pb-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+        {/* <div className="flex space-x-4 overflow-x-auto mb-4 pb-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
           {followedUsers.map((user) => (
             <div key={user._id} className="flex flex-col items-center min-w-[60px]">
               <img src={user.avatar} alt={user.groupName} className="w-10 h-10 rounded-full cursor-pointer" />
               <p className="text-xs mt-1 truncate text-center">{user.groupName}</p>
             </div>
           ))}
+        </div> */}
+
+<div className="overflow-x-auto scrollbar-hidden mb-4 pb-2 scroll-smooth">
+  <div className="flex space-x-2 px-1 w-max whitespace-nowrap">
+    {followings
+      .filter((user) => {
+        const fullName = `${user.user.firstname} ${user.user.lastname}`;
+        return normalizeText(fullName).includes(normalizeText(searchTerm.trim()));
+      })
+      .map((user) => (
+        <div key={user._id} className="flex flex-col items-center w-[82px] cursor-pointer">
+          <img
+            src={user.user.avatar}
+            alt={user.user._id}
+            className="w-12 h-12 rounded-full object-cover"
+          />
+          <p className="text-xs mt-1 text-center leading-tight truncate">
+            {user.user.firstname} {user.user.lastname}
+          </p>
         </div>
+      ))}
+  </div>
+</div>
+
+
+
+
+
+
+
 
         {/* Thanh tìm kiếm và nút menu */}
         <div className="flex items-center justify-between mb-4 space-x-2">
@@ -176,7 +214,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
 
             const getShortMessagePreview = (msg: Message): string => {
               let contentPreview = '';
-        
+
               switch (msg.type) {
                 case 'image':
                   contentPreview = '[Image]';
@@ -193,7 +231,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
                 default:
                   contentPreview = typeof msg.content === 'string' ? msg.content : '[Message]';
               }
-        
+
               if (msg.isSentByUser) {
                 return `You: ${contentPreview}`;
               } else {
@@ -202,7 +240,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
                   : contentPreview;
               }
             };
-        
+
             if (conversation.messages?.length > 0) {
               const lastMsg = conversation.messages[conversation.messages.length - 1];
               lastMessage = getShortMessagePreview(lastMsg);

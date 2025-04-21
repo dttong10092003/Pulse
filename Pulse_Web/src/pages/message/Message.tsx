@@ -109,7 +109,7 @@ const Message: React.FC = () => {
     return () => {
       socket.off('incomingCall');
     };
-  }, [user]);
+  }, [user, dispatch]);
 
   for (const conversation of conversations) {
     console.log('Conversation aaaaaaa:', conversation); // Kiểm tra từng cuộc trò chuyện

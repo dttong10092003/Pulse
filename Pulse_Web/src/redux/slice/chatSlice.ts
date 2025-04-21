@@ -75,7 +75,7 @@ export const checkUserOnline = createAsyncThunk(
 // 2️⃣ Tạo hoặc lấy cuộc trò chuyện riêng tư
 export const createOrGetPrivateConversation = createAsyncThunk(
   'chat/createOrGetPrivateConversation',
-  async ({ user1, user2, user2Name, user2Avatar }: { user1: string; user2: string; user2Name: string, user2Avatar: string }, { getState, rejectWithValue }) => {
+  async ({ user1, user2 }: { user1: string; user2: string }, { getState, rejectWithValue }) => {
     const token = (getState() as RootState).auth?.token;
     if (!token) {
       return rejectWithValue('No token found');
@@ -84,7 +84,7 @@ export const createOrGetPrivateConversation = createAsyncThunk(
     try {
       const response = await axios.post(
         `${CHAT_SERVICE_URL}/conversations/private`,
-        { user1, user2, user2Name, user2Avatar },
+        { user1, user2 },
         { headers: { Authorization: `${token}` } }
       );
       return response.data;

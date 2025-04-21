@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../redux/store";
 import { getTopUsersExcludingFollowed } from "../redux/slice/userSlice";
+import { getFollowings, getFollowers } from "../redux/slice/followSlice";
 import { motion } from "framer-motion";
 
 interface User {
@@ -27,6 +28,8 @@ const RightSidebar = () => {
   useEffect(() => {
     if (authUser?._id) {
       dispatch(getTopUsersExcludingFollowed (authUser._id)); // ✅ PHẢI truyền _id vào đây
+      dispatch(getFollowings(authUser._id)); // Lấy danh sách người theo dõi
+      dispatch(getFollowers(authUser._id)); // Lấy danh sách người theo dõi
     }
   }, [authUser, dispatch]);
 
