@@ -52,7 +52,10 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
       dispatch(addConversation(newConversation)); // Cập nhật cuộc trò chuyện mới vào Redux
 
-      if (newConversation.members[0].userId === user._id) {
+      const isPrivate = !newConversation.isGroup;
+      const isGroupAdmin = newConversation.adminId === user._id;
+
+      if ((isPrivate && newConversation.members[0].userId === user._id) || isGroupAdmin) {
         dispatch(setSelectedConversation(newConversation));
       }
     });
