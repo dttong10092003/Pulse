@@ -5,7 +5,7 @@ import { RootState, AppDispatch } from '../../../redux/store';
 import { useSelector, useDispatch } from 'react-redux';
 import { Search, MoreVertical, Users } from 'lucide-react';
 import CreateGroupModal from './CreateGroupModal';
-import { createGroupConversation, getAllConversations, setSelectedConversation } from '../../../redux/slice/chatSlice';
+import { setSelectedConversation } from '../../../redux/slice/chatSlice';
 import { getFollowings } from "../../../redux/slice/followSlice";
 import { Message } from '../../../redux/slice/types';
 import socket from '../../../utils/socket';
@@ -91,7 +91,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
   const handleCreateGroup = async (name: string, members: Member[], avatar?: File | null) => {
     if (!currentUserId) return;
 
-    const membersIds = members.map(member => member.userId);
+    // const membersIds = members.map(member => member.userId);
+    const groupMembers = [...members, me];
 
     let avatarBase64 = '';
     if (avatar) {
@@ -106,23 +107,15 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({ onSelectConve
       )}`;
     }
 
-    dispatch(
-      createGroupConversation({
-        groupName: name,
-        members: [...membersIds, currentUserId],
-        adminId: currentUserId,
-        avatar: avatarBase64,
-      }))
-      .unwrap()
-      .then((createdConversation) => {
-        console.log("✅ Nhóm đã tạo:", createdConversation);
-        dispatch(getAllConversations(currentUserId)); // Gọi lại để refresh full dữ liệu
-      })
-      .catch((error) => {
-        console.error("❌ Lỗi khi tạo nhóm:", error);
-      });
+    const conversationData = {
+      groupName: name,
+      members: groupMembers,
+      isGroup: true,
+      adminId: currentUserId,
+      avatar: avatarBase64,
+    };
 
-    console.log('Group created:', name, members);
+    socket.emit("createGroupConversation", conversationData);
     setShowCreateGroup(false);
   };
 

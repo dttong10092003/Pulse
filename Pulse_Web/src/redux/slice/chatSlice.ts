@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { RootState } from '../store';
-import { Conversation, Message } from './types';
+import { Conversation, Message, Member } from './types';
 
 const CHAT_SERVICE_URL = 'http://localhost:3000/chat';
 
@@ -483,6 +483,66 @@ const chatSlice = createSlice({
   name: 'chat',
   initialState,
   reducers: {
+    addMemberToConversation: (
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        newMembers: Member[];
+      }>
+    ) => {
+      const { conversationId, newMembers } = action.payload;
+      const conversation = state.conversations.find((c) => c._id === conversationId);
+    
+      if (conversation) {
+        // Tránh thêm trùng thành viên (nếu có) (bắt ở fe rồi =)))
+        const existingIds = new Set(conversation.members.map((m) => m.userId));
+        const uniqueNewMembers = newMembers.filter((m) => !existingIds.has(m.userId));
+        conversation.members.push(...uniqueNewMembers);
+
+        if (state.selectedConversation && state.selectedConversation._id === conversationId) {
+          state.selectedConversation.members.push(...uniqueNewMembers);
+        }
+      }
+    },
+    removeConversation(state, action: PayloadAction<string>) {
+      state.conversations = state.conversations.filter(
+        (conv) => conv._id !== action.payload
+      );
+      if (state.selectedConversation?._id === action.payload) {
+        state.selectedConversation = null;
+      }
+    },
+    removeMemberFromConversation(
+      state,
+      action: PayloadAction<{ conversationId: string; userId: string }>
+    ) {
+      const conv = state.conversations.find((c) => c._id === action.payload.conversationId);
+      if (conv) {
+        conv.members = conv.members.filter((m) => m.userId !== action.payload.userId);
+      }
+
+      if (
+        state.selectedConversation?.isGroup &&
+        state.selectedConversation._id === action.payload.conversationId
+      ) {
+        state.selectedConversation.members = state.selectedConversation.members.filter(
+          (m) => m.userId !== action.payload.userId
+        );
+      }
+    },
+    updateAdminInConversation(
+      state,
+      action: PayloadAction<{ conversationId: string; newAdminId: string }>
+    ) {
+      const conv = state.conversations.find((c) => c._id === action.payload.conversationId);
+      if (conv) {
+        conv.adminId = action.payload.newAdminId;
+      }
+
+      if (state.selectedConversation?._id === action.payload.conversationId) {
+        state.selectedConversation.adminId = action.payload.newAdminId;
+      }
+    },
     revokeMessageLocal: (state, action: PayloadAction<{ messageId: string }>) => {
       if (state.selectedConversation) {
         state.selectedConversation.messages = state.selectedConversation.messages.map((msg) =>
@@ -492,7 +552,7 @@ const chatSlice = createSlice({
         );
       }
     },
-    
+
     deleteMessageLocal: (state, action: PayloadAction<{ messageId: string }>) => {
       if (state.selectedConversation) {
         state.selectedConversation.messages = state.selectedConversation.messages.filter(
@@ -516,7 +576,7 @@ const chatSlice = createSlice({
     addMessageToState: (state, action: PayloadAction<{ message: Message; currentUserId: string }>) => {
       const { message: newMessage, currentUserId } = action.payload;
       const conversation = state.selectedConversation;
-    
+
       // Cập nhật tin nhắn vào selectedConversation
       if (conversation && conversation._id === newMessage.conversationId) {
         const isExisted = conversation.messages?.some((msg) => msg._id === newMessage._id);
@@ -524,23 +584,23 @@ const chatSlice = createSlice({
           conversation.messages = [...(conversation.messages || []), newMessage];
         }
       }
-    
+
       const conv = state.conversations.find((c) => c._id === newMessage.conversationId);
-    
+
       if (conv) {
         conv.lastMessage = getLastMessageContent(newMessage);
-    
+
         const isExisted = conv.messages?.some((msg) => msg._id === newMessage._id);
         if (!isExisted) {
           conv.messages = [...(conv.messages || []), newMessage];
         }
-    
+
         if (conv._id !== state.selectedConversation?._id && newMessage.senderId !== currentUserId) {
           conv.unreadCount = (conv.unreadCount || 0) + 1;
         }
       }
     },
-    
+
     // Action để cập nhật cuộc trò chuyện đã chọn
     setSelectedConversation: (state, action: PayloadAction<Conversation | null>) => {
       state.selectedConversation = action.payload;
@@ -564,7 +624,7 @@ const chatSlice = createSlice({
     addConversation: (state, action: PayloadAction<Conversation>) => {
       console.log("conversation mới: ", action.payload);
       state.conversations = [action.payload, ...state.conversations]; // Tạo mảng mới với cuộc trò chuyện mới
-   }
+    }
 
   },
   extraReducers: (builder) => {
@@ -650,7 +710,7 @@ const chatSlice = createSlice({
       .addCase(createOrGetPrivateConversation.fulfilled, (state, action: PayloadAction<Conversation>) => {
         state.loading = false;
         state.conversations = state.conversations ? [action.payload, ...state.conversations] : [action.payload];
-        state.selectedConversation = action.payload; 
+        state.selectedConversation = action.payload;
       })
       .addCase(createOrGetPrivateConversation.rejected, (state, action) => {
         state.loading = false;
@@ -912,5 +972,9 @@ const chatSlice = createSlice({
   },
 });
 
-export const { addMessageToState, setSelectedConversation, setUnreadToZero, revokeMessageLocal, deleteMessageLocal, addConversation } = chatSlice.actions;
+export const { addMessageToState, setSelectedConversation, 
+  setUnreadToZero, revokeMessageLocal, removeConversation,
+  deleteMessageLocal, addConversation,
+  removeMemberFromConversation, updateAdminInConversation,
+  addMemberToConversation } = chatSlice.actions;
 export default chatSlice.reducer;

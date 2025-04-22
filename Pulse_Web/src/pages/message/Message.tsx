@@ -126,7 +126,7 @@ const Message: React.FC = () => {
     return () => {
       socketCall.off("callRejected");
     };
-  }, []);
+  }, [dispatch]);
   
   for (const conversation of conversations) {
     console.log('Conversation aaaaaaa:', conversation); // Kiểm tra từng cuộc trò chuyện

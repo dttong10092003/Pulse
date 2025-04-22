@@ -2,8 +2,11 @@ import { useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import socket from '../utils/socket';
 import { RootState, AppDispatch } from '../redux/store';
-import { addMessageToState, getAllConversations, revokeMessageLocal, deleteMessageLocal, addConversation, setSelectedConversation } from '../redux/slice/chatSlice';
+import { addMessageToState, getAllConversations, revokeMessageLocal,
+   deleteMessageLocal, addConversation, setSelectedConversation,
+  removeMemberFromConversation, updateAdminInConversation, removeConversation, addMemberToConversation } from '../redux/slice/chatSlice';
 import { Message, Member } from '../redux/slice/types';
+import { toast } from 'react-toastify';
 
 const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -52,7 +55,10 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
       dispatch(addConversation(newConversation)); // Cập nhật cuộc trò chuyện mới vào Redux
 
-      if (newConversation.members[0].userId === user._id) {
+      const isPrivate = !newConversation.isGroup;
+      const isGroupAdmin = newConversation.adminId === user._id;
+
+      if ((isPrivate && newConversation.members[0].userId === user._id) || isGroupAdmin) {
         dispatch(setSelectedConversation(newConversation));
       }
     });
@@ -71,11 +77,33 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
       }
     });
 
+    // Khi bị xóa khỏi nhóm
+    socket.on('memberRemoved', ({ conversationId, userId }) => {
+      if (userId === user._id) {
+        toast.warning('You have been removed from the group chat!');
+        dispatch(removeConversation(conversationId));
+      } else {
+        dispatch(removeMemberFromConversation({ conversationId, userId }));
+      }
+    });
+
+    // Khi chuyển admin
+    socket.on('adminTransferred', ({ conversationId, newAdminId }) => {
+      dispatch(updateAdminInConversation({ conversationId, newAdminId }));
+    });
+
+    socket.on('memberAdded', ({ conversationId, newMembers }) => {
+      dispatch(addMemberToConversation({ conversationId, newMembers }));
+    });
+
     return () => {
       socket.off('receiveMessage', handleReceiveMessage);
       socket.off('newConversation');
       socket.off('messageRevoked');
       socket.off('messageDeleted');
+      socket.off('memberRemoved');
+      socket.off('adminTransferred');
+      socket.off('memberAdded');
       socket.disconnect();
       hasConnected.current = false;
     };
