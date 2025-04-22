@@ -6,6 +6,7 @@ import { RootState, AppDispatch } from "../../../redux/store";
 import { deleteMessageLocal, revokeMessageLocal } from "../../../redux/slice/chatSlice";
 import { Conversation, Message } from '../../../redux/slice/types';
 import socket from '../../../utils/socket';
+import socketCall from '../../../utils/socketCall';
 import {
   Phone,
   Search,
@@ -24,6 +25,8 @@ import {
 } from "lucide-react";
 import { fileIcons } from '../../../assets';
 import { startCall } from '../../../redux/slice/callSlice';
+import { getUserDetails } from '../../../redux/slice/userSlice';
+
 interface ConversationDetailProps {
   selectedConversation: Conversation | null; // Thay đổi kiểu dữ liệu ở đây
 }
@@ -39,7 +42,23 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const dispatch = useDispatch<AppDispatch>();
   const currentUser = useSelector((state: RootState) => state.auth.user);
-  const userDetails = useSelector((state: RootState) => state.user.userDetails);
+  const userDetails = useSelector((state: RootState) => state.user.userDetails) as {
+    firstname?: string;
+    lastname?: string;
+    avatar?: string;
+  };
+  console.log("User details:", userDetails);
+
+  useEffect(() => {
+    if (currentUser?._id) {
+      dispatch(getUserDetails(currentUser._id));
+    }
+  }, [currentUser?._id, dispatch]);
+
+  console.log("User details (full):", userDetails);
+  console.log("First name:", userDetails?.firstname);
+  console.log("Last name:", userDetails?.lastname);
+
 
   // const dispatch = useDispatch();
   const messages = useSelector(
@@ -209,67 +228,126 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
               size={20}
               className="text-white cursor-pointer hover:text-gray-400 transition duration-200"
               onClick={() => {
-                if (selectedConversation && currentUser) {
-                  const isGroup = selectedConversation.isGroup;
-                  const otherUser = selectedConversation.members.find(m => m.userId !== currentUser._id);
+                if (!selectedConversation || !currentUser) return;
 
-                  const calleeName = isGroup ? selectedConversation.groupName : otherUser?.name || "Unknown";
-                  const calleeAvatar = isGroup ? selectedConversation.avatar : otherUser?.avatar || "";
-                  const toUserId = otherUser?.userId;
+                const isGroup = selectedConversation.isGroup;
+
+                const calleeName = isGroup
+                  ? selectedConversation.groupName
+                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.name || "Unknown";
+
+                const calleeAvatar = isGroup
+                  ? selectedConversation.avatar
+                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.avatar || "";
 
                   dispatch(startCall({
                     isVideo: false,
                     calleeName,
                     calleeAvatar,
+                    toUserId: selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId,
+                    fromUserId: currentUser._id,
+                    fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                    fromAvatar: userDetails?.avatar || '',
+                    isGroup,
+                    groupName: selectedConversation.groupName,
                   }));
+                  
 
-                  // Gửi socket thông báo cuộc gọi đến
-                  if (!isGroup && toUserId) {
-                    socket.emit("incomingCall", {
+                if (isGroup) {
+                  selectedConversation.members.forEach(member => {
+                    if (member.userId !== currentUser._id) {
+                      socketCall.emit("incomingCall", {
+                        toUserId: member.userId,
+                        fromUserId: currentUser._id,
+                        fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                        fromAvatar: userDetails?.avatar || "",
+                        isVideo: false,
+                        isGroup: true,
+                        groupName: selectedConversation.groupName,
+                        groupAvatar: selectedConversation.avatar,
+                      });
+                    }
+                  });
+                } else {
+                  const toUserId = selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId;
+                  if (toUserId) {
+                    socketCall.emit("incomingCall", {
                       toUserId,
                       fromUserId: currentUser._id,
-                      fromName: userDetails?.firstName + " " + userDetails?.lastName,
+                      fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
                       fromAvatar: userDetails?.avatar || "",
                       isVideo: false,
+                      isGroup: false,
                     });
                   }
                 }
               }}
-
             />
 
             <Video
               size={20}
               className="text-white cursor-pointer hover:text-gray-400 transition duration-200"
               onClick={() => {
-                if (selectedConversation && currentUser) {
-                  const isGroup = selectedConversation.isGroup;
-                  const otherUser = selectedConversation.members.find(m => m.userId !== currentUser._id);
+                if (!selectedConversation || !currentUser) return;
 
-                  const calleeName = isGroup ? selectedConversation.groupName : otherUser?.name || "Unknown";
-                  const calleeAvatar = isGroup ? selectedConversation.avatar : otherUser?.avatar || "";
-                  const toUserId = otherUser?.userId;
+                const isGroup = selectedConversation.isGroup;
+
+                const calleeName = isGroup
+                  ? selectedConversation.groupName
+                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.name || "Unknown";
+
+                const calleeAvatar = isGroup
+                  ? selectedConversation.avatar
+                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.avatar || "";
+
+                  const toUserId = selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId;
 
                   dispatch(startCall({
-                    isVideo: true,
+                    isVideo: false,
                     calleeName,
                     calleeAvatar,
+                    toUserId,
+                    fromUserId: currentUser._id,
+                    fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                    fromAvatar: userDetails?.avatar || '',
+                    isGroup,
+                    groupName: selectedConversation.groupName,
                   }));
+                  
 
-                  if (!isGroup && toUserId) {
-                    socket.emit("incomingCall", {
+                if (isGroup) {
+                  selectedConversation.members.forEach(member => {
+                    if (member.userId !== currentUser._id) {
+                      socketCall.emit("incomingCall", {
+                        toUserId: member.userId,
+                        fromUserId: currentUser._id,
+                        fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                        fromAvatar: userDetails?.avatar || "",
+                        isVideo: true,
+                        isGroup: true,
+                        groupName: selectedConversation.groupName,
+                        groupAvatar: selectedConversation.avatar,
+                      });
+                    }
+                  });
+                } else {
+                  const toUserId = selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId;
+                  if (toUserId) {
+                    socketCall.emit("incomingCall", {
                       toUserId,
                       fromUserId: currentUser._id,
-                      fromName: userDetails?.firstName + " " + userDetails?.lastName,
+                      fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
                       fromAvatar: userDetails?.avatar || "",
-                      isVideo: true, // hoặc false tùy nơi
+                      isVideo: true,
+                      isGroup: false,
                     });
-
                   }
                 }
               }}
-
             />
+
+
+
 
             <Search
               size={20}

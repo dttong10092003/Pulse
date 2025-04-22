@@ -1,13 +1,26 @@
 import React, { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../../redux/store';
-import { closeCall, endCall, startCall } from '../../../redux/slice/callSlice';
+import { closeCall, endCall, rejectedCall, startCall } from '../../../redux/slice/callSlice';
+import socketCall from '../../../utils/socketCall';
 
 const CallModal: React.FC = () => {
   const dispatch = useDispatch();
   const call = useSelector((state: RootState) => state.call);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    socketCall.on("callDeclined", ({ fromName }) => {
+      console.log(`${fromName} declined the call`);
+
+      dispatch(rejectedCall());
+      dispatch(endCall());
+    });
+
+    return () => {
+      socketCall.off("callDeclined");
+    };
+  }, []);
 
   useEffect(() => {
     if (call.isCalling) {
@@ -46,23 +59,49 @@ const CallModal: React.FC = () => {
             className="w-24 h-24 rounded-full mx-auto"
           />
           <h2 className="mt-4 text-xl font-bold">{call.calleeName}</h2>
-          <p className="text-gray-500">{call.isCalling ? 'Calling...' : 'The call has ended.'}</p>
+          <p className="text-gray-500">
+            {call.rejectedByCallee
+              ? 'The call was declined.' // ✅ khi bị từ chối
+              : call.isCalling
+                ? 'Calling...'
+                : 'The call has ended.'}
+          </p>
         </div>
 
         <div className="flex justify-center gap-4">
           {!call.isCalling && (
             <button
               className="bg-green-600 px-5 py-2 rounded-full hover:bg-green-700"
-              onClick={() =>
+              onClick={() => {
                 dispatch(startCall({
                   isVideo: call.isVideo,
                   calleeName: call.calleeName,
                   calleeAvatar: call.calleeAvatar,
-                }))
-              }
+                  toUserId: call.toUserId,
+                  fromUserId: call.fromUserId,
+                  fromName: call.fromName,
+                  fromAvatar: call.fromAvatar,
+                  isGroup: call.isGroup,
+                  groupName: call.groupName,
+                }));
+
+                // 🔁 Gửi lại socketCall cho người nhận
+                setTimeout(() => {
+                  socketCall.emit("incomingCall", {
+                    toUserId: call.toUserId,
+                    fromUserId: call.fromUserId,
+                    fromName: call.fromName,
+                    fromAvatar: call.fromAvatar,
+                    isVideo: call.isVideo,
+                    isGroup: call.isGroup || false,
+                    groupName: call.groupName || undefined,
+                  });
+                }, 100);
+              }}
             >
               Call back
             </button>
+
           )}
           <button
             className="bg-red-600 px-5 py-2 rounded-full hover:bg-red-700"

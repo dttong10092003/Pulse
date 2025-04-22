@@ -8,6 +8,8 @@ import { Conversation, Member } from '../../redux/slice/types';
 import IncomingCallModal from './components/incomingCallModal';
 import { showIncomingCall } from '../../redux/slice/incomingCallSlice';
 import socket from '../../utils/socket';
+import socketCall from '../../utils/socketCall';
+import { rejectedCall } from '../../redux/slice/callSlice';
 // const initialConversations = [
 //   {
 //     conversationId: "61a1b2c3d4e5f6789abcde01",  // ID cuộc trò chuyện
@@ -98,19 +100,34 @@ const Message: React.FC = () => {
   const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
   
   useEffect(() => {
-    if (!user?._id) return;
-    socket.on('incomingCall', (data) => {
-      console.log('📞 Received incoming call:', data);
-      if (data.toUserId === user._id) {
-        dispatch(showIncomingCall({ ...data, visible: true }));
-      }
-    });
-
+    if (user?._id) {
+      socketCall.connect(); // <-- QUAN TRỌNG
+      socketCall.emit('join', { userId: user._id });
+  
+      socketCall.on('incomingCall', (data) => {
+        console.log("📞 incomingCall:", data);
+        console.log("👤 this user:", user._id);
+        if (data.toUserId === user._id) {
+          dispatch(showIncomingCall({ ...data, visible: true }));
+        }
+      });
+    }
+  
     return () => {
-      socket.off('incomingCall');
+      socketCall.off('incomingCall');
     };
   }, [user, dispatch]);
-
+  
+  useEffect(() => {
+    socketCall.on("callRejected", () => {
+      dispatch(rejectedCall()); // 👈 Kích hoạt trạng thái từ chối
+    });
+  
+    return () => {
+      socketCall.off("callRejected");
+    };
+  }, []);
+  
   for (const conversation of conversations) {
     console.log('Conversation aaaaaaa:', conversation); // Kiểm tra từng cuộc trò chuyện
   }
