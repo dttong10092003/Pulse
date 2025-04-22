@@ -4,9 +4,12 @@ import { format, formatDistanceToNow } from "date-fns";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../../../redux/store";
 import { deleteMessageLocal, revokeMessageLocal } from "../../../redux/slice/chatSlice";
-import { Conversation, Message } from '../../../redux/slice/types';
+import { Conversation, Member, Message } from '../../../redux/slice/types';
 import socket from '../../../utils/socket';
 import socketCall from '../../../utils/socketCall';
+import GroupMembersModal from './GroupMembersModal';
+import toast from 'react-hot-toast';
+import ForwardMessageModal from './ForwardMessageModal';
 import {
   Phone,
   Search,
@@ -22,10 +25,12 @@ import {
   Trash2,
   LogOut,
   MessageCircle,
+  Users,
 } from "lucide-react";
 import { fileIcons } from '../../../assets';
 import { startCall } from '../../../redux/slice/callSlice';
 import { getUserDetails } from '../../../redux/slice/userSlice';
+import AddMemberModal from "./AddMemberModal";
 
 interface ConversationDetailProps {
   selectedConversation: Conversation | null; // Thay đổi kiểu dữ liệu ở đây
@@ -38,9 +43,14 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   console.log("Selected conversationaaaaaa:", selectedConversation);
   console.log("ahahahha: ", selectedConversation?.messages);
 
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [messageToForward, setMessageToForward] = useState<Message | null>(null);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [showGroupMembersModal, setShowGroupMembersModal] = useState(false);
   const [showMenu, setShowMenu] = useState<Message | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const dispatch = useDispatch<AppDispatch>();
+  const conversations = useSelector((state: RootState) => state.chat.conversations);
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const userDetails = useSelector((state: RootState) => state.user.userDetails) as {
     firstname?: string;
@@ -48,6 +58,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     avatar?: string;
   };
   console.log("User details:", userDetails);
+  const followings = useSelector((state: RootState) => state.follow.followings);
 
   useEffect(() => {
     if (currentUser?._id) {
@@ -133,8 +144,70 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const handleForwardMessage = (message: Message) => {
     console.log("🔁 Forwarding message:", message);
 
-    // TODO: Bạn có thể mở modal chọn người nhận hoặc gán tin nhắn sang khung chat khác
-    // Ví dụ: dispatch(setForwardingMessage(message)); hoặc mở modal forward
+    setMessageToForward(message);
+    setShowForwardModal(true);
+  };
+
+  const handleRemoveMember = (userId: string) => {
+    console.log("Remove member:", userId);
+    if (!selectedConversation) return;
+
+    toast.custom((t) => (
+      <div className="bg-[#2a2a2a] text-white p-4 rounded-lg shadow-md w-72">
+        <p className="mb-2">Are you sure you want to remove this member?</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => {
+              socket.emit('removeMember', {
+                conversationId: selectedConversation._id,
+                userIdToRemove: userId,
+              });
+              toast.dismiss(t.id);
+            }}
+            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    ));
+  };
+
+  const handleTransferAdmin = (newAdminId: string) => {
+    console.log("Transfer admin to:", newAdminId);
+    if (!selectedConversation) return;
+
+    toast.custom((t) => (
+      <div className="bg-[#2a2a2a] text-white p-4 rounded-lg shadow-md w-72">
+        <p className="mb-2">Transfer admin rights to this user?</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => {
+              socket.emit('transferAdmin', {
+                conversationId: selectedConversation._id,
+                newAdminId,
+              });
+              toast.dismiss(t.id);
+            }}
+            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    ));
   };
 
   if (!selectedConversation) {
@@ -200,6 +273,20 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     }
   };
 
+  const allUsers: Member[] = followings.map(follow => ({
+    userId: follow.user._id,
+    name: `${follow.user.firstname} ${follow.user.lastname}`,
+    avatar: follow.user.avatar || '',
+  }));
+
+  const handleAddMembers = (newMembers: Member[]) => {
+    if (!selectedConversation) return;
+    socket.emit('addMembersToGroup', {
+      conversationId: selectedConversation._id,
+      newMembers,
+    });
+  };
+
 
   return (
     <div className={`flex ${showSidebar ? "w-full" : "w-3/4"}`}>
@@ -240,18 +327,18 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                   ? selectedConversation.avatar
                   : selectedConversation.members.find(m => m.userId !== currentUser._id)?.avatar || "";
 
-                  dispatch(startCall({
-                    isVideo: false,
-                    calleeName,
-                    calleeAvatar,
-                    toUserId: selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId,
-                    fromUserId: currentUser._id,
-                    fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
-                    fromAvatar: userDetails?.avatar || '',
-                    isGroup,
-                    groupName: selectedConversation.groupName,
-                  }));
-                  
+                dispatch(startCall({
+                  isVideo: false,
+                  calleeName,
+                  calleeAvatar,
+                  toUserId: selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId,
+                  fromUserId: currentUser._id,
+                  fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                  fromAvatar: userDetails?.avatar || '',
+                  isGroup,
+                  groupName: selectedConversation.groupName,
+                }));
+
 
                 if (isGroup) {
                   selectedConversation.members.forEach(member => {
@@ -300,20 +387,20 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                   ? selectedConversation.avatar
                   : selectedConversation.members.find(m => m.userId !== currentUser._id)?.avatar || "";
 
-                  const toUserId = selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId;
+                const toUserId = selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId;
 
-                  dispatch(startCall({
-                    isVideo: false,
-                    calleeName,
-                    calleeAvatar,
-                    toUserId,
-                    fromUserId: currentUser._id,
-                    fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
-                    fromAvatar: userDetails?.avatar || '',
-                    isGroup,
-                    groupName: selectedConversation.groupName,
-                  }));
-                  
+                dispatch(startCall({
+                  isVideo: false,
+                  calleeName,
+                  calleeAvatar,
+                  toUserId,
+                  fromUserId: currentUser._id,
+                  fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                  fromAvatar: userDetails?.avatar || '',
+                  isGroup,
+                  groupName: selectedConversation.groupName,
+                }));
+
 
                 if (isGroup) {
                   selectedConversation.members.forEach(member => {
@@ -553,16 +640,48 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                 </span>{" "}
               </div>
               <div className="flex flex-col items-center text-gray-300 cursor-pointer hover:text-white">
-                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mb-1">
+                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mb-1"
+                  onClick={() => setShowAddMemberModal(true)}
+                >
                   <UserPlus size={16} />
                 </div>
                 <span className="text-xs text-center">
-                  Create
-                  <br /> <span className="centered-text">chat group</span>
+                  Add
+                  <br /> <span className="centered-text">member</span>
                 </span>
               </div>
             </div>
           </div>
+
+          {/* Nút xem thành viên nhóm */}
+          {selectedConversation.isGroup && (
+            <button
+              onClick={() => setShowGroupMembersModal(true)}
+              className="flex items-center gap-1 hover:text-green-400 cursor-pointer p-4 border-b border-gray-700 text-gray-300"
+            >
+              <Users size={18} /> Members ({selectedConversation.members.length})
+
+            </button>
+          )}
+
+          {selectedConversation.isGroup && showGroupMembersModal && (
+            <GroupMembersModal
+              members={selectedConversation.members}
+              adminId={selectedConversation.adminId || ''}
+              onClose={() => setShowGroupMembersModal(false)}
+              onRemoveMember={handleRemoveMember}
+              onTransferAdmin={handleTransferAdmin}
+            />
+          )}
+
+          {selectedConversation?.isGroup && showAddMemberModal && (
+            <AddMemberModal
+              membersInGroup={selectedConversation.members}
+              allUsers={allUsers}
+              onClose={() => setShowAddMemberModal(false)}
+              onAddMembers={handleAddMembers}
+            />
+          )}
 
           {/* Shared Content Section */}
           <div className="flex-1 overflow-y-auto">
@@ -654,6 +773,37 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
             </div>
           </div>
         </div>
+      )}
+      {showForwardModal && messageToForward && (
+        <ForwardMessageModal
+          message={messageToForward}
+          conversations={conversations.filter(
+            (conv) => conv._id !== selectedConversation?._id // ẩn cuộc trò chuyện hiện tại
+          )}
+          onClose={() => setShowForwardModal(false)}
+          onForward={(message, toConversationIds) => {
+            toConversationIds.forEach((convId) => {
+              socket.emit("sendMessage", {
+                conversationId: convId,
+                senderId: currentUserId,
+                name: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                senderAvatar: userDetails?.avatar || "",
+                content: message.content,
+                type: message.type,
+                timestamp: new Date().toISOString(),
+                isDeleted: false,
+                isSentByUser: true,
+                isPinned: false,
+                fileName: message.fileName || '',
+                fileType: message.fileType || '',
+              });
+            });
+
+            toast.success("Message forwarded successfully");
+            setShowForwardModal(false);
+            setMessageToForward(null);
+          }}
+        />
       )}
     </div>
   );

@@ -12,6 +12,10 @@ import { Provider } from 'react-redux';
 import { store } from './redux/store';
 import './global.css';
 
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { Toaster } from 'react-hot-toast';
+
 import PrivateRoute from './pages/PrivateRoute';
 import SocketProvider from './components/SocketProvider';
 const App = () => {
@@ -32,6 +36,8 @@ const App = () => {
           <ClipLoader size={50} color="#00FF7F" loading={loading} />
         </div>
       )}
+      <ToastContainer position="bottom-right" autoClose={3000} />
+      <Toaster position="top-center" reverseOrder={false} />
 
       <SocketProvider>
         <Routes>
