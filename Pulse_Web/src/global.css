@@ -1,4 +1,12 @@
-/* Overlay cho spinner */
+.scrollbar-hidden {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE 10+ */
+  }
+  
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  /* Overlay cho spinner */
 .loading-overlay {
     position: fixed;
     top: 0;
@@ -11,4 +19,5 @@
     align-items: center;
     z-index: 1000; /* Đảm bảo overlay trên cùng */
   }
+  
   

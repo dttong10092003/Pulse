@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Upload, SendHorizonal, Smile, Trash2 } from 'lucide-react';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
-import { useDispatch, useSelector } from 'react-redux';
-import { addMessageToState } from '../../../redux/slice/chatSlice';
-import { RootState, AppDispatch } from '../../../redux/store';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../redux/store';
 import socket from '../../../utils/socket';
 import { Message } from '../../../redux/slice/types';
 
@@ -13,7 +12,6 @@ const ChatInput: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const userDetail = useSelector((state: RootState) => state.auth.userDetail);
   const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
-  const dispatch = useDispatch<AppDispatch>();
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -48,10 +46,10 @@ const ChatInput: React.FC = () => {
       };
   
       socket.emit('sendMessage', textMessage);
-      dispatch(addMessageToState({
-        message: textMessage,
-        currentUserId: userDetail.userId,
-      }));
+      // dispatch(addMessageToState({
+      //   message: textMessage,
+      //   currentUserId: userDetail.userId,
+      // }));
     }
   
     // Gửi từng file theo thứ tự
@@ -86,10 +84,10 @@ const ChatInput: React.FC = () => {
       };
   
       socket.emit('sendMessage', fileMessage);
-      dispatch(addMessageToState({
-        message: fileMessage,
-        currentUserId: userDetail.userId,
-      }));
+      // dispatch(addMessageToState({
+      //   message: fileMessage,
+      //   currentUserId: userDetail.userId,
+      // }));
     }
   
     // Xoá nội dung sau khi gửi xong
