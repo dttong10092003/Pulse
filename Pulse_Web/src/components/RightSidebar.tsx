@@ -36,6 +36,7 @@ const RightSidebar = () => {
   const handleUserClick = (id: string) => {
     // Điều hướng đến trang UserInfo_Follow và truyền ID của user
     navigate(`/home/user-info/${id}`);
+    
   };
 
   return (

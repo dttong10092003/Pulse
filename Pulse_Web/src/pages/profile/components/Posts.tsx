@@ -36,6 +36,8 @@ interface Post {
   comments?: number;
   media?: string[];
   tags?: string[];
+  username?: string; 
+  avatar?: string;
 }
 
 const Posts = ({ posts, username, avatar }: { posts: Post[]; username: string; avatar: string }) => {

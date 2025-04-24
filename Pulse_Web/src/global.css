@@ -20,4 +20,52 @@
     z-index: 1000; /* Đảm bảo overlay trên cùng */
   }
   
-  
+  /* Scrollbar toàn cục cho dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #1F1F1F;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #4B4B4B;
+  border-radius: 10px;
+  transition: background-color 0.2s ease-in-out;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #6B6B6B;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #4B4B4B #1F1F1F;
+}
+
+/* Class riêng nếu muốn chỉ áp dụng ở một khu vực cụ thể */
+.scrollbar-dark {
+  scrollbar-width: thin;
+  scrollbar-color: #4B4B4B #1F1F1F;
+}
+
+.scrollbar-dark::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-dark::-webkit-scrollbar-track {
+  background-color: #1F1F1F;
+}
+
+.scrollbar-dark::-webkit-scrollbar-thumb {
+  background-color: #4B4B4B;
+  border-radius: 10px;
+}
+
+.scrollbar-dark::-webkit-scrollbar-thumb:hover {
+  background-color: #6B6B6B;
+}
