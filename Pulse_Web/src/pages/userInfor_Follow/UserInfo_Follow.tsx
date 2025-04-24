@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Posts, Featured, Media } from "./components";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../redux/store";
+import '../../global.css'
 
 import {
   followUser,
@@ -36,6 +37,10 @@ const UserInfo_Follow = () => {
       dispatch(getFollowings(id));
     }
   }, [dispatch, id]);
+
+  useEffect(() => {
+    setActiveTab("Posts");
+  }, [id]);
 
   useEffect(() => {
     if (currentUser && id) {
@@ -180,7 +185,7 @@ const UserInfo_Follow = () => {
                 Following
               </button>
             </div>
-            <div className="max-h-[25vh] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900">
+            <div className="max-h-[25vh] overflow-y-auto scrollbar-dark">
               {activeTab === "followers" ? (
                 followers.length === 0 ? (
                   <p className="text-center text-gray-500">Không có followers nào.</p>
@@ -230,7 +235,11 @@ const UserInfo_Follow = () => {
       </div>
 
       <div className="mt-4">
-        {activeTab === "Posts" && <Posts posts={userPosts} username={fullName} avatar={avatar} />}
+        {activeTab === "Posts" && (
+          <div className="max-h-[65vh] overflow-y-auto scrollbar-dark px-2">
+            <Posts posts={userPosts} username={fullName} avatar={avatar} />
+          </div>
+        )}
         {activeTab === "Featured" && <Featured />}
         {activeTab === "Media" && <Media />}
       </div>
