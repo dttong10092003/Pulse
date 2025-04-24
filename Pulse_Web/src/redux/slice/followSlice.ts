@@ -40,16 +40,31 @@ const initialState: FollowState = {
 };
 // Follow user
 // redux/slice/followSlice.ts
-export const followUser = createAsyncThunk<FollowState, FollowPayload, { rejectValue: string }>(
+// export const followUser = createAsyncThunk<FollowState, FollowPayload, { rejectValue: string }>(
+//   'follow/followUser',
+//   async ({ followingId, followerId }, { rejectWithValue }) => {  // Truyền followerId thay vì token
+//     try {
+//       const response = await axios.post(
+//         `${FOLLOW_API}`,  // API endpoint của bạn
+//         { followingId },
+//         { headers: { 'x-user-id': followerId } }  // Gửi trực tiếp followerId trong header
+//       );
+//       return response.data; // Trả về dữ liệu của việc theo dõi
+//     } catch {
+//       return rejectWithValue('Failed to follow user');
+//     }
+//   }
+// );
+export const followUser = createAsyncThunk<string, FollowPayload, { rejectValue: string }>(
   'follow/followUser',
-  async ({ followingId, followerId }, { rejectWithValue }) => {  // Truyền followerId thay vì token
+  async ({ followingId, followerId }, { rejectWithValue }) => {
     try {
       const response = await axios.post(
-        `${FOLLOW_API}`,  // API endpoint của bạn
+        `${FOLLOW_API}`,
         { followingId },
-        { headers: { 'x-user-id': followerId } }  // Gửi trực tiếp followerId trong header
+        { headers: { 'x-user-id': followerId } }
       );
-      return response.data; // Trả về dữ liệu của việc theo dõi
+      return response.data.message; // ✅ kiểu string
     } catch {
       return rejectWithValue('Failed to follow user');
     }
@@ -58,7 +73,35 @@ export const followUser = createAsyncThunk<FollowState, FollowPayload, { rejectV
 
 
 // Unfollow user
-export const unfollowUser = createAsyncThunk<FollowState, FollowPayload, { rejectValue: string }>(
+// export const unfollowUser = createAsyncThunk<FollowState, FollowPayload, { rejectValue: string }>(
+//   'follow/unfollowUser',
+//   async ({ followingId, followerId }, { rejectWithValue, dispatch }) => {
+//     try {
+//       // Gửi yêu cầu unfollow
+//       const response = await axios.post(
+//         `${FOLLOW_API}/unfollow`, // Thay đổi URL nếu cần
+//         { followingId },
+//         {
+//           headers: { 'x-user-id': followerId }, // Gửi followerId trong header
+//         }
+//       );
+
+//       // Làm mới danh sách followers và followings sau khi unfollow
+//       dispatch(getFollowers(followerId)); // Làm mới danh sách followers
+//       dispatch(getFollowings(followerId)); // Làm mới danh sách followings
+
+//       return response.data.message; // Trả về thông báo thành công
+//     } catch (error) {
+//       // Xử lý lỗi và trả về thông báo lỗi thích hợp
+//       return rejectWithValue(
+//         axios.isAxiosError(error) && error.response?.data?.message
+//           ? error.response.data.message // Lấy message từ backend nếu có
+//           : 'Unfollow failed' // Thông báo lỗi mặc định
+//       );
+//     }
+//   }
+// );
+export const unfollowUser = createAsyncThunk<string, FollowPayload, { rejectValue: string }>(
   'follow/unfollowUser',
   async ({ followingId, followerId }, { rejectWithValue, dispatch }) => {
     try {
@@ -140,10 +183,10 @@ const followSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      // .addCase(followUser.fulfilled, (state, action: PayloadAction<string>) => {
-      //   state.loading = false;
-      //   state.successMessage = action.payload;
-      // })
+      .addCase(followUser.fulfilled, (state, action: PayloadAction<string>) => {
+        state.loading = false;
+        state.successMessage = action.payload;
+      })
       .addCase(followUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
@@ -153,10 +196,10 @@ const followSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      // .addCase(unfollowUser.fulfilled, (state, action: PayloadAction<string>) => {
-      //   state.loading = false;
-      //   state.successMessage = action.payload;
-      // })
+      .addCase(unfollowUser.fulfilled, (state, action: PayloadAction<string>) => {
+        state.loading = false;
+        state.successMessage = action.payload;
+      })
       .addCase(unfollowUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
