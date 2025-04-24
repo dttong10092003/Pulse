@@ -26,6 +26,8 @@ import {
   LogOut,
   MessageCircle,
   Users,
+  Pencil,
+  Camera,
 } from "lucide-react";
 import { fileIcons } from '../../../assets';
 import { startCall } from '../../../redux/slice/callSlice';
@@ -43,12 +45,6 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   console.log("Selected conversationaaaaaa:", selectedConversation);
   console.log("ahahahha: ", selectedConversation?.messages);
 
-  const [showForwardModal, setShowForwardModal] = useState(false);
-  const [messageToForward, setMessageToForward] = useState<Message | null>(null);
-  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
-  const [showGroupMembersModal, setShowGroupMembersModal] = useState(false);
-  const [showMenu, setShowMenu] = useState<Message | null>(null);
-  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const dispatch = useDispatch<AppDispatch>();
   const conversations = useSelector((state: RootState) => state.chat.conversations);
   const currentUser = useSelector((state: RootState) => state.auth.user);
@@ -57,8 +53,37 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     lastname?: string;
     avatar?: string;
   };
-  console.log("User details:", userDetails);
   const followings = useSelector((state: RootState) => state.follow.followings);
+  const messages = useSelector(
+    (state: RootState) => state.chat.selectedConversation?.messages
+  );
+
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [messageToForward, setMessageToForward] = useState<Message | null>(null);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [showGroupMembersModal, setShowGroupMembersModal] = useState(false);
+  const [showMenu, setShowMenu] = useState<Message | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [isToggled, setIsToggled] = useState(false);
+
+  const [editingName, setEditingName] = useState(false);
+  const [newGroupName, setNewGroupName] = useState(selectedConversation?.groupName || "owo");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  console.log("User details:", userDetails);
+
+  useEffect(() => {
+    if (editingName && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [editingName]);
+
+  useEffect(() => {
+    if (selectedConversation) {
+      setNewGroupName(selectedConversation.groupName);
+    }
+  }, [selectedConversation]);
 
   useEffect(() => {
     if (currentUser?._id) {
@@ -66,22 +91,6 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     }
   }, [currentUser?._id, dispatch]);
 
-  console.log("User details (full):", userDetails);
-  console.log("First name:", userDetails?.firstname);
-  console.log("Last name:", userDetails?.lastname);
-
-
-  // const dispatch = useDispatch();
-  const messages = useSelector(
-    (state: RootState) => state.chat.selectedConversation?.messages
-  );
-
-  useEffect(() => {
-    console.log("Messages updated:", messages); // Debugging log
-  }, [messages]);
-
-  const [showSidebar, setShowSidebar] = useState(false);
-  const [isToggled, setIsToggled] = useState(false);
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
   };
@@ -106,6 +115,30 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
       window.removeEventListener("click", handleClickOutside);
     };
   }, [showMenu]);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedConversation) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result;
+      socket.emit("updateGroupAvatar", {
+        conversationId: selectedConversation._id,
+        avatar: base64,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleGroupNameSave = () => {
+    if (!selectedConversation || newGroupName.trim() === '') return;
+    socket.emit("updateGroupName", {
+      conversationId: selectedConversation._id,
+      groupName: newGroupName.trim(),
+    });
+    setEditingName(false);
+  };
 
   const handleMessageRightClick = (event: React.MouseEvent, message: Message | undefined) => {
     event.preventDefault();
@@ -604,7 +637,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
           {/* Conversation Info */}
           <div className="p-4 border-b border-gray-700">
-            <div className="flex flex-col items-center mb-4">
+            {/* <div className="flex flex-col items-center mb-4">
               <img
                 src={selectedConversation.avatar}
                 alt={selectedConversation.groupName}
@@ -613,6 +646,52 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
               <h2 className="text-white font-bold text-lg">
                 {selectedConversation.groupName}
               </h2>
+              {selectedConversation.isGroup && (
+                <p className="text-gray-400 text-sm">
+                  Group · {selectedConversation.messages?.length} message
+                </p>
+              )}
+            </div> */}
+
+            <div className="flex flex-col items-center mb-4 relative">
+              <div className="relative group">
+                <img
+                  src={selectedConversation.avatar}
+                  alt={selectedConversation.groupName}
+                  className="w-20 h-20 rounded-full mb-2 object-cover"
+                />
+                {selectedConversation.isGroup && (
+                  <label className="absolute bottom-0 right-0 bg-black bg-opacity-60 rounded-full p-1 cursor-pointer group-hover:visible invisible">
+                    <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+                    <Camera className="w-5 h-5 text-white" />
+                  </label>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {editingName ? (
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleGroupNameSave();
+                    }}
+                    onBlur={() => setEditingName(false)}
+                    className="bg-transparent border-b border-white text-white text-center outline-none"
+                  />
+                ) : (
+                  <h2 className="text-white font-bold text-lg">{selectedConversation.groupName}</h2>
+                )}
+
+                {selectedConversation.isGroup && !editingName && (
+                  <button onClick={() => setEditingName(true)}>
+                    <Pencil className="w-4 h-4 text-white hover:text-green-400 cursor-pointer" />
+                  </button>
+                )}
+              </div>
+
               {selectedConversation.isGroup && (
                 <p className="text-gray-400 text-sm">
                   Group · {selectedConversation.messages?.length} message
@@ -639,17 +718,19 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                   <br /> <span className="centered-text">message</span>
                 </span>{" "}
               </div>
-              <div className="flex flex-col items-center text-gray-300 cursor-pointer hover:text-white">
-                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mb-1"
-                  onClick={() => setShowAddMemberModal(true)}
-                >
-                  <UserPlus size={16} />
+              {selectedConversation.isGroup && (
+                <div className="flex flex-col items-center text-gray-300 cursor-pointer hover:text-white">
+                  <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mb-1"
+                    onClick={() => setShowAddMemberModal(true)}
+                  >
+                    <UserPlus size={16} />
+                  </div>
+                  <span className="text-xs text-center">
+                    Add
+                    <br /> <span className="centered-text">member</span>
+                  </span>
                 </div>
-                <span className="text-xs text-center">
-                  Add
-                  <br /> <span className="centered-text">member</span>
-                </span>
-              </div>
+              )}
             </div>
           </div>
 

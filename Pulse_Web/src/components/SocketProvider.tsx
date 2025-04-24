@@ -2,9 +2,12 @@ import { useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import socket from '../utils/socket';
 import { RootState, AppDispatch } from '../redux/store';
-import { addMessageToState, getAllConversations, revokeMessageLocal,
-   deleteMessageLocal, addConversation, setSelectedConversation,
-  removeMemberFromConversation, updateAdminInConversation, removeConversation, addMemberToConversation } from '../redux/slice/chatSlice';
+import {
+  addMessageToState, getAllConversations, revokeMessageLocal,
+  deleteMessageLocal, addConversation, setSelectedConversation,
+  removeMemberFromConversation, updateAdminInConversation, removeConversation, addMemberToConversation,
+  updateGroupAvatar, updateGroupName
+} from '../redux/slice/chatSlice';
 import { Message, Member } from '../redux/slice/types';
 import { toast } from 'react-toastify';
 
@@ -96,6 +99,14 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
       dispatch(addMemberToConversation({ conversationId, newMembers }));
     });
 
+    socket.on('groupAvatarUpdated', ({ conversationId, avatar }) => {
+      dispatch(updateGroupAvatar({ conversationId, avatar }));
+    });
+
+    socket.on('groupNameUpdated', ({ conversationId, groupName }) => {
+      dispatch(updateGroupName({ conversationId, groupName }));
+    });
+
     return () => {
       socket.off('receiveMessage', handleReceiveMessage);
       socket.off('newConversation');
@@ -104,6 +115,8 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
       socket.off('memberRemoved');
       socket.off('adminTransferred');
       socket.off('memberAdded');
+      socket.off('groupAvatarUpdated');
+      socket.off('groupNameUpdated');
       socket.disconnect();
       hasConnected.current = false;
     };

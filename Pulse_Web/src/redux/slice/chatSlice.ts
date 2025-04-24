@@ -483,6 +483,40 @@ const chatSlice = createSlice({
   name: 'chat',
   initialState,
   reducers: {
+    updateGroupAvatar: (
+      state,
+      action: PayloadAction<{ conversationId: string; avatar: string }>
+    ) => {
+      const { conversationId, avatar } = action.payload;
+
+      // Cập nhật trong conversations list
+      const conv = state.conversations.find((c) => c._id === conversationId);
+      if (conv) {
+        conv.avatar = avatar;
+      }
+
+      // Cập nhật trong selectedConversation nếu đang xem
+      if (state.selectedConversation?._id === conversationId) {
+        state.selectedConversation.avatar = avatar;
+      }
+    },
+    updateGroupName: (
+      state,
+      action: PayloadAction<{ conversationId: string; groupName: string }>
+    ) => {
+      const { conversationId, groupName } = action.payload;
+
+      // Cập nhật trong conversations list
+      const conv = state.conversations.find((c) => c._id === conversationId);
+      if (conv) {
+        conv.groupName = groupName;
+      }
+
+      // Cập nhật trong selectedConversation nếu đang xem
+      if (state.selectedConversation?._id === conversationId) {
+        state.selectedConversation.groupName = groupName;
+      }
+    },
     addMemberToConversation: (
       state,
       action: PayloadAction<{
@@ -492,7 +526,7 @@ const chatSlice = createSlice({
     ) => {
       const { conversationId, newMembers } = action.payload;
       const conversation = state.conversations.find((c) => c._id === conversationId);
-    
+
       if (conversation) {
         // Tránh thêm trùng thành viên (nếu có) (bắt ở fe rồi =)))
         const existingIds = new Set(conversation.members.map((m) => m.userId));
@@ -560,19 +594,6 @@ const chatSlice = createSlice({
         );
       }
     },
-    // addMessageToState: (state, action: PayloadAction<Message>) => {
-    //   if (state.selectedConversation) {
-    //     const conversation = state.selectedConversation;
-    //     // Tìm cuộc trò chuyện và cập nhật tin nhắn
-    //     if (conversation._id === action.payload.conversationId) {
-    //       if (!conversation.messages) {
-    //         conversation.messages = [];  // Khởi tạo mảng messages nếu chưa có
-    //       }
-    //       conversation.messages.push(action.payload); // Thêm tin nhắn vào state
-    //       conversation.lastMessage = action.payload.content; // Cập nhật lastMessage
-    //     }
-    //   }
-    // },
     addMessageToState: (state, action: PayloadAction<{ message: Message; currentUserId: string }>) => {
       const { message: newMessage, currentUserId } = action.payload;
       const conversation = state.selectedConversation;
@@ -972,9 +993,9 @@ const chatSlice = createSlice({
   },
 });
 
-export const { addMessageToState, setSelectedConversation, 
+export const { addMessageToState, setSelectedConversation,
   setUnreadToZero, revokeMessageLocal, removeConversation,
   deleteMessageLocal, addConversation,
   removeMemberFromConversation, updateAdminInConversation,
-  addMemberToConversation } = chatSlice.actions;
+  addMemberToConversation, updateGroupAvatar, updateGroupName } = chatSlice.actions;
 export default chatSlice.reducer;
