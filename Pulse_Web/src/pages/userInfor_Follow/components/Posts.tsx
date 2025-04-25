@@ -6,7 +6,7 @@ import ImageModal from "./ImageModal";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../../redux/store";
 import { deletePost, fetchUserPosts } from "../../../redux/slice/postProfileSlice";
-import { likePost, unlikePost, fetchUserLikedPosts, fetchLikeCounts } from "../../../redux/slice/likeSlice";
+import { likePost, unlikePost, fetchLikeCounts } from "../../../redux/slice/likeSlice";
 
 dayjs.extend(relativeTime);
 
