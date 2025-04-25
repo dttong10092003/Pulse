@@ -161,15 +161,19 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const currentUserId = currentUser._id;
 
   const handleDeleteMessage = (messageId: string) => {
-    socket.emit('deleteMessage', { messageId, senderId: currentUserId, conversationId: selectedConversation?._id });
-    dispatch(deleteMessageLocal({ messageId }));
+    if (!selectedConversation?._id) return;
+    const conversationId = selectedConversation?._id;
+    socket.emit('deleteMessage', { messageId, senderId: currentUserId, conversationId });
+    dispatch(deleteMessageLocal({ messageId, conversationId }));
 
     setShowMenu(null); // Close menu after action
   };
 
   const handleRevokeMessage = (messageId: string) => {
-    socket.emit('revokeMessage', { messageId, senderId: currentUserId, conversationId: selectedConversation?._id });
-    dispatch(revokeMessageLocal({ messageId }));
+    if (!selectedConversation?._id) return;
+    const conversationId = selectedConversation?._id;
+    socket.emit('revokeMessage', { messageId, senderId: currentUserId, conversationId });
+    dispatch(revokeMessageLocal({ messageId, conversationId }));
 
     setShowMenu(null); // Close menu after action
   };
