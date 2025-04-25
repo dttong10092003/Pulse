@@ -8,6 +8,7 @@ import callReducer from './slice/callSlice';
 import incomingCallReducer from './slice/incomingCallSlice';
 import likesReducer from './slice/likeSlice';
 import notificationReducer from './slice/notificationSlice';
+import commentsReducer from './slice/commentSilce';
 export const store = configureStore({
   reducer: {
     auth: authReducer, 
@@ -18,9 +19,11 @@ export const store = configureStore({
     call: callReducer,
     incomingCall: incomingCallReducer,
     likes: likesReducer,
+    comments: commentsReducer,
     notification: notificationReducer,
   },
 });
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+
