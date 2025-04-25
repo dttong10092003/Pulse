@@ -8,6 +8,10 @@ import {
   ChevronRight,
   ChevronLeft,
 } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, AppDispatch } from "../../../redux/store";
+import { createComment, getCommentsByPost, resetComments, getCommentCountsByPosts } from "../../../redux/slice/commentSilce";
+import commentSocket from "../../../utils/socketComment"; // ✅ Correct socket instance
 
 interface Props {
   isOpen: boolean;
@@ -18,6 +22,7 @@ interface Props {
   avatar: string;
   content: string;
   fullView?: boolean;
+  postId: string;
 }
 
 const ImageModal = ({
@@ -28,31 +33,71 @@ const ImageModal = ({
   username,
   avatar,
   content,
-  fullView = false,
+  postId,
 }: Props) => {
   const [index, setIndex] = useState(startIndex);
+  const [commentText, setCommentText] = useState("");
+  const dispatch = useDispatch<AppDispatch>();
+  const { comments } = useSelector((state: RootState) => state.comments);
+  const authUser = useSelector((state: RootState) => state.auth.userDetail);
 
   useEffect(() => {
-    setIndex(startIndex); // reset index when modal reopens
+    setIndex(startIndex);
   }, [startIndex]);
 
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", handleEsc);
-    return () => document.removeEventListener("keydown", handleEsc);
-  }, [onClose]);
+    setIndex(startIndex);
+    if (isOpen) {
+      dispatch(resetComments()); // 🧹 reset comment cũ khi mở modal mới
+      if (postId) dispatch(getCommentsByPost(postId));
+    }
+  }, [isOpen, startIndex, dispatch, postId]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!commentSocket.connected) commentSocket.connect();
 
-  const currentMedia = mediaList[index];
-  const isVideo = currentMedia.match(/\.(mp4|webm|ogg)$/i);
+    if (postId) {
+      const eventName = `receive-comment-${postId}`;
+      const handler = (data: any) => {
+        console.log("📥 Received socket event:", eventName, data); // ✅ THÊM LOG
+        dispatch(getCommentsByPost(postId));
+      };
+
+      commentSocket.on(eventName, handler);
+      return () => {
+        commentSocket.off(eventName, handler);
+      };
+    }
+  }, [dispatch, postId]);
+
+
+  const handleSubmitComment = async () => {
+    console.log("🟡 handleSubmitComment running...");
+    if (postId && commentText.trim()) {
+      try {
+        const newComment = await dispatch(createComment({ postId, text: commentText })).unwrap();
+        commentSocket.emit("send-comment", newComment);
+        dispatch(getCommentCountsByPosts([postId]));
+        setCommentText("");
+      } catch (err) {
+        console.error("❌ Failed to create comment:", err);
+      }
+    } else {
+      console.warn("⚠️ Missing postId or empty comment");
+    }
+  };
+
+
+  const currentMedia = mediaList[index] || "";
+  const isVideo = /\.(mp4|webm|ogg)$/i.test(currentMedia);
 
   const goNext = () => setIndex((prev) => (prev + 1) % mediaList.length);
   const goPrev = () => setIndex((prev) => (prev - 1 + mediaList.length) % mediaList.length);
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 bg-black flex">
-      {/* Left: Image/Video */}
       <div className="flex-1 relative flex items-center justify-center bg-black">
         {mediaList.length > 1 && (
           <>
@@ -72,22 +117,12 @@ const ImageModal = ({
         )}
 
         {isVideo ? (
-          <video
-            src={currentMedia}
-            autoPlay
-            controls
-            className={fullView ? "w-full h-full object-contain" : "max-h-screen max-w-full object-contain rounded-xl"}
-          />
+          <video src={currentMedia} autoPlay controls className="max-h-screen max-w-full object-contain rounded-xl" />
         ) : (
-          <img
-            src={currentMedia}
-            alt="preview"
-            className={fullView ? "w-full h-full object-contain" : "max-h-screen max-w-full object-contain rounded-xl"}
-          />
+          <img src={currentMedia} alt="preview" className="max-h-screen max-w-full object-contain rounded-xl" />
         )}
       </div>
 
-      {/* Right: info */}
       <div className="w-[420px] bg-zinc-900 text-white flex flex-col border-l border-zinc-800">
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
           <div className="flex items-center gap-3">
@@ -104,13 +139,12 @@ const ImageModal = ({
 
         <div className="p-4 border-b border-zinc-800 text-sm">
           <p className="text-zinc-200 whitespace-pre-line mb-3">{content}</p>
-
           <div className="flex items-center gap-6 text-zinc-400">
             <div className="flex items-center gap-1 cursor-pointer">
               <Heart size={18} /> <span className="text-sm">0</span>
             </div>
             <div className="flex items-center gap-1 cursor-pointer">
-              <MessageCircle size={18} /> <span className="text-sm">0</span>
+              <MessageCircle size={18} /> <span className="text-sm">{comments.length}</span>
             </div>
             <div className="cursor-pointer">
               <Bookmark size={18} />
@@ -119,25 +153,28 @@ const ImageModal = ({
         </div>
 
         <div className="px-4 py-3 flex-1 overflow-y-auto space-y-4">
-          <div className="flex items-start gap-3">
-            <img
-              src="https://i.postimg.cc/7Y7ypVD2/avatar-mac-dinh.jpg"
-              className="w-9 h-9 rounded-full object-cover"
-              alt="avatar"
-            />
-            <div className="bg-zinc-800 px-3 py-2 rounded-xl max-w-[300px]">
-              <p className="text-sm font-semibold leading-none mb-1">Truong Giang</p>
-              <p className="text-sm text-zinc-300">
-                Anh có chơi S3 không thì chúng mình PT chặn cổng Lorencia :)))
-              </p>
+          {comments.map((comment) => (
+            <div key={comment._id} className="flex items-start gap-3">
+              <img
+                src={comment.user?.avatar || "https://i.postimg.cc/7Y7ypVD2/avatar-mac-dinh.jpg"}
+                className="w-9 h-9 rounded-full object-cover"
+                alt="avatar"
+              />
+              <div className="bg-zinc-800 px-3 py-2 rounded-xl max-w-[300px]">
+                <p className="text-sm font-semibold leading-none mb-1">
+                  {comment.user?.firstname} {comment.user?.lastname}
+                </p>
+                <p className="text-sm text-zinc-300">{comment.text}</p>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
+
 
         <div className="px-4 py-3 border-t border-zinc-800">
           <div className="flex items-center gap-2">
             <img
-              src="https://i.postimg.cc/7Y7ypVD2/avatar-mac-dinh.jpg"
+              src={authUser?.avatar || "https://i.postimg.cc/7Y7ypVD2/avatar-mac-dinh.jpg"}
               className="w-9 h-9 rounded-full object-cover"
               alt="avatar"
             />
@@ -145,7 +182,26 @@ const ImageModal = ({
               type="text"
               placeholder="Viết bình luận..."
               className="flex-1 px-4 py-2 bg-zinc-800 text-white rounded-full outline-none text-sm"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
             />
+            <button
+              onClick={handleSubmitComment}
+              className="bg-green-500 hover:bg-green-600 w-10 h-10 flex items-center justify-center rounded-md"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </button>
+
           </div>
         </div>
       </div>

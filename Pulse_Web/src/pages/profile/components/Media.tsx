@@ -13,13 +13,15 @@ const Media = () => {
     const [modalPostContent, setModalPostContent] = useState("");
     const [modalUsername, setModalUsername] = useState("");
     const [modalAvatar, setModalAvatar] = useState("");
+    const [modalPostId, setModalPostId] = useState("");
 
-    const handleOpenModal = (mediaList: string[], index: number, content: string) => {
+    const handleOpenModal = (mediaList: string[], index: number, content:string ,postId: string) => {
         setModalMediaList(mediaList);
         setModalStartIndex(index);
         setModalPostContent(content);
         setModalUsername(`${userDetail?.firstname} ${userDetail?.lastname}`);
         setModalAvatar(userDetail?.avatar || "");
+        setModalPostId(postId);
         setModalOpen(true);
     };
 
@@ -29,7 +31,8 @@ const Media = () => {
             src,
             mediaList: post.media,
             content: post.content,
-            index: idx
+            index: idx,
+            postId: post._id,
         }))
     );
 
@@ -46,7 +49,7 @@ const Media = () => {
                             key={`${item.src}-${i}`}
                             className="relative w-full rounded-lg overflow-hidden aspect-[16/9] bg-black cursor-pointer"
                             onClick={() =>
-                                handleOpenModal(item.mediaList || [], item.index, item.content)
+                                handleOpenModal(item.mediaList || [], item.index, item.content,item.postId)
                             }
                         >
                             {item.src.includes("video") || item.src.includes(".mp4") ? (
@@ -78,6 +81,7 @@ const Media = () => {
                 content={modalPostContent}
                 username={modalUsername}
                 avatar={modalAvatar}
+                postId={modalPostId}
             />
         </div>
     );

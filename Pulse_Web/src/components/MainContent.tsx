@@ -6,6 +6,9 @@ import { fetchAllPosts, createPost } from "../redux/slice/postProfileSlice";
 import SearchBar from "../pages/explore/components/SearchBar";
 import Posts from "../pages/profile/components/Posts";
 import { fetchLikeCounts, fetchUserLikedPosts } from "../redux/slice/likeSlice";
+import { getCommentCountsByPosts } from "../redux/slice/commentSilce"
+import commentSocket from "../utils/socketComment";
+
 const MainContent = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { posts, loading, error } = useSelector((state: RootState) => state.postProfile);
@@ -17,14 +20,30 @@ const MainContent = () => {
     const [isPosting, setIsPosting] = useState(false);
     const inputRef = useRef<HTMLDivElement>(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const commentCounts = useSelector((state: RootState) => state.comments.commentCounts);
+
     useEffect(() => {
-        dispatch(fetchAllPosts()).then((res) => {
-            if (res.payload && Array.isArray(res.payload)) {
-                const ids = res.payload.map((post: any) => post._id);
-                dispatch(fetchLikeCounts(ids));        // 🟢 lấy số lượng like
-                dispatch(fetchUserLikedPosts());       // 🟢 lấy các bài đã like
-            }
+        dispatch(fetchAllPosts());
+    }, [dispatch]);
+
+    // Khi posts đã có, gọi lấy like
+    useEffect(() => {
+        if (posts.length > 0) {
+            const ids = posts.map((post) => post._id);
+            dispatch(fetchLikeCounts(ids));
+            dispatch(fetchUserLikedPosts());
+            dispatch(getCommentCountsByPosts(ids));
+        }
+    }, [dispatch, posts]);
+
+    useEffect(() => {
+        commentSocket.on("newComment", ({ postId }) => {
+            dispatch(getCommentCountsByPosts([postId]));
         });
+
+        return () => {
+            commentSocket.off("newComment"); // Cleanup khi component bị unmount
+        };
     }, [dispatch]);
 
     useEffect(() => {
@@ -195,6 +214,7 @@ const MainContent = () => {
                             posts={[post]}
                             username={post.username || "Ẩn danh"}
                             avatar={post.avatar || "https://picsum.photos/200"}
+                            commentCounts={commentCounts}
                         />
                     ))
                 )}

@@ -28,6 +28,7 @@ const UserInfo_Follow = () => {
   const [activeTab, setActiveTab] = useState("Posts");
   const [isFollowing, setIsFollowing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTab, setModalTab] = useState<"followers" | "following">("followers");
 
   useEffect(() => {
     if (id) {
@@ -115,7 +116,7 @@ const UserInfo_Follow = () => {
   const background = userDetail.backgroundAvatar || "https://picsum.photos/200";
 
   const handleFollowersClick = () => {
-    setActiveTab("followers");
+    setModalTab("followers");
     setIsModalOpen(true);
   };
 
@@ -173,20 +174,23 @@ const UserInfo_Follow = () => {
             </div>
             <div className="flex justify-between items-center mb-4">
               <button
-                onClick={() => setActiveTab("followers")}
-                className={`font-semibold flex-1 py-2 text-center text-sm cursor-pointer ${activeTab === "followers" ? "text-white border-b-2 border-white" : "text-gray-400"}`}
+                onClick={() => setModalTab("followers")}
+                className={`font-semibold flex-1 py-2 text-center text-sm cursor-pointer ${modalTab === "followers" ? "text-white border-b-2 border-white" : "text-gray-400"
+                  }`}
               >
                 Followers
               </button>
               <button
-                onClick={() => setActiveTab("following")}
-                className={`font-semibold flex-1 py-2 text-center text-sm cursor-pointer ${activeTab === "following" ? "text-white border-b-2 border-white" : "text-gray-400"}`}
+                onClick={() => setModalTab("following")}
+                className={`font-semibold flex-1 py-2 text-center text-sm cursor-pointer ${modalTab === "following" ? "text-white border-b-2 border-white" : "text-gray-400"
+                  }`}
               >
                 Following
               </button>
+
             </div>
             <div className="max-h-[25vh] overflow-y-auto scrollbar-dark">
-              {activeTab === "followers" ? (
+              {modalTab === "followers" ? (
                 followers.length === 0 ? (
                   <p className="text-center text-gray-500">Không có followers nào.</p>
                 ) : (
@@ -202,20 +206,22 @@ const UserInfo_Follow = () => {
                     ))}
                   </ul>
                 )
-              ) : followings.length === 0 ? (
-                <p className="text-center text-gray-500">Không có following nào.</p>
               ) : (
-                <ul>
-                  {followings.map((following, index) => (
-                    <li key={index} onClick={() => handleUserClickInModal(following.user._id)} className="flex justify-between items-center py-2 cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <img src={following.user.avatar || "https://i.pravatar.cc/150"} className="w-8 h-8 rounded-full object-cover" />
-                        <span>{`${following.user.firstname} ${following.user.lastname}`}</span>
-                      </div>
-                      <button className="text-blue-500">Friend</button>
-                    </li>
-                  ))}
-                </ul>
+                followings.length === 0 ? (
+                  <p className="text-center text-gray-500">Không có following nào.</p>
+                ) : (
+                  <ul>
+                    {followings.map((following, index) => (
+                      <li key={index} onClick={() => handleUserClickInModal(following.user._id)} className="flex justify-between items-center py-2 cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <img src={following.user.avatar || "https://i.pravatar.cc/150"} className="w-8 h-8 rounded-full object-cover" />
+                          <span>{`${following.user.firstname} ${following.user.lastname}`}</span>
+                        </div>
+                        <button className="text-blue-500">Friend</button>
+                      </li>
+                    ))}
+                  </ul>
+                )
               )}
             </div>
           </div>
