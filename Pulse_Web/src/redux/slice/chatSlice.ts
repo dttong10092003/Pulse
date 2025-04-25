@@ -577,21 +577,39 @@ const chatSlice = createSlice({
         state.selectedConversation.adminId = action.payload.newAdminId;
       }
     },
-    revokeMessageLocal: (state, action: PayloadAction<{ messageId: string }>) => {
-      if (state.selectedConversation) {
+    revokeMessageLocal: (state, action: PayloadAction<{ messageId: string; conversationId: string }>) => {
+      const { messageId, conversationId } = action.payload;
+
+      if (state.selectedConversation?._id === conversationId) {
         state.selectedConversation.messages = state.selectedConversation.messages.map((msg) =>
           msg._id === action.payload.messageId
             ? { ...msg, content: 'Message revoked', isDeleted: true, type: 'text', isPinned: false }
             : msg
         );
       }
+
+      const conv = state.conversations.find((c) => c._id === conversationId);
+      if (conv && conv.messages) {
+        conv.messages = conv.messages.map((msg) =>
+          msg._id === messageId
+            ? { ...msg, content: 'Message revoked', isDeleted: true, type: 'text', isPinned: false }
+            : msg
+        );
+      }
     },
 
-    deleteMessageLocal: (state, action: PayloadAction<{ messageId: string }>) => {
-      if (state.selectedConversation) {
+    deleteMessageLocal: (state, action: PayloadAction<{ messageId: string; conversationId: string }>) => {
+      const { messageId, conversationId } = action.payload;
+
+      if (state.selectedConversation?._id === conversationId) {
         state.selectedConversation.messages = state.selectedConversation.messages.filter(
-          (msg) => msg._id !== action.payload.messageId
+          (msg) => msg._id !== messageId
         );
+      }
+
+      const conv = state.conversations.find((c) => c._id === conversationId);
+      if (conv && conv.messages) {
+        conv.messages = conv.messages.filter((msg) => msg._id !== messageId);
       }
     },
     addMessageToState: (state, action: PayloadAction<{ message: Message; currentUserId: string }>) => {
