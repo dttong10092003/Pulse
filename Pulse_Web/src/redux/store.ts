@@ -6,6 +6,8 @@ import postProfileReducer from './slice/postProfileSlice';
 import followReducer from './slice/followSlice';
 import callReducer from './slice/callSlice';
 import incomingCallReducer from './slice/incomingCallSlice';
+import likesReducer from './slice/likeSlice';
+
 export const store = configureStore({
   reducer: {
     auth: authReducer, 
@@ -15,6 +17,7 @@ export const store = configureStore({
     follow: followReducer,
     call: callReducer,
     incomingCall: incomingCallReducer,
+    likes: likesReducer,
   },
 });
 

@@ -5,6 +5,9 @@ import { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../redux/store';
 import { fetchUserPosts, createPost } from "../../redux/slice/postProfileSlice";
+import { fetchUserLikedPosts } from "../../redux/slice/likeSlice";
+import { getFollowers, getFollowings } from "../../redux/slice/followSlice";
+
 const MyProfile = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch<AppDispatch>();
@@ -18,6 +21,25 @@ const MyProfile = () => {
     const [mediaFiles, setMediaFiles] = useState<File[]>([]);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [isPosting, setIsPosting] = useState(false);
+    const followers = useSelector((state: RootState) => state.follow.followers);
+    const followings = useSelector((state: RootState) => state.follow.followings);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [activeFollowTab, setActiveFollowTab] = useState<"followers" | "following">("followers");
+
+    useEffect(() => {
+        if (userId) {
+            dispatch(getFollowers(userId));
+            dispatch(getFollowings(userId));
+        }
+    }, [dispatch, userId]);
+
+
+
+    useEffect(() => {
+        if (userId) {
+            dispatch(fetchUserLikedPosts());
+        }
+    }, [dispatch, userId]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -94,10 +116,71 @@ const MyProfile = () => {
         }
     };
 
-
-
-
     return (
+
+        <>
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50" onClick={() => setIsModalOpen(false)}>
+            <div className="bg-black p-6 rounded-lg max-w-sm w-full relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-white cursor-pointer">
+                <X size={24} />
+              </button>
+              <div className="mb-4 mt-8">
+                <h2 className="text-xl font-semibold text-center text-white">Followers & Following</h2>
+              </div>
+              <div className="flex justify-between items-center mb-4">
+                <button
+                  onClick={() => setActiveFollowTab("followers")}
+                  className={`font-semibold flex-1 py-2 text-center text-sm cursor-pointer ${activeFollowTab === "followers" ? "text-white border-b-2 border-white" : "text-gray-400"}`}
+                >
+                  Followers
+                </button>
+                <button
+                  onClick={() => setActiveFollowTab("following")}
+                  className={`font-semibold flex-1 py-2 text-center text-sm cursor-pointer ${activeFollowTab === "following" ? "text-white border-b-2 border-white" : "text-gray-400"}`}
+                >
+                  Following
+                </button>
+              </div>
+    
+              <div className="max-h-[25vh] overflow-y-auto scrollbar-dark">
+                {activeFollowTab === "followers" ? (
+                  followers.length === 0 ? (
+                    <p className="text-center text-gray-500">No followers yet.</p>
+                  ) : (
+                    <ul>
+                      {followers.map((f, idx) => (
+                        <li key={idx} className="flex justify-between items-center py-2">
+                          <div className="flex items-center gap-3">
+                            <img src={f.user.avatar || "https://i.pravatar.cc/150"} className="w-8 h-8 rounded-full object-cover" />
+                            <span>{f.user.firstname} {f.user.lastname}</span>
+                          </div>
+                          <span className="text-blue-500">Friend</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )
+                ) : followings.length === 0 ? (
+                  <p className="text-center text-gray-500">No followings yet.</p>
+                ) : (
+                  <ul>
+                    {followings.map((f, idx) => (
+                      <li key={idx} className="flex justify-between items-center py-2">
+                        <div className="flex items-center gap-3">
+                          <img src={f.user.avatar || "https://i.pravatar.cc/150"} className="w-8 h-8 rounded-full object-cover" />
+                          <span>{f.user.firstname} {f.user.lastname}</span>
+                        </div>
+                        <span className="text-blue-500">Friend</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+    
+
         <main className="bg-[#1F1F1F] text-white">
             {/* Header */}
             <div className="relative w-full h-48 bg-cover bg-center"
@@ -121,7 +204,16 @@ const MyProfile = () => {
                 <div className="mt-4 flex items-center justify-between w-full text-zinc-400">
                     <div className="flex items-center gap-6">
                         <span className="flex items-center gap-1 cursor-pointer"><MessageSquare size={18} /> {count} posts</span>
-                        <span className="flex items-center gap-1 cursor-pointer"><Users size={18} /> 10  followers</span>
+                        <span
+                            className="flex items-center gap-1 cursor-pointer"
+                            onClick={() => {
+                                setActiveFollowTab("followers");
+                                setIsModalOpen(true);
+                            }}
+                        >
+                            <Users size={18} /> {followers.length} followers
+                        </span>
+
                         <span className="flex items-center gap-1 cursor-pointer"><Share2 size={18} /></span>
                     </div>
                     <button className="flex items-center gap-2 text-white px-4 py-2 rounded-md hover:bg-zinc-600 cursor-pointer" onClick={() => navigate("/home/edit-profile")}>
@@ -257,6 +349,7 @@ const MyProfile = () => {
 
 
         </main>
+         </>
     );
 };
 
