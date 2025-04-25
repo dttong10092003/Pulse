@@ -94,7 +94,6 @@ const PostCard = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const dispatch = useDispatch<AppDispatch>();
   const userId = useSelector((state: RootState) => state.auth.user?._id);
-  const likeCount = useSelector((state: RootState) => state.likes.likeCounts[postId] || 0);
   const likedPostIds = useSelector((state: RootState) => state.likes.likedPostIds);
   const isLiked = likedPostIds.includes(postId);
 
@@ -206,7 +205,7 @@ const PostCard = ({
               onClick={handleToggleLike}
             >
               <Heart size={20} />
-              <span>{likeCount}</span>
+          
             </button>
 
             <button

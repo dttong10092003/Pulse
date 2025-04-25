@@ -174,12 +174,6 @@ const UserInfo_Follow = () => {
             </div>
             <div className="flex justify-between items-center mb-4">
               <button
-                onClick={() => setActiveTab("followers")}
-                className={`font-semibold flex-1 py-2 text-center text-sm cursor-pointer ${activeTab === "followers" ? "text-white border-b-2 border-white" : "text-gray-400"}`}
-              >
-                Followers
-              </button>
-              <button
                 onClick={() => setModalTab("followers")}
                 className={`font-semibold flex-1 py-2 text-center text-sm cursor-pointer ${modalTab === "followers" ? "text-white border-b-2 border-white" : "text-gray-400"
                   }`}
