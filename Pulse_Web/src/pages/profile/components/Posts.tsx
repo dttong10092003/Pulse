@@ -47,7 +47,7 @@ const Posts = ({ posts, username, avatar }: { posts: Post[]; username: string; a
     if (posts.length > 0) {
       const postIds = posts.map((p) => p._id);
       dispatch(fetchLikeCounts(postIds));
-      // dispatch(fetchUserLikedPosts()); // 🆕 lấy các post user đã like
+      // dispatch(fetchUserLikedPosts()); // 🆕 lấy các post user đã like test
     }
   }, [posts]);
 
