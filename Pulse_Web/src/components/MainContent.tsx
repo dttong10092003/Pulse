@@ -5,7 +5,7 @@ import { AppDispatch, RootState } from "../redux/store";
 import { fetchAllPosts, createPost } from "../redux/slice/postProfileSlice";
 import SearchBar from "../pages/explore/components/SearchBar";
 import Posts from "../pages/profile/components/Posts";
-
+import { fetchLikeCounts, fetchUserLikedPosts } from "../redux/slice/likeSlice";
 const MainContent = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { posts, loading, error } = useSelector((state: RootState) => state.postProfile);
@@ -17,9 +17,14 @@ const MainContent = () => {
     const [isPosting, setIsPosting] = useState(false);
     const inputRef = useRef<HTMLDivElement>(null);
     const [searchTerm, setSearchTerm] = useState("");
-
     useEffect(() => {
-        dispatch(fetchAllPosts());
+        dispatch(fetchAllPosts()).then((res) => {
+            if (res.payload && Array.isArray(res.payload)) {
+                const ids = res.payload.map((post: any) => post._id);
+                dispatch(fetchLikeCounts(ids));        // 🟢 lấy số lượng like
+                dispatch(fetchUserLikedPosts());       // 🟢 lấy các bài đã like
+            }
+        });
     }, [dispatch]);
 
     useEffect(() => {
