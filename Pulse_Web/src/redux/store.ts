@@ -7,6 +7,7 @@ import followReducer from './slice/followSlice';
 import callReducer from './slice/callSlice';
 import incomingCallReducer from './slice/incomingCallSlice';
 import likesReducer from './slice/likeSlice';
+import commentsReducer from './slice/commentSilce';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     call: callReducer,
     incomingCall: incomingCallReducer,
     likes: likesReducer,
+    comments: commentsReducer,
   },
 });
 

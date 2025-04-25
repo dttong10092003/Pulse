@@ -40,18 +40,15 @@ interface Post {
   avatar?: string;
 }
 
-const Posts = ({ posts, username, avatar }: { posts: Post[]; username: string; avatar: string }) => {
+const Posts = ({ posts, username, avatar,commentCounts }: { posts: Post[]; username: string; avatar: string;commentCounts: Record<string, number>; }) => {
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
     if (posts.length > 0) {
       const postIds = posts.map((p) => p._id);
       dispatch(fetchLikeCounts(postIds));
-      // dispatch(fetchUserLikedPosts()); // 🆕 lấy các post user đã like test
     }
   }, [posts]);
-
-
 
   return (
     <div className="divide-zinc-800">
@@ -63,7 +60,7 @@ const Posts = ({ posts, username, avatar }: { posts: Post[]; username: string; a
           avatar={avatar}
           content={post.content}
           time={timeAgo(post.createdAt)}
-          comments={post.comments ?? 0}
+          comments={commentCounts[post._id] || 0}
           media={post.media || []}
           tags={post.tags || []}
         />
@@ -94,13 +91,13 @@ const PostCard = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
-  // const [liked, setLiked] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const dispatch = useDispatch<AppDispatch>();
   const userId = useSelector((state: RootState) => state.auth.user?._id);
   const likeCount = useSelector((state: RootState) => state.likes.likeCounts[postId] || 0);
   const likedPostIds = useSelector((state: RootState) => state.likes.likedPostIds);
   const isLiked = likedPostIds.includes(postId);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -131,7 +128,6 @@ const PostCard = ({
     }
   };
 
-
   return (
     <div className="p-4 hover:bg-zinc-900/50">
       <div className="flex items-start gap-3">
@@ -142,12 +138,10 @@ const PostCard = ({
               <h3 className="font-semibold">{user}</h3>
               <p className="text-xs text-zinc-500">{time}</p>
             </div>
-
             <div className="relative">
               <button className="text-zinc-500 cursor-pointer" onClick={() => setShowMenu((prev) => !prev)}>
                 <MoreHorizontal size={20} />
               </button>
-
               {showMenu && (
                 <div
                   ref={menuRef}
@@ -179,14 +173,7 @@ const PostCard = ({
                 const isVideo = url.match(/\.(mp4|webm|ogg)$/i);
 
                 return (
-                  <div
-                    key={idx}
-                    className="relative cursor-pointer overflow-hidden"
-                    onClick={() => {
-                      setStartIndex(idx);
-                      setIsModalOpen(true);
-                    }}
-                  >
+                  <div key={idx} className="relative overflow-hidden">
                     {isVideo ? (
                       <video controls className="w-full h-[300px] object-cover" preload="metadata">
                         <source src={url} type="video/mp4" />
@@ -222,10 +209,17 @@ const PostCard = ({
               <span>{likeCount}</span>
             </button>
 
-            <button className="flex items-center gap-2 text-zinc-500 cursor-pointer">
+            <button
+              className="flex items-center gap-2 text-zinc-500 cursor-pointer"
+              onClick={() => {
+                setStartIndex(0);
+                setIsModalOpen(true);
+              }}
+            >
               <MessageCircle size={20} />
               <span>{comments}</span>
             </button>
+
             <button className="text-zinc-500 cursor-pointer">
               <Bookmark size={20} />
             </button>
@@ -233,16 +227,19 @@ const PostCard = ({
         </div>
       </div>
 
-      <ImageModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        mediaList={media}
-        startIndex={startIndex}
-        username={user}
-        avatar={avatar}
-        content={content}
-        fullView
-      />
+      <div className="max-w-xl mx-auto">
+        <ImageModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          mediaList={media}
+          startIndex={startIndex}
+          username={user}
+          avatar={avatar}
+          content={content}
+          fullView
+          postId={postId}
+        />
+      </div>
     </div>
   );
 };
