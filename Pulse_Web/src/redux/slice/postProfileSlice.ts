@@ -10,6 +10,8 @@ interface Post {
   tags?: string[];
   userId: string;
   createdAt: string;
+  username: string;
+  avatar: string; 
 }
 
 interface PostState {
@@ -81,6 +83,17 @@ export const deletePost = createAsyncThunk(
   }
 );
 
+export const fetchAllPosts = createAsyncThunk(
+  "postProfile/fetchAllPosts",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axios.get(`${URI_API}`); // GET /posts
+      return res.data;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
 
 
 const postProfileSlice = createSlice({
@@ -109,6 +122,19 @@ const postProfileSlice = createSlice({
       .addCase(deletePost.fulfilled, (state, action: PayloadAction<{ postId: string }>) => {
         state.posts = state.posts.filter(post => post._id !== action.payload.postId);
         state.count = state.posts.length;
+      })
+      .addCase(fetchAllPosts.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllPosts.fulfilled, (state, action: PayloadAction<Post[]>) => {
+        state.loading = false;
+        state.posts = action.payload;
+        state.count = action.payload.length;
+      })
+      .addCase(fetchAllPosts.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });

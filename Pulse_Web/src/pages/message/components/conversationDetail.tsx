@@ -1,9 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChatInput } from "./index";
 import { format, formatDistanceToNow } from "date-fns";
-import { useSelector } from "react-redux";
-import { RootState } from "../../../redux/store";
-import { Conversation } from '../../../redux/slice/types';
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "../../../redux/store";
+import { deleteMessageLocal, revokeMessageLocal } from "../../../redux/slice/chatSlice";
+import { Conversation, Member, Message } from '../../../redux/slice/types';
+import socket from '../../../utils/socket';
+import socketCall from '../../../utils/socketCall';
+import GroupMembersModal from './GroupMembersModal';
+import toast from 'react-hot-toast';
+import ForwardMessageModal from './ForwardMessageModal';
 import {
   Phone,
   Search,
@@ -19,7 +25,14 @@ import {
   Trash2,
   LogOut,
   MessageCircle,
+  Users,
+  Pencil,
+  Camera,
 } from "lucide-react";
+import { fileIcons } from '../../../assets';
+import { startCall } from '../../../redux/slice/callSlice';
+import { getUserDetails } from '../../../redux/slice/userSlice';
+import AddMemberModal from "./AddMemberModal";
 
 interface ConversationDetailProps {
   selectedConversation: Conversation | null; // Thay đổi kiểu dữ liệu ở đây
@@ -32,17 +45,52 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   console.log("Selected conversationaaaaaa:", selectedConversation);
   console.log("ahahahha: ", selectedConversation?.messages);
 
-  // const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
+  const conversations = useSelector((state: RootState) => state.chat.conversations);
+  const currentUser = useSelector((state: RootState) => state.auth.user);
+  const userDetails = useSelector((state: RootState) => state.user.userDetails) as {
+    firstname?: string;
+    lastname?: string;
+    avatar?: string;
+  };
+  const followings = useSelector((state: RootState) => state.follow.followings);
   const messages = useSelector(
     (state: RootState) => state.chat.selectedConversation?.messages
   );
 
-  useEffect(() => {
-    console.log("Messages updated:", messages); // Debugging log
-  }, [messages]);
-
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [messageToForward, setMessageToForward] = useState<Message | null>(null);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [showGroupMembersModal, setShowGroupMembersModal] = useState(false);
+  const [showMenu, setShowMenu] = useState<Message | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [showSidebar, setShowSidebar] = useState(false);
   const [isToggled, setIsToggled] = useState(false);
+
+  const [editingName, setEditingName] = useState(false);
+  const [newGroupName, setNewGroupName] = useState(selectedConversation?.groupName || "owo");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  console.log("User details:", userDetails);
+
+  useEffect(() => {
+    if (editingName && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [editingName]);
+
+  useEffect(() => {
+    if (selectedConversation) {
+      setNewGroupName(selectedConversation.groupName);
+    }
+  }, [selectedConversation]);
+
+  useEffect(() => {
+    if (currentUser?._id) {
+      dispatch(getUserDetails(currentUser._id));
+    }
+  }, [currentUser?._id, dispatch]);
+
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
   };
@@ -56,14 +104,149 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     }
   }, [selectedConversation]);
 
-  // if (!selectedConversation) {
-  //   return (
-  //     <div className="p-5 text-white">
-  //       No conversation selected. Please select a conversation to start
-  //       chatting.
-  //     </div>
-  //   );
-  // }
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (showMenu) setShowMenu(null);
+    };
+
+    window.addEventListener("click", handleClickOutside);
+
+    return () => {
+      window.removeEventListener("click", handleClickOutside);
+    };
+  }, [showMenu]);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedConversation) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result;
+      socket.emit("updateGroupAvatar", {
+        conversationId: selectedConversation._id,
+        avatar: base64,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleGroupNameSave = () => {
+    if (!selectedConversation || newGroupName.trim() === '') return;
+    socket.emit("updateGroupName", {
+      conversationId: selectedConversation._id,
+      groupName: newGroupName.trim(),
+    });
+    setEditingName(false);
+  };
+
+  const handleMessageRightClick = (event: React.MouseEvent, message: Message | undefined) => {
+    event.preventDefault();
+    if (message) {
+      const bubbleWidth = 200;
+      const { clientX, clientY } = event;
+      const adjustedLeft = message.isSentByUser ? clientX - bubbleWidth : clientX;
+      setMenuPosition({ top: clientY, left: adjustedLeft });
+      setShowMenu(message); // chỉ setShowMenu nếu có messageId
+    } else {
+      console.warn("Message ID is undefined");
+    }
+  };
+
+
+  if (!currentUser) {
+    return <div className="text-white">Loading user...</div>;
+  }
+
+  const currentUserId = currentUser._id;
+
+  const handleDeleteMessage = (messageId: string) => {
+    if (!selectedConversation?._id) return;
+    const conversationId = selectedConversation?._id;
+    socket.emit('deleteMessage', { messageId, senderId: currentUserId, conversationId });
+    dispatch(deleteMessageLocal({ messageId, conversationId }));
+
+    setShowMenu(null); // Close menu after action
+  };
+
+  const handleRevokeMessage = (messageId: string) => {
+    if (!selectedConversation?._id) return;
+    const conversationId = selectedConversation?._id;
+    socket.emit('revokeMessage', { messageId, senderId: currentUserId, conversationId });
+    dispatch(revokeMessageLocal({ messageId, conversationId }));
+
+    setShowMenu(null); // Close menu after action
+  };
+
+  const handleForwardMessage = (message: Message) => {
+    console.log("🔁 Forwarding message:", message);
+
+    setMessageToForward(message);
+    setShowForwardModal(true);
+  };
+
+  const handleRemoveMember = (userId: string) => {
+    console.log("Remove member:", userId);
+    if (!selectedConversation) return;
+
+    toast.custom((t) => (
+      <div className="bg-[#2a2a2a] text-white p-4 rounded-lg shadow-md w-72">
+        <p className="mb-2">Are you sure you want to remove this member?</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => {
+              socket.emit('removeMember', {
+                conversationId: selectedConversation._id,
+                userIdToRemove: userId,
+              });
+              toast.dismiss(t.id);
+            }}
+            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    ));
+  };
+
+  const handleTransferAdmin = (newAdminId: string) => {
+    console.log("Transfer admin to:", newAdminId);
+    if (!selectedConversation) return;
+
+    toast.custom((t) => (
+      <div className="bg-[#2a2a2a] text-white p-4 rounded-lg shadow-md w-72">
+        <p className="mb-2">Transfer admin rights to this user?</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => {
+              socket.emit('transferAdmin', {
+                conversationId: selectedConversation._id,
+                newAdminId,
+              });
+              toast.dismiss(t.id);
+            }}
+            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    ));
+  };
+
   if (!selectedConversation) {
     return (
       <div className="flex flex-col w-full items-center justify-center p-5 text-white h-screen">
@@ -82,6 +265,65 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   ) {
     return <div className="p-5 text-white">No messages available.</div>;
   }
+
+  const getFileNameFromUrl = (url: string) => {
+    try {
+      const parsedUrl = new URL(url);
+      const fullName = parsedUrl.pathname.split('/').pop() || 'file';
+      return decodeURIComponent(fullName.split('.')[0]) + '.' + fullName.split('.').pop();
+    } catch {
+      return "file";
+    }
+  };
+
+  const getFileIcon = (fileName: string = '') => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+
+    if (!ext) return fileIcons.doc; // fallback
+
+    switch (ext) {
+      case 'pdf':
+        return fileIcons.pdf;
+      case 'doc':
+      case 'docx':
+        return fileIcons.doc;
+      case 'xls':
+      case 'xlsx':
+        return fileIcons.xls;
+      case 'zip':
+      case 'rar':
+        return fileIcons.zip;
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'gif':
+        return fileIcons.image;
+      case 'mp4':
+      case 'mov':
+      case 'avi':
+        return fileIcons.video;
+      case 'mp3':
+      case 'wav':
+        return fileIcons.sound;
+      default:
+        return fileIcons.doc;
+    }
+  };
+
+  const allUsers: Member[] = followings.map(follow => ({
+    userId: follow.user._id,
+    name: `${follow.user.firstname} ${follow.user.lastname}`,
+    avatar: follow.user.avatar || '',
+  }));
+
+  const handleAddMembers = (newMembers: Member[]) => {
+    if (!selectedConversation) return;
+    socket.emit('addMembersToGroup', {
+      conversationId: selectedConversation._id,
+      newMembers,
+    });
+  };
+
 
   return (
     <div className={`flex ${showSidebar ? "w-full" : "w-3/4"}`}>
@@ -109,11 +351,128 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
             <Phone
               size={20}
               className="text-white cursor-pointer hover:text-gray-400 transition duration-200"
+              onClick={() => {
+                if (!selectedConversation || !currentUser) return;
+
+                const isGroup = selectedConversation.isGroup;
+
+                const calleeName = isGroup
+                  ? selectedConversation.groupName
+                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.name || "Unknown";
+
+                const calleeAvatar = isGroup
+                  ? selectedConversation.avatar
+                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.avatar || "";
+
+                dispatch(startCall({
+                  isVideo: false,
+                  calleeName,
+                  calleeAvatar,
+                  toUserId: selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId,
+                  fromUserId: currentUser._id,
+                  fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                  fromAvatar: userDetails?.avatar || '',
+                  isGroup,
+                  groupName: selectedConversation.groupName,
+                }));
+
+
+                if (isGroup) {
+                  selectedConversation.members.forEach(member => {
+                    if (member.userId !== currentUser._id) {
+                      socketCall.emit("incomingCall", {
+                        toUserId: member.userId,
+                        fromUserId: currentUser._id,
+                        fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                        fromAvatar: userDetails?.avatar || "",
+                        isVideo: false,
+                        isGroup: true,
+                        groupName: selectedConversation.groupName,
+                        groupAvatar: selectedConversation.avatar,
+                      });
+                    }
+                  });
+                } else {
+                  const toUserId = selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId;
+                  if (toUserId) {
+                    socketCall.emit("incomingCall", {
+                      toUserId,
+                      fromUserId: currentUser._id,
+                      fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                      fromAvatar: userDetails?.avatar || "",
+                      isVideo: false,
+                      isGroup: false,
+                    });
+                  }
+                }
+              }}
             />
+
             <Video
               size={20}
               className="text-white cursor-pointer hover:text-gray-400 transition duration-200"
+              onClick={() => {
+                if (!selectedConversation || !currentUser) return;
+
+                const isGroup = selectedConversation.isGroup;
+
+                const calleeName = isGroup
+                  ? selectedConversation.groupName
+                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.name || "Unknown";
+
+                const calleeAvatar = isGroup
+                  ? selectedConversation.avatar
+                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.avatar || "";
+
+                const toUserId = selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId;
+
+                dispatch(startCall({
+                  isVideo: false,
+                  calleeName,
+                  calleeAvatar,
+                  toUserId,
+                  fromUserId: currentUser._id,
+                  fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                  fromAvatar: userDetails?.avatar || '',
+                  isGroup,
+                  groupName: selectedConversation.groupName,
+                }));
+
+
+                if (isGroup) {
+                  selectedConversation.members.forEach(member => {
+                    if (member.userId !== currentUser._id) {
+                      socketCall.emit("incomingCall", {
+                        toUserId: member.userId,
+                        fromUserId: currentUser._id,
+                        fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                        fromAvatar: userDetails?.avatar || "",
+                        isVideo: true,
+                        isGroup: true,
+                        groupName: selectedConversation.groupName,
+                        groupAvatar: selectedConversation.avatar,
+                      });
+                    }
+                  });
+                } else {
+                  const toUserId = selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId;
+                  if (toUserId) {
+                    socketCall.emit("incomingCall", {
+                      toUserId,
+                      fromUserId: currentUser._id,
+                      fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                      fromAvatar: userDetails?.avatar || "",
+                      isVideo: true,
+                      isGroup: false,
+                    });
+                  }
+                }
+              }}
             />
+
+
+
+
             <Search
               size={20}
               className="text-white cursor-pointer hover:text-gray-400 transition duration-200"
@@ -121,8 +480,8 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
             <Columns2
               size={20}
               className={`cursor-pointer transition duration-200 ${showSidebar
-                  ? "text-green-400"
-                  : "text-white hover:text-gray-400"
+                ? "text-green-400"
+                : "text-white hover:text-gray-400"
                 }`}
               onClick={toggleSidebar}
             />
@@ -156,11 +515,54 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                   <p className="text-xs text-gray-400 mb-1">{msg.name}</p>
                 )}
 
-                <div
+                {/* <div
                   className={`p-3 rounded-lg text-white ${msg.isSentByUser ? "bg-green-600" : "bg-gray-600"
                     } break-words`}
                 >
                   {msg.content}
+                </div> */}
+
+                <div className={`p-3 rounded-lg text-white ${msg.isSentByUser ? "bg-green-600" : "bg-gray-600"} break-words`}
+                  onContextMenu={(event) => handleMessageRightClick(event, msg)}
+                >
+                  {/* Kiểm tra nếu msg.content là string */}
+                  {typeof msg.content === 'string' ? (
+                    msg.type === "image" ? (
+                      <img
+                        src={typeof msg.content === 'string' ? msg.content : URL.createObjectURL(new Blob([msg.content]))}
+                        alt="Image message"
+                        className="w-full max-h-[499px] object-cover rounded-lg"
+                      />
+                    ) : msg.type === "file" || msg.type === "video" || msg.type === "audio" ? (
+                      <div className="flex items-center gap-3 bg-white p-3 rounded-lg shadow text-black max-w-[300px]">
+                        <img
+                          src={getFileIcon(msg.fileName || getFileNameFromUrl(msg.content))}
+                          alt="file-icon"
+                          className="w-10 h-10 object-contain"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate font-medium text-sm">
+                            {msg.fileName || getFileNameFromUrl(msg.content)}
+                          </p>
+                          <a
+                            href={msg.content as string}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download={msg.fileName}
+                            className="text-xs text-gray-600 hover:text-black"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+                            </svg>
+                          </a>
+                        </div>
+                      </div>
+                    ) : (
+                      <p>{msg.content}</p>
+                    )
+                  ) : (
+                    <p>Invalid content type</p> // Trường hợp nếu không phải string
+                  )}
                 </div>
 
                 {/* Hiển thị thời gian */}
@@ -192,6 +594,32 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
         <ChatInput />
       </div>
 
+      {/* Menu context */}
+      {showMenu && (
+        <div
+          className="absolute bg-gray-800 text-white p-2 rounded-lg shadow-lg"
+          style={{ top: menuPosition.top, left: menuPosition.left, zIndex: 999 }}
+        >
+          {showMenu.senderId === currentUserId && (
+            <>
+              <div onClick={() => handleDeleteMessage(showMenu._id!)} className="cursor-pointer p-1 hover:bg-gray-700">
+                Delete Message
+              </div>
+              <div onClick={() => handleRevokeMessage(showMenu._id!)} className="cursor-pointer p-1 hover:bg-gray-700">
+                Revoke Message
+              </div>
+            </>
+          )}
+          {/* 👉 Luôn hiển thị với mọi tin nhắn */}
+          <div
+            onClick={() => handleForwardMessage(showMenu)}
+            className="cursor-pointer p-1 hover:bg-gray-700"
+          >
+            Forward Message
+          </div>
+        </div>
+      )}
+
       {/* Right Sidebar */}
       {showSidebar && (
         <div
@@ -213,7 +641,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
           {/* Conversation Info */}
           <div className="p-4 border-b border-gray-700">
-            <div className="flex flex-col items-center mb-4">
+            {/* <div className="flex flex-col items-center mb-4">
               <img
                 src={selectedConversation.avatar}
                 alt={selectedConversation.groupName}
@@ -222,6 +650,52 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
               <h2 className="text-white font-bold text-lg">
                 {selectedConversation.groupName}
               </h2>
+              {selectedConversation.isGroup && (
+                <p className="text-gray-400 text-sm">
+                  Group · {selectedConversation.messages?.length} message
+                </p>
+              )}
+            </div> */}
+
+            <div className="flex flex-col items-center mb-4 relative">
+              <div className="relative group">
+                <img
+                  src={selectedConversation.avatar}
+                  alt={selectedConversation.groupName}
+                  className="w-20 h-20 rounded-full mb-2 object-cover"
+                />
+                {selectedConversation.isGroup && (
+                  <label className="absolute bottom-0 right-0 bg-black bg-opacity-60 rounded-full p-1 cursor-pointer group-hover:visible invisible">
+                    <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+                    <Camera className="w-5 h-5 text-white" />
+                  </label>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {editingName ? (
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleGroupNameSave();
+                    }}
+                    onBlur={() => setEditingName(false)}
+                    className="bg-transparent border-b border-white text-white text-center outline-none"
+                  />
+                ) : (
+                  <h2 className="text-white font-bold text-lg">{selectedConversation.groupName}</h2>
+                )}
+
+                {selectedConversation.isGroup && !editingName && (
+                  <button onClick={() => setEditingName(true)}>
+                    <Pencil className="w-4 h-4 text-white hover:text-green-400 cursor-pointer" />
+                  </button>
+                )}
+              </div>
+
               {selectedConversation.isGroup && (
                 <p className="text-gray-400 text-sm">
                   Group · {selectedConversation.messages?.length} message
@@ -248,17 +722,51 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                   <br /> <span className="centered-text">message</span>
                 </span>{" "}
               </div>
-              <div className="flex flex-col items-center text-gray-300 cursor-pointer hover:text-white">
-                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mb-1">
-                  <UserPlus size={16} />
+              {selectedConversation.isGroup && (
+                <div className="flex flex-col items-center text-gray-300 cursor-pointer hover:text-white">
+                  <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mb-1"
+                    onClick={() => setShowAddMemberModal(true)}
+                  >
+                    <UserPlus size={16} />
+                  </div>
+                  <span className="text-xs text-center">
+                    Add
+                    <br /> <span className="centered-text">member</span>
+                  </span>
                 </div>
-                <span className="text-xs text-center">
-                  Create
-                  <br /> <span className="centered-text">chat group</span>
-                </span>
-              </div>
+              )}
             </div>
           </div>
+
+          {/* Nút xem thành viên nhóm */}
+          {selectedConversation.isGroup && (
+            <button
+              onClick={() => setShowGroupMembersModal(true)}
+              className="flex items-center gap-1 hover:text-green-400 cursor-pointer p-4 border-b border-gray-700 text-gray-300"
+            >
+              <Users size={18} /> Members ({selectedConversation.members.length})
+
+            </button>
+          )}
+
+          {selectedConversation.isGroup && showGroupMembersModal && (
+            <GroupMembersModal
+              members={selectedConversation.members}
+              adminId={selectedConversation.adminId || ''}
+              onClose={() => setShowGroupMembersModal(false)}
+              onRemoveMember={handleRemoveMember}
+              onTransferAdmin={handleTransferAdmin}
+            />
+          )}
+
+          {selectedConversation?.isGroup && showAddMemberModal && (
+            <AddMemberModal
+              membersInGroup={selectedConversation.members}
+              allUsers={allUsers}
+              onClose={() => setShowAddMemberModal(false)}
+              onAddMembers={handleAddMembers}
+            />
+          )}
 
           {/* Shared Content Section */}
           <div className="flex-1 overflow-y-auto">
@@ -350,6 +858,37 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
             </div>
           </div>
         </div>
+      )}
+      {showForwardModal && messageToForward && (
+        <ForwardMessageModal
+          message={messageToForward}
+          conversations={conversations.filter(
+            (conv) => conv._id !== selectedConversation?._id // ẩn cuộc trò chuyện hiện tại
+          )}
+          onClose={() => setShowForwardModal(false)}
+          onForward={(message, toConversationIds) => {
+            toConversationIds.forEach((convId) => {
+              socket.emit("sendMessage", {
+                conversationId: convId,
+                senderId: currentUserId,
+                name: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                senderAvatar: userDetails?.avatar || "",
+                content: message.content,
+                type: message.type,
+                timestamp: new Date().toISOString(),
+                isDeleted: false,
+                isSentByUser: true,
+                isPinned: false,
+                fileName: message.fileName || '',
+                fileType: message.fileType || '',
+              });
+            });
+
+            toast.success("Message forwarded successfully");
+            setShowForwardModal(false);
+            setMessageToForward(null);
+          }}
+        />
       )}
     </div>
   );

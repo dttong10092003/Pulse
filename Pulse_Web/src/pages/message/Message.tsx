@@ -1,12 +1,15 @@
-import React from 'react';
-import { ConversationSidebar, ConversationDetail } from './components';
+import React, { useEffect } from 'react';
+import { ConversationSidebar, ConversationDetail, CallModal } from './components';
 // import { addMessageToState } from '../../redux/slice/chatSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSelectedConversation, setUnreadToZero } from '../../redux/slice/chatSlice';
 import { RootState, AppDispatch } from '../../redux/store';
 import { Conversation, Member } from '../../redux/slice/types';
-
+import IncomingCallModal from './components/incomingCallModal';
+import { showIncomingCall } from '../../redux/slice/incomingCallSlice';
 import socket from '../../utils/socket';
+import socketCall from '../../utils/socketCall';
+import { rejectedCall } from '../../redux/slice/callSlice';
 // const initialConversations = [
 //   {
 //     conversationId: "61a1b2c3d4e5f6789abcde01",  // ID cuộc trò chuyện
@@ -95,6 +98,39 @@ const Message: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const conversations = useSelector((state: RootState) => state.chat.conversations);
   const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
+  
+  useEffect(() => {
+    if (user?._id) {
+      socketCall.connect(); // <-- QUAN TRỌNG
+      socketCall.emit('join', { userId: user._id });
+  
+      socketCall.on('incomingCall', (data) => {
+        console.log("📞 incomingCall:", data);
+        console.log("👤 this user:", user._id);
+        if (data.toUserId === user._id) {
+          dispatch(showIncomingCall({ ...data, visible: true }));
+        }
+      });
+    }
+  
+    return () => {
+      socketCall.off('incomingCall');
+    };
+  }, [user, dispatch]);
+  
+  useEffect(() => {
+    socketCall.on("callRejected", () => {
+      dispatch(rejectedCall()); // 👈 Kích hoạt trạng thái từ chối
+    });
+  
+    return () => {
+      socketCall.off("callRejected");
+    };
+  }, [dispatch]);
+  
+  for (const conversation of conversations) {
+    console.log('Conversation aaaaaaa:', conversation); // Kiểm tra từng cuộc trò chuyện
+  }
   // useEffect(() => {
   //   if (token && user) {
   //     dispatch(getAllConversations(user._id)); // Lấy tất cả các cuộc trò chuyện của người dùng
@@ -144,7 +180,7 @@ const Message: React.FC = () => {
       unreadCount: 0,
     };
 
-    
+
     console.log('Selected conversationqweqweqweqwe:', conversation); // Kiểm tra cuộc trò chuyện đã chọn
     console.log('Updated conversation:', updateConversation); // Kiểm tra cuộc trò chuyện đã cập nhật
     dispatch(setSelectedConversation(updateConversation)); // Cập nhật cuộc trò chuyện đã chọn trong Redux
@@ -152,8 +188,8 @@ const Message: React.FC = () => {
     dispatch(setUnreadToZero(conversation._id));
   };
 
-   // Lấy tên người còn lại trong cuộc trò chuyện (không phải user hiện tại)
-   const getOtherUserName = (members: Member[]) => {
+  // Lấy tên người còn lại trong cuộc trò chuyện (không phải user hiện tại)
+  const getOtherUserName = (members: Member[]) => {
     if (!user) return '';
     const otherMember = members.find((member) => member.userId !== user._id);
     return otherMember ? otherMember.name : '';
@@ -167,17 +203,21 @@ const Message: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen">
-      {/* <ConversationSidebar />
+    <>
+      <div className="flex h-screen">
+        {/* <ConversationSidebar />
       <ConversationDetail /> */}
-      <ConversationSidebar
-        onSelectConversation={handleSelectConversation}
-        selectedConversationId={selectedConversation?._id || ''}
-        conversations={conversations}
-      />
-      {/* Truyền selectedConversation vào ConversationDetail */}
-      <ConversationDetail selectedConversation={selectedConversation} />
-    </div>
+        <ConversationSidebar
+          onSelectConversation={handleSelectConversation}
+          selectedConversationId={selectedConversation?._id || ''}
+          conversations={conversations}
+        />
+        {/* Truyền selectedConversation vào ConversationDetail */}
+        <ConversationDetail selectedConversation={selectedConversation} />
+      </div>
+      <CallModal />
+      <IncomingCallModal />
+    </>
   );
 };
 
