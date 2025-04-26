@@ -6,6 +6,8 @@ import { useGoogleLogin } from "@react-oauth/google";
 import { loginUser, loginWithGoogle,loginWithGoogleRegister, getUserProfile, getPhoneNumber} from '../../redux/slice/authSlice';
 import { RootState, AppDispatch } from '../../redux/store';
 import { useDispatch, useSelector } from 'react-redux';
+import { fetchRecentNotifications } from '../../redux/slice/notificationSlice';
+
 interface GoogleRegisterError {
   message: string;
   status: number;
@@ -15,7 +17,7 @@ const Login = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { loading } = useSelector((state: RootState) => state.auth);
 
-  const [form, setForm] = useState({ username: '', password: '' });
+  const [form, setForm] = useState({ username: 'hachi', password: '123456' });
   const [errorText, setErrorText] = useState("");
   const [isBtnEnable, setIsBtnEnable] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -82,7 +84,7 @@ const Login = () => {
       .unwrap()
       .then((res) => {
         // Token đã được lưu vào localStorage trong reducer
-        console.log("Login successful, token:", res.token);
+        // console.log("Login successful, token:", res.token);
         
         // Gọi API để lấy thông tin chi tiết người dùng
         dispatch(getUserProfile(res.token))
@@ -92,6 +94,8 @@ const Login = () => {
             
             // Kiểm tra xem người dùng đã có thông tin chi tiết chưa
             if (userDetail && userDetail.firstname && userDetail.lastname) {
+                // lấy danh sách thông báo 
+              dispatch(fetchRecentNotifications());
               // Đã có thông tin chi tiết, chuyển đến trang home
               navigate('/home');
             } else {

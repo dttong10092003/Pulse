@@ -3,18 +3,25 @@ import { Home, Bell, MessageSquare, Bookmark, User, LayoutDashboard, MoreHorizon
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Columns2, ChevronRight } from "lucide-react";
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../redux/store';
 import { logout } from '../redux/slice/authSlice';
-import { useDispatch } from 'react-redux';
+
+import { AppDispatch } from "../redux/store"; // Import AppDispatch
+import { fetchUnreadCount } from "../redux/slice/notificationSlice"; // Import action fetchUnreadCount
+
+
 
 const Sidebar = () => {
-    const dispatch = useDispatch();
+    // const dispatch = useDispatch();
+    const dispatch = useDispatch<AppDispatch>();
     const [showSidebar, setShowSidebar] = useState(true);
     const navigate = useNavigate();
     const [showMenu, setShowMenu] = useState(false);
-    const [isHovered, setIsHovered] = useState(false); // Thêm state để kiểm tra hover vào sidebar
-    const userDetail = useSelector((state: RootState) => state.auth.userDetail);
+    const [isHovered, setIsHovered] = useState(false);
+    const userDetail = useSelector((state: RootState) => state.auth.userDetail); 
+    const unreadCount = useSelector((state: RootState) => state.notification.unreadCount); // Lấy số lượng thông báo chưa đọc từ Redux
+   
     const getInitialActiveItem = () => {
         const item = localStorage.getItem("activeItem");
         const validItems = ["Home", "Notifications", "Messages", "Bookmarks", "My Profile", "Explore"];
@@ -22,7 +29,10 @@ const Sidebar = () => {
     };
 
     const [activeItem, setActiveItem] = useState(getInitialActiveItem);
-
+    useEffect(() => {
+        // Gọi fetchUnreadCount khi Sidebar render lần đầu tiên
+        dispatch(fetchUnreadCount());
+    }, [dispatch]);
 
     useEffect(() => {
         const handleStorageChange = () => {
@@ -57,7 +67,7 @@ const Sidebar = () => {
                 </a>
                 <nav className="mt-8 flex flex-col space-y-1">
                     <SidebarItem icon={<Home size={24} />} label="Home" active={activeItem === "Home"} navigate={() => handleNavigation("Home", "/home")} showSidebar={showSidebar} />
-                    <SidebarItem icon={<Bell size={24} />} label="Notifications" active={activeItem === "Notifications"} navigate={() => handleNavigation("Notifications", "/home/notifications")} showSidebar={showSidebar} />
+                    <SidebarItem icon={<Bell size={24} />} label="Notifications" active={activeItem === "Notifications"} navigate={() => handleNavigation("Notifications", "/home/notifications")} showSidebar={showSidebar} unreadCount={unreadCount} />
                     <SidebarItem icon={<MessageSquare size={24} />} label="Messages" active={activeItem === "Messages"} navigate={() => handleNavigation("Messages", "/home/message")} showSidebar={showSidebar} />
                     <SidebarItem icon={<Bookmark size={24} />} label="Bookmarks" active={activeItem === "Bookmarks"} navigate={() => handleNavigation("Bookmarks", "/home/bookmarks")} showSidebar={showSidebar} />
                     <SidebarItem icon={<User size={24} />} label="My Profile" active={activeItem === "My Profile"} navigate={() => handleNavigation("My Profile", "/home/my-profile")} showSidebar={showSidebar} />
@@ -115,19 +125,20 @@ const Sidebar = () => {
         </aside>
     );
 };
-
 const SidebarItem = ({
     icon,
     label,
     active,
     navigate,
-    showSidebar
+    showSidebar,
+    unreadCount
 }: {
     icon: React.ReactNode;
     label: string;
     active?: boolean;
     navigate: () => void;
     showSidebar: boolean;
+    unreadCount?: number;
 }) => {
     return (
         <button
@@ -136,7 +147,10 @@ const SidebarItem = ({
             onClick={navigate}
         >
             {icon}
-            {showSidebar && <span className="text-lg">{label}</span>} {/* Show label when sidebar is expanded */}
+            {showSidebar && <span className="text-lg">{label}</span>}
+            {(label === "Notifications" || label === "Messages") && (unreadCount ?? 0) > 0 && (
+                <span className="ml-2 bg-red-500 text-white text-xs px-2 rounded-full">{unreadCount}</span>
+            )}
         </button>
     );
 };
