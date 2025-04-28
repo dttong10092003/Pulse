@@ -12,7 +12,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "../../../redux/store";
 import { createComment, getCommentsByPost, resetComments, getCommentCountsByPosts } from "../../../redux/slice/commentSilce";
 import commentSocket from "../../../utils/socketComment"; // ✅ Correct socket instance
-
+import { likePost, unlikePost } from "../../../redux/slice/likeSlice";
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -40,7 +40,10 @@ const ImageModal = ({
   const dispatch = useDispatch<AppDispatch>();
   const { comments } = useSelector((state: RootState) => state.comments);
   const authUser = useSelector((state: RootState) => state.auth.userDetail);
-
+  const likeCounts = useSelector((state: RootState) => state.likes.likeCounts);
+  const likes = likeCounts[postId] || 0;
+  const likedPostIds = useSelector((state: RootState) => state.likes.likedPostIds);
+  const isLiked = likedPostIds.includes(postId);
   useEffect(() => {
     setIndex(startIndex);
   }, [startIndex]);
@@ -69,6 +72,14 @@ const ImageModal = ({
       };
     }
   }, [dispatch, postId]);
+  const handleToggleLike = () => {
+    if (!postId) return;
+    if (isLiked) {
+      dispatch(unlikePost(postId));
+    } else {
+      dispatch(likePost(postId));
+    }
+  };
 
 
   const handleSubmitComment = async () => {
@@ -116,11 +127,21 @@ const ImageModal = ({
           </>
         )}
 
-        {isVideo ? (
-          <video src={currentMedia} autoPlay controls className="max-h-screen max-w-full object-contain rounded-xl" />
-        ) : (
-          <img src={currentMedia} alt="preview" className="max-h-screen max-w-full object-contain rounded-xl" />
-        )}
+{isVideo ? (
+  <video
+    src={currentMedia}
+    autoPlay
+    controls
+    className="w-auto max-w-[100%] h-auto max-h-[100%] object-contain rounded-xl"
+  />
+) : (
+  <img
+    src={currentMedia}
+    alt="preview"
+    className="w-auto max-w-[100%] h-auto max-h-[100%] object-contain rounded-xl"
+  />
+)}
+
       </div>
 
       <div className="w-[420px] bg-zinc-900 text-white flex flex-col border-l border-zinc-800">
@@ -140,9 +161,15 @@ const ImageModal = ({
         <div className="p-4 border-b border-zinc-800 text-sm">
           <p className="text-zinc-200 whitespace-pre-line mb-3">{content}</p>
           <div className="flex items-center gap-6 text-zinc-400">
-            <div className="flex items-center gap-1 cursor-pointer">
-              <Heart size={18} /> <span className="text-sm">0</span>
-            </div>
+            <button
+              className={`flex items-center gap-1 ${isLiked ? "text-red-500" : "text-zinc-400"} cursor-pointer`}
+              onClick={handleToggleLike}
+            >
+              <Heart size={18} />
+              <span className="text-sm">{likes}</span>
+            </button>
+
+
             <div className="flex items-center gap-1 cursor-pointer">
               <MessageCircle size={18} /> <span className="text-sm">{comments.length}</span>
             </div>

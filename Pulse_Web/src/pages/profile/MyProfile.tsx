@@ -344,15 +344,18 @@ const MyProfile = () => {
                 )}
 
                 <div className="mt-4">
-                    <Posts
-                        posts={userPosts}
-                        username={username}
-                        avatar={userDetail?.avatar ?? "default-avatar-url"}
-                        commentCounts={commentCounts}
-                    />
+                    {activeTab === "Posts" && (
+                        <Posts
+                            posts={userPosts}
+                            username={username}
+                            avatar={userDetail?.avatar ?? "default-avatar-url"}
+                            commentCounts={commentCounts}
+                        />
+                    )}
                     {activeTab === "Featured" && <Featured />}
                     {activeTab === "Media" && <Media />}
                 </div>
+
 
 
             </main>

@@ -17,7 +17,7 @@ const Login = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { loading } = useSelector((state: RootState) => state.auth);
 
-  const [form, setForm] = useState({ username: 'hachi', password: '123456' });
+  const [form, setForm] = useState({ username: '', password: '' });
   const [errorText, setErrorText] = useState("");
   const [isBtnEnable, setIsBtnEnable] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
