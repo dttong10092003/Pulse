@@ -11,23 +11,10 @@ import GroupMembersModal from './GroupMembersModal';
 import toast from 'react-hot-toast';
 import ForwardMessageModal from './ForwardMessageModal';
 import {
-  Phone,
-  Search,
-  Columns2,
-  Video,
-  X,
-  File,
-  Bell,
-  UserPlus,
-  Pin,
-  EyeOff,
-  TriangleAlert,
-  Trash2,
-  LogOut,
-  MessageCircle,
-  Users,
-  Pencil,
-  Camera,
+  Phone, Search, Columns2, Video, X, File, Bell, UserPlus, Pin, EyeOff,
+  TriangleAlert, Trash2, LogOut, MessageCircle, Users, Pencil, Camera,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { fileIcons } from '../../../assets';
 import { startCall } from '../../../redux/slice/callSlice';
@@ -70,6 +57,11 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const [editingName, setEditingName] = useState(false);
   const [newGroupName, setNewGroupName] = useState(selectedConversation?.groupName || "owo");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const [isSearching, setIsSearching] = useState(false); // Có đang bật tìm kiếm không
+  const [searchTerm, setSearchTerm] = useState(''); // Từ khóa tìm kiếm
+  const [searchResults, setSearchResults] = useState<number[]>([]); // Các index kết quả
+  const [currentResultIndex, setCurrentResultIndex] = useState(0); // Đang chọn kết quả nào
 
   console.log("User details:", userDetails);
 
@@ -324,6 +316,68 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     });
   };
 
+  const handleSearch = () => {
+    if (!messages || searchTerm.trim() === '') {
+      setSearchResults([]);
+      return;
+    }
+
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    const foundIndexes = messages
+      .map((msg, index) =>
+        (typeof msg.content === 'string' &&
+          msg.type === 'text' &&
+          !msg.isDeleted &&
+          msg.content.toLowerCase().includes(lowerSearchTerm))
+          ? index
+          : -1
+      )
+      .filter(index => index !== -1);
+
+    setSearchResults(foundIndexes);
+    setCurrentResultIndex(0);
+
+    if (foundIndexes.length > 0) {
+      scrollToMessage(foundIndexes[0]);
+    }
+  };
+
+  const scrollToMessage = (index: number) => {
+    const target = document.getElementById(`message-${index}`);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
+  const handlePrevResult = () => {
+    if (searchResults.length === 0) return;
+    const prevIndex = (currentResultIndex - 1 + searchResults.length) % searchResults.length;
+    setCurrentResultIndex(prevIndex);
+    scrollToMessage(searchResults[prevIndex]);
+  };
+
+  const handleNextResult = () => {
+    if (searchResults.length === 0) return;
+    const nextIndex = (currentResultIndex + 1) % searchResults.length;
+    setCurrentResultIndex(nextIndex);
+    scrollToMessage(searchResults[nextIndex]);
+  };
+
+  const highlightText = (text: string, keyword: string) => {
+    if (!keyword) return text;
+
+    const parts = text.split(new RegExp(`(${keyword})`, 'gi'));
+
+    return parts.map((part, index) => (
+      part.toLowerCase() === keyword.toLowerCase() ? (
+        <span key={index} className="bg-amber-600">{part}</span>
+      ) : (
+        <span key={index}>{part}</span>
+      )
+    ));
+  };
+
+
 
   return (
     <div className={`flex ${showSidebar ? "w-full" : "w-3/4"}`}>
@@ -345,6 +399,47 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
               {selectedConversation.groupName}
             </h3>
           </div>
+
+          {isSearching && (
+            <div className="flex items-center gap-2 bg-gray-700 px-2 py-1 rounded-lg ml-2">
+              <input
+                type="text"
+                className="flex-1 bg-transparent p-1 pl-2 text-sm text-white outline-none focus:ring-0 placeholder-gray-400"
+                placeholder="Search messages..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSearch();
+                }}
+              />
+              <div className="flex items-center gap-1 text-gray-300 text-xs">
+                <ChevronUp
+                  size={18}
+                  onClick={handlePrevResult}
+                  className="cursor-pointer hover:text-green-400 transition"
+                />
+                <span className="px-1">{searchResults.length > 0 ? `${currentResultIndex + 1}/${searchResults.length}` : '0/0'}</span>
+                <ChevronDown
+                  size={18}
+                  onClick={handleNextResult}
+                  className="cursor-pointer hover:text-green-400 transition"
+                />
+              </div>
+              <X
+                size={20}
+                onClick={() => {
+                  setIsSearching(false);
+                  setSearchTerm('');
+                  setSearchResults([]);
+                  setCurrentResultIndex(0);
+                }}
+                className="cursor-pointer text-gray-400 hover:text-red-400 transition"
+              />
+            </div>
+          )}
+
+
+
 
           {/* Các icon bên phải */}
           <div className="flex items-center gap-4">
@@ -475,12 +570,22 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
             <Search
               size={20}
-              className="text-white cursor-pointer hover:text-gray-400 transition duration-200"
+              className={`cursor-pointer transition duration-200 ${
+                isSearching
+                  ? "text-green-400 scale-120"
+                  : "text-white hover:text-green-300"
+              }`}
+              onClick={() => {
+                setIsSearching(!isSearching);
+                setSearchTerm('');
+                setSearchResults([]);
+                setCurrentResultIndex(0);
+              }}
             />
             <Columns2
               size={20}
               className={`cursor-pointer transition duration-200 ${showSidebar
-                ? "text-green-400"
+                ? "text-green-400 scale-120"
                 : "text-white hover:text-gray-400"
                 }`}
               onClick={toggleSidebar}
@@ -493,8 +598,9 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
           {messages?.map((msg, index) => (
             <div
               key={index}
+              id={`message-${index}`}
               className={`flex items-start gap-3 ${msg.isSentByUser ? "flex-row-reverse" : ""
-                }`}
+                } `}
             >
               {/* Nếu là tin nhắn của người khác, hiển thị avatar */}
               {!msg.isSentByUser && (
@@ -514,13 +620,6 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                 {!msg.isSentByUser && selectedConversation.isGroup && (
                   <p className="text-xs text-gray-400 mb-1">{msg.name}</p>
                 )}
-
-                {/* <div
-                  className={`p-3 rounded-lg text-white ${msg.isSentByUser ? "bg-green-600" : "bg-gray-600"
-                    } break-words`}
-                >
-                  {msg.content}
-                </div> */}
 
                 <div className={`p-3 rounded-lg text-white ${msg.isSentByUser ? "bg-green-600" : "bg-gray-600"} break-words`}
                   onContextMenu={(event) => handleMessageRightClick(event, msg)}
@@ -558,7 +657,12 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <p>{msg.content}</p>
+                      // <p>{msg.content}</p>
+                      <p>
+                        {typeof msg.content === 'string'
+                          ? (isSearching ? highlightText(msg.content, searchTerm) : msg.content)
+                          : msg.content}
+                      </p>
                     )
                   ) : (
                     <p>Invalid content type</p> // Trường hợp nếu không phải string
