@@ -15,7 +15,7 @@ const Media = () => {
     const [modalAvatar, setModalAvatar] = useState("");
     const [modalPostId, setModalPostId] = useState("");
 
-    const handleOpenModal = (mediaList: string[], index: number, content:string ,postId: string) => {
+    const handleOpenModal = (mediaList: string[], index: number, content: string, postId: string) => {
         setModalMediaList(mediaList);
         setModalStartIndex(index);
         setModalPostContent(content);
@@ -48,9 +48,7 @@ const Media = () => {
                         <div
                             key={`${item.src}-${i}`}
                             className="relative w-full rounded-lg overflow-hidden aspect-[16/9] bg-black cursor-pointer"
-                            onClick={() =>
-                                handleOpenModal(item.mediaList || [], item.index, item.content,item.postId)
-                            }
+                            onClick={() => handleOpenModal(item.mediaList || [], item.index, item.content, item.postId)}
                         >
                             {item.src.includes("video") || item.src.includes(".mp4") ? (
                                 <video
@@ -72,7 +70,7 @@ const Media = () => {
                 )}
             </div>
 
-            {/* Modal chuẩn hóa giao diện */}
+            {/* Modal hiển thị ảnh hoặc video */}
             <ImageModal
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}
