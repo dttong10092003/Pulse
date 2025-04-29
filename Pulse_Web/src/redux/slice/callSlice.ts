@@ -15,6 +15,7 @@ interface CallState {
   fromAvatar: string;
   isGroup: boolean;
   groupName: string;
+  localStream: MediaStream | null;
 }
 
 const initialState: CallState = {
@@ -31,6 +32,7 @@ const initialState: CallState = {
   isGroup: false,
   groupName: '',
   isOngoing: false, // Thêm thuộc tính này để theo dõi trạng thái cuộc gọi;
+  localStream: null, // Thêm thuộc tính này để lưu trữ stream video/audio
 };
 
 const callSlice = createSlice({
@@ -76,6 +78,17 @@ const callSlice = createSlice({
 
     endCall: (state) => {
       state.isCalling = false;
+      state.isVisible = false;
+      state.isOngoing = false;
+      state.calleeName = '';
+      state.calleeAvatar = '';
+      state.rejectedByCallee = false;
+      state.toUserId = '';
+      state.fromUserId = '';
+      state.fromName = '';
+      state.fromAvatar = '';
+      state.isGroup = false;
+      state.groupName = '';
     },
     closeCall: (state) => {
       state.isVisible = false;
@@ -87,9 +100,15 @@ const callSlice = createSlice({
       state.rejectedByCallee = true;
       state.isCalling = false;
     },
-
+    setLocalStream: (state, action: PayloadAction<MediaStream>) => {
+      state.localStream = action.payload;
+    },
+    clearLocalStream: (state) => {
+      state.localStream = null;
+    },
+    
   },
 });
 
-export const { startCall, endCall, closeCall, rejectedCall, acceptedCall } = callSlice.actions;
+export const { startCall, endCall, closeCall, rejectedCall, acceptedCall, setLocalStream,clearLocalStream} = callSlice.actions;
 export default callSlice.reducer;

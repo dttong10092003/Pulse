@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../../redux/store';
 import { hideIncomingCall } from '../../../redux/slice/incomingCallSlice';
 import socketCall from '../../../utils/socketCall';
+import { acceptedCall, setLocalStream, startCall } from '../../../redux/slice/callSlice';
 
 const RINGTONE_URL = "https://res.cloudinary.com/df2amyjzw/video/upload/v1744890393/audiochuong_qdwihw.mp3";
 
@@ -33,10 +34,40 @@ const IncomingCallModal = () => {
         };
     }, [call.visible]);
 
-    const handleAccept = () => {
+    const handleAccept = async () => {
         console.log('✅ Accepted call from', call.fromUserId);
-        dispatch(hideIncomingCall());
-    };
+      
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: call.isVideo });
+          dispatch(setLocalStream(stream)); // 🆕 Lưu stream vào Redux
+      
+          socketCall.emit('callAccepted', {
+            toUserId: call.fromUserId,
+          });
+      
+          dispatch(hideIncomingCall()); // Ẩn modal nhận cuộc gọi
+      
+          // Gọi lại startCall để mở giao diện gọi
+          dispatch(startCall({
+            isVideo: call.isVideo,
+            calleeName: userDetails.firstname + " " + userDetails.lastname,
+            calleeAvatar: userDetails.avatar || '',
+            toUserId: call.fromUserId,
+            fromUserId: currentUser?._id || '',
+            fromName: call.fromName,
+            fromAvatar: call.fromAvatar,
+            isGroup: call.isGroup,
+            groupName: call.groupName,
+          }));
+      
+          dispatch(acceptedCall()); // Bật trạng thái ongoing
+        } catch (error) {
+          console.error('🚫 Error accessing media devices:', error);
+        }
+      };
+      
+      
+      
 
     const handleDecline = () => {
         console.log('❌ Declined call from', call.fromUserId);
