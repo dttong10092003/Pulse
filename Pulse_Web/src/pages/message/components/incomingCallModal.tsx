@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../../redux/store';
 import { hideIncomingCall } from '../../../redux/slice/incomingCallSlice';
 import socketCall from '../../../utils/socketCall';
-import { acceptedCall, setLocalStream, startCall } from '../../../redux/slice/callSlice';
+import { acceptedCall, startCall } from '../../../redux/slice/callSlice';
 
 const RINGTONE_URL = "https://res.cloudinary.com/df2amyjzw/video/upload/v1744890393/audiochuong_qdwihw.mp3";
 
@@ -11,12 +11,13 @@ const IncomingCallModal = () => {
     const dispatch = useDispatch();
     const call = useSelector((state: RootState) => state.incomingCall);
     const audioRef = useRef<HTMLAudioElement | null>(null);
-  const currentUser = useSelector((state: RootState) => state.auth.user);
-  const userDetails = useSelector((state: RootState) => state.user.userDetails) as {
-    firstname?: string;
-    lastname?: string;
-    avatar?: string;
-  };
+    const localStreamRef = useRef<MediaStream | null>(null);
+    const currentUser = useSelector((state: RootState) => state.auth.user);
+    const userDetails = useSelector((state: RootState) => state.user.userDetails) as {
+        firstname?: string;
+        lastname?: string;
+        avatar?: string;
+    };
     useEffect(() => {
         if (call.visible) {
             audioRef.current = new Audio(RINGTONE_URL);
@@ -36,50 +37,51 @@ const IncomingCallModal = () => {
 
     const handleAccept = async () => {
         console.log('✅ Accepted call from', call.fromUserId);
-      
+
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: call.isVideo });
-          dispatch(setLocalStream(stream)); // 🆕 Lưu stream vào Redux
-      
-          socketCall.emit('callAccepted', {
-            toUserId: call.fromUserId,
-          });
-      
-          dispatch(hideIncomingCall()); // Ẩn modal nhận cuộc gọi
-      
-          // Gọi lại startCall để mở giao diện gọi
-          dispatch(startCall({
-            isVideo: call.isVideo,
-            calleeName: userDetails.firstname + " " + userDetails.lastname,
-            calleeAvatar: userDetails.avatar || '',
-            toUserId: call.fromUserId,
-            fromUserId: currentUser?._id || '',
-            fromName: call.fromName,
-            fromAvatar: call.fromAvatar,
-            isGroup: call.isGroup,
-            groupName: call.groupName,
-          }));
-      
-          dispatch(acceptedCall()); // Bật trạng thái ongoing
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: call.isVideo });
+            localStreamRef.current = stream;
+
+            socketCall.emit('callAccepted', {
+                toUserId: call.fromUserId,
+            });
+
+            dispatch(hideIncomingCall()); // Ẩn modal nhận cuộc gọi
+
+            // Gọi lại startCall để mở giao diện gọi
+            dispatch(startCall({
+                isVideo: call.isVideo,
+                calleeName: userDetails.firstname + " " + userDetails.lastname,
+                calleeAvatar: userDetails.avatar || '',
+                toUserId: call.fromUserId,
+                fromUserId: currentUser?._id || '',
+                fromName: call.fromName,
+                fromAvatar: call.fromAvatar,
+                isGroup: call.isGroup,
+                groupName: call.groupName,
+            }));
+
+            dispatch(acceptedCall()); // Bật trạng thái ongoing
         } catch (error) {
-          console.error('🚫 Error accessing media devices:', error);
+            console.error('🚫 Error accessing media devices:', error);
         }
-      };
-      
-      
-      
+    };
+
+
+
 
     const handleDecline = () => {
         console.log('❌ Declined call from', call.fromUserId);
         socketCall.emit("declineCall", {
-          toUserId: call.fromUserId, // người gọi
-          fromUserId: currentUser?._id, // người từ chối
-          fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+            toUserId: call.fromUserId, // người gọi
+            fromUserId: currentUser?._id, // người từ chối
+            fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
         });
         dispatch(hideIncomingCall());
-        socketCall.emit("callRejected", { fromUserId: call.fromUserId });      };
-      
-      
+        socketCall.emit("callRejected", { fromUserId: call.fromUserId });
+    };
+
+
 
     if (!call.visible) return null;
 

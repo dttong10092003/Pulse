@@ -1,13 +1,16 @@
 import React, { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../../redux/store';
-import { acceptedCall, clearLocalStream, closeCall, endCall, rejectedCall, setLocalStream, startCall } from '../../../redux/slice/callSlice';
+import { acceptedCall, clearLocalStream, closeCall, endCall, rejectedCall, startCall } from '../../../redux/slice/callSlice';
 import socketCall from '../../../utils/socketCall';
 import OngoingCallModal from './ongoingCallModal';
+
 const CallModal: React.FC = () => {
   const dispatch = useDispatch();
   const call = useSelector((state: RootState) => state.call);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+
   useEffect(() => {
     socketCall.on('callEnded', () => {
       dispatch(endCall());
@@ -25,7 +28,7 @@ const CallModal: React.FC = () => {
     
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: call.isVideo });
-        dispatch(setLocalStream(stream));
+        localStreamRef.current = stream;
       } catch (err) {
         console.error('Failed to access microphone/camera:', err);
       }
@@ -101,8 +104,8 @@ const CallModal: React.FC = () => {
           calleeName={call.calleeName}
           calleeAvatar={call.calleeAvatar}
           onEndCall={handleEndCall}
-          localStream={call.localStream} // Truyền stream vào để sử dụng
-        />
+          localStream={localStreamRef.current}
+          />
 
       ) : (
         <div className="fixed bottom-5 right-5 z-50">

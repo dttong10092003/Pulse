@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { PhoneOff, Mic, MicOff, Video, VideoOff } from "lucide-react";
 import socketCall from "../../../utils/socketCall";
 import { useSelector } from "react-redux";
@@ -24,7 +24,7 @@ const OngoingCallModal: React.FC<OngoingCallModalProps> = ({
   const currentCall = useSelector((state: RootState) => state.call);
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
-
+  const [callDuration, setCallDuration] = useState(0);
   const handleEndCall = () => {
     if (currentCall.toUserId) {
       socketCall.emit('endCall', { toUserId: currentCall.toUserId });
@@ -33,7 +33,21 @@ const OngoingCallModal: React.FC<OngoingCallModalProps> = ({
     }
     onEndCall();
   };
+  // Tăng thời gian mỗi giây
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCallDuration((prev) => prev + 1);
+    }, 1000);
 
+    return () => clearInterval(timer);
+  }, []);
+
+  // Format phút:giây
+  const formatDuration = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
   const handleToggleMic = () => {
     if (localStream) {
       localStream.getAudioTracks().forEach(track => {
@@ -54,6 +68,11 @@ const OngoingCallModal: React.FC<OngoingCallModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50">
+      
+      <div className="text-white text-2xl mb-4">
+        {formatDuration(callDuration)}
+      </div>
+
       <div className="flex items-center gap-10 mb-10">
         {/* Người gọi */}
         <div className="flex flex-col items-center">
