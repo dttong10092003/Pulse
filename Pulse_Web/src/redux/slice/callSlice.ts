@@ -100,9 +100,7 @@ const callSlice = createSlice({
       state.rejectedByCallee = true;
       state.isCalling = false;
     },
-    setLocalStream: (state, action: PayloadAction<MediaStream>) => {
-      state.localStream = action.payload;
-    },
+  
     clearLocalStream: (state) => {
       state.localStream = null;
     },
@@ -110,5 +108,5 @@ const callSlice = createSlice({
   },
 });
 
-export const { startCall, endCall, closeCall, rejectedCall, acceptedCall, setLocalStream,clearLocalStream} = callSlice.actions;
+export const { startCall, endCall, closeCall, rejectedCall, acceptedCall,clearLocalStream} = callSlice.actions;
 export default callSlice.reducer;
