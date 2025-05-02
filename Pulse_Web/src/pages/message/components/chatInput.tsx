@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../../redux/store';
 import socket from '../../../utils/socket';
 import { Message } from '../../../redux/slice/types';
+import { fileIcons } from '../../../assets';
 
 const ChatInput: React.FC = () => {
   const [message, setMessage] = useState('');
@@ -25,7 +26,7 @@ const ChatInput: React.FC = () => {
       console.error('No conversation selected');
       return;
     }
-  
+
     if (!userDetail) {
       console.error('No user detail found');
       return;
@@ -44,30 +45,30 @@ const ChatInput: React.FC = () => {
         isPinned: false,
         senderAvatar: userDetail?.avatar,
       };
-  
+
       socket.emit('sendMessage', textMessage);
       // dispatch(addMessageToState({
       //   message: textMessage,
       //   currentUserId: userDetail.userId,
       // }));
     }
-  
+
     // Gửi từng file theo thứ tự
     for (const file of selectedFiles) {
       const fileType = file.type.split('/')[0];
       let messageType: "image" | "video" | "audio" | "file" = "file";
-  
+
       if (fileType === "image") messageType = "image";
       else if (fileType === "video") messageType = "video";
       else if (fileType === "audio") messageType = "audio";
-  
+
       const fileContent = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onloadend = () => resolve(reader.result as string);
         reader.onerror = reject;
       });
-  
+
       const fileMessage: Message = {
         conversationId: selectedConversation._id,
         senderId: userDetail.userId,
@@ -82,19 +83,19 @@ const ChatInput: React.FC = () => {
         fileName: file.name,
         fileType: file.type,
       };
-  
+
       socket.emit('sendMessage', fileMessage);
       // dispatch(addMessageToState({
       //   message: fileMessage,
       //   currentUserId: userDetail.userId,
       // }));
     }
-  
+
     // Xoá nội dung sau khi gửi xong
     setMessage('');
     setSelectedFiles([]);
   };
-  
+
 
   const handleEmojiClick = (emojiObject: EmojiClickData) => {
     setMessage((prevMessage) => prevMessage + emojiObject.emoji);
@@ -145,6 +146,44 @@ const ChatInput: React.FC = () => {
   //   setFilePreviews([]);
   // };
 
+  const isImageFile = (file: File) => {
+    return file.type.startsWith("image/");
+  };
+
+  const getFileIcon = (fileName: string = '') => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+
+    if (!ext) return fileIcons.doc; // fallback
+
+    switch (ext) {
+      case 'pdf':
+        return fileIcons.pdf;
+      case 'doc':
+      case 'docx':
+        return fileIcons.doc;
+      case 'xls':
+      case 'xlsx':
+        return fileIcons.xls;
+      case 'zip':
+      case 'rar':
+        return fileIcons.zip;
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'gif':
+        return fileIcons.image;
+      case 'mp4':
+      case 'mov':
+      case 'avi':
+        return fileIcons.video;
+      case 'mp3':
+      case 'wav':
+        return fileIcons.sound;
+      default:
+        return fileIcons.doc;
+    }
+  };
+
   return (
     <div className="p-3 bg-[#282828b2] flex flex-col rounded-xl">
       <div className='p-3 bg-[#282828b2] flex items-center rounded-xl w-full'>
@@ -190,28 +229,50 @@ const ChatInput: React.FC = () => {
         </button>
       </div>
 
-      
-  {/* Selected Files */}
-  {selectedFiles.length > 0 && (
+
+      {/* Selected Files */}
+      {selectedFiles.length > 0 && (
         <div className="mt-2 flex gap-2">
           <div className="flex flex-wrap gap-2">
-            {selectedFiles.map((file, index) => (
-              <div key={index} className="relative">
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt={file.name}
-                  className="w-16 h-16 object-cover rounded-lg"
-                />
-                {/* Delete button inside image */}
-                <button
-                  className="absolute top-0 right-0 text-red-500 not-only:rounded-full p-1 cursor-pointer"
-                  onClick={() => handleRemoveFile(index)}
-                >
-                  <Trash2 size={16} />
+            {selectedFiles.map((file, index) => {
+              const isImage = isImageFile(file);
+              const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+              const icon = getFileIcon(file.name);
+              return (
+                <div key={index} className="relative bg-gray-700 rounded-lg flex items-center gap-2 overflow-hidden max-w-[150px]">
+                  {isImage ? (
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={file.name}
+                      className="w-16 h-16 object-cover rounded-lg"
+                    />
+                  ) : (
+                    <img
+                      src={icon}
+                      alt="file-icon"
+                      className="w-10 h-10 object-contain"
+                    />
+                  )}
 
-                </button>
-              </div>
-            ))}
+                  {!isImage && (
+                    <div className="flex-1 w-[110px]">
+                      <p className="text-white text-sm truncate w-[86px]">
+                        {file.name}
+                      </p>
+                      <p className="text-gray-400 text-xs uppercase">{fileExtension}</p>
+                    </div>
+                  )}
+                  {/* Delete button inside image */}
+                  <button
+                    className="absolute top-0 right-0 text-red-500 not-only:rounded-full p-1 cursor-pointer"
+                    onClick={() => handleRemoveFile(index)}
+                  >
+                    <Trash2 size={16} />
+
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
           {/* Button to remove all files */}
