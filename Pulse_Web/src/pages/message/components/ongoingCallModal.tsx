@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { PhoneOff, Mic, MicOff, Video, VideoOff } from "lucide-react";
-import socketCall from "../../../utils/socketCall";
-import { useSelector } from "react-redux";
-import { RootState } from "../../../redux/store";
+// import socketCall from "../../../utils/socketCall";
+// import { useSelector } from "react-redux";
+// import { RootState } from "../../../redux/store";
+import { agoraClient } from "../../../utils/agoraClient";
+import { leaveAgora } from "../../../utils/agoraClient";
+import { localAudioTrack, localVideoTrack } from "../../../utils/agoraClient";
 
 interface OngoingCallModalProps {
   callerName: string;
@@ -19,20 +22,64 @@ const OngoingCallModal: React.FC<OngoingCallModalProps> = ({
   calleeName,
   calleeAvatar,
   onEndCall,
-  localStream,
+  // localStream,
 }) => {
-  const currentCall = useSelector((state: RootState) => state.call);
+  // const currentCall = useSelector((state: RootState) => state.call);
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const handleEndCall = () => {
-    if (currentCall.toUserId) {
-      socketCall.emit('endCall', { toUserId: currentCall.toUserId });
-    } else if (currentCall.fromUserId) {
-      socketCall.emit('endCall', { toUserId: currentCall.fromUserId });
+  useEffect(() => {
+    const registerEventHandlers = () => {
+      agoraClient.on("user-published", async (user, mediaType) => {
+        await agoraClient.subscribe(user, mediaType);
+        console.log("📡 Subscribed to", user.uid);
+      
+        if (mediaType === "audio" && user.audioTrack) {
+          user.audioTrack.play(); // 🔈 BẮT BUỘC ĐỂ NGHE ÂM THANH
+          console.log("🎧 Playing remote audio...");
+        }
+      
+        if (mediaType === "video" && user.videoTrack) {
+          user.videoTrack.play("remote-player"); // hoặc append vào element tuỳ bạn
+        }
+      });
+
+      agoraClient.on("user-unpublished", (_, mediaType) => {
+        console.log(`👋 User unpublished: ${mediaType}`);
+      });
+    };
+
+    registerEventHandlers();
+
+    return () => {
+      agoraClient.removeAllListeners();
+    };
+  }, []);
+
+
+  useEffect(() => {
+    if (localVideoTrack) {
+      try {
+        localVideoTrack.play("local-player");
+      } catch (err) {
+        console.error("Không thể play local video:", err);
+      }
     }
+  }, []);
+
+  // const handleEndCall = () => {
+  //   if (currentCall.toUserId) {
+  //     socketCall.emit('endCall', { toUserId: currentCall.toUserId });
+  //   } else if (currentCall.fromUserId) {
+  //     socketCall.emit('endCall', { toUserId: currentCall.fromUserId });
+  //   }
+  //   onEndCall();
+  // };
+  const handleEndCall = () => {
+    leaveAgora();
     onEndCall();
   };
+
   // Tăng thời gian mỗi giây
   useEffect(() => {
     const timer = setInterval(() => {
@@ -49,26 +96,24 @@ const OngoingCallModal: React.FC<OngoingCallModalProps> = ({
     return `${m}:${s}`;
   };
   const handleToggleMic = () => {
-    if (localStream) {
-      localStream.getAudioTracks().forEach(track => {
-        track.enabled = !track.enabled;
-      });
-      setIsMuted(prev => !prev); // 🔥 Toggle luôn icon
+    if (localAudioTrack) {
+      localAudioTrack.setEnabled(!isMuted);
+      setIsMuted(!isMuted);
     }
   };
 
   const handleToggleCamera = () => {
-    if (localStream) {
-      localStream.getVideoTracks().forEach(track => {
-        track.enabled = !track.enabled;
-      });
-      setIsCameraOff(prev => !prev); // 🔥 Toggle luôn icon
+    if (localVideoTrack) {
+      localVideoTrack.setEnabled(!isCameraOff);
+      setIsCameraOff(!isCameraOff);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50">
-      
+      <div id="local-player" style={{ width: 300, height: 200 }}></div>
+      <div id="remote-player" style={{ width: 300, height: 200 }}></div>
+
       <div className="text-white text-2xl mb-4">
         {formatDuration(callDuration)}
       </div>

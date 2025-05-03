@@ -4,6 +4,7 @@ import { RootState } from '../../../redux/store';
 import { acceptedCall, clearLocalStream, closeCall, endCall, rejectedCall, startCall } from '../../../redux/slice/callSlice';
 import socketCall from '../../../utils/socketCall';
 import OngoingCallModal from './ongoingCallModal';
+import { joinAgora, localVideoTrack } from "../../../utils/agoraClient";
 
 const CallModal: React.FC = () => {
   const dispatch = useDispatch();
@@ -23,14 +24,14 @@ const CallModal: React.FC = () => {
 
   useEffect(() => {
     socketCall.on('callAccepted', async () => {
-      console.log('📞 The call has been accepted.');
-      dispatch(acceptedCall());
-    
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: call.isVideo });
-        localStreamRef.current = stream;
+        await joinAgora(`call_${call.fromUserId}_${call.toUserId}`, call.fromUserId);
+        if (localVideoTrack) {
+          localVideoTrack.play("local-player");
+        }
+        dispatch(acceptedCall());
       } catch (err) {
-        console.error('Failed to access microphone/camera:', err);
+        console.error("Failed to join Agora:", err);
       }
     });
 
@@ -141,6 +142,7 @@ const CallModal: React.FC = () => {
                       fromAvatar: call.fromAvatar,
                       isGroup: call.isGroup,
                       groupName: call.groupName,
+                      
                     }));
 
                     // Gửi lại socket thông báo gọi
