@@ -15,37 +15,46 @@ export const agoraClient: IAgoraRTCClient = AgoraRTC.createClient({
 export let localAudioTrack: IMicrophoneAudioTrack | null = null;
 export let localVideoTrack: ICameraVideoTrack | null = null;
 
-export const joinAgora = async (channel: string, uid: string) => {
-  try {
-    console.log("➡️ Joining channel", channel, "with UID", uid);
+// ✏️ Thay thế hàm joinAgora bằng 2 hàm mới
 
-    // ⚠️ Leave if still connected (tránh bug khi reconnect)
+export const joinOnly = async (channel: string, uid: string) => {
+  try {
+    console.log("➡️ Joining only channel", channel, "with UID", uid);
+
     if (
       agoraClient.connectionState === "CONNECTED" ||
       agoraClient.connectionState === "CONNECTING"
     ) {
-      console.warn("⚠️ Already connected to Agora. Leaving before re-joining...");
-      await leaveAgora(); // 👈 phải leave sạch trước
+      console.warn("⚠️ Already connected. Leaving first...");
+      await leaveAgora();
     }
 
     await agoraClient.join(APP_ID, channel, TOKEN, uid);
-
-    // ⚠️ Tạo mới track mỗi lần join
-    [localAudioTrack, localVideoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-    console.log("✅ Created local tracks");
-
-    await agoraClient.publish([localAudioTrack, localVideoTrack]);
-    console.log("📡 Published tracks");
-
-    // 👇 Xóa DOM cũ nếu có để tránh "play" lỗi
-    const localEl = document.getElementById("local-player");
-    if (localEl) localEl.innerHTML = "";
-
-    localVideoTrack.play("local-player");
   } catch (error) {
-    console.error("❌ joinAgora failed:", error);
+    console.error("❌ joinOnly failed:", error);
   }
 };
+
+export const publishTracks = async () => {
+  try {
+    // Không truyền cameraId → dùng đúng camera mặc định của trình duyệt
+    [localAudioTrack, localVideoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+
+    console.log("✅ Created local tracks with default devices");
+    await agoraClient.publish([localAudioTrack, localVideoTrack]);
+    console.log("📡 Published tracks");
+  } catch (error) {
+    console.error("❌ publishTracks failed:", error);
+  }
+};
+
+
+// ✅ Nếu vẫn cần giữ hàm cũ để dùng nhanh, thì để như sau:
+export const joinAgora = async (channel: string, uid: string) => {
+  await joinOnly(channel, uid);
+  await publishTracks();
+};
+
 
 export const leaveAgora = async () => {
   try {
