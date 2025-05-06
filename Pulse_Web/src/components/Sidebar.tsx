@@ -114,14 +114,6 @@ const Sidebar = () => {
                     </div>
                 )}
             </div>
-
-            {/* Nút toggle thu/phóng sidebar */}
-            <button
-                className={`cursor-pointer absolute top-4 right-1 text-lg transition duration-200 ${isHovered || showSidebar ? 'text-green-400' : 'text-white hover:text-gray-400'}`}
-                onClick={toggleSidebar}
-            >
-                {showSidebar ? <Columns2 size={20} /> : <ChevronRight size={20} />}
-            </button>
         </aside>
     );
 };
