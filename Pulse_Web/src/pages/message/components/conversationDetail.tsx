@@ -3,7 +3,7 @@ import { ChatInput } from "./index";
 import { format, formatDistanceToNow } from "date-fns";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../../../redux/store";
-import { deleteMessageLocal, revokeMessageLocal } from "../../../redux/slice/chatSlice";
+import { deleteConversation, deleteMessageLocal, incrementUnreadCount, revokeMessageLocal } from "../../../redux/slice/chatSlice";
 import { Conversation, Member, Message } from '../../../redux/slice/types';
 import socket from '../../../utils/socket';
 import socketCall from '../../../utils/socketCall';
@@ -11,23 +11,10 @@ import GroupMembersModal from './GroupMembersModal';
 import toast from 'react-hot-toast';
 import ForwardMessageModal from './ForwardMessageModal';
 import {
-  Phone,
-  Search,
-  Columns2,
-  Video,
-  X,
-  File,
-  Bell,
-  UserPlus,
-  Pin,
-  EyeOff,
-  TriangleAlert,
-  Trash2,
-  LogOut,
-  MessageCircle,
-  Users,
-  Pencil,
-  Camera,
+  Phone, Search, Columns2, Video, X, Bell, UserPlus, Pin, EyeOff,
+  TriangleAlert, Trash2, LogOut, MessageCircle, Users, Pencil, Camera,
+  ChevronDown,
+  ChevronUp, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { fileIcons } from '../../../assets';
 import { startCall } from '../../../redux/slice/callSlice';
@@ -71,6 +58,16 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const [newGroupName, setNewGroupName] = useState(selectedConversation?.groupName || "owo");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const [isSearching, setIsSearching] = useState(false); // Có đang bật tìm kiếm không
+  const [searchTerm, setSearchTerm] = useState(''); // Từ khóa tìm kiếm
+  const [searchResults, setSearchResults] = useState<number[]>([]); // Các index kết quả
+  const [currentResultIndex, setCurrentResultIndex] = useState(0); // Đang chọn kết quả nào
+
+  const [showAllMedia, setShowAllMedia] = useState(false);
+  const [showAllFiles, setShowAllFiles] = useState(false);
+
+  const [previewImageIndex, setPreviewImageIndex] = useState<number | null>(null);
+
   console.log("User details:", userDetails);
 
   useEffect(() => {
@@ -102,7 +99,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "auto" });
     }
-  }, [selectedConversation]);
+  }, [selectedConversation?._id]);
 
   useEffect(() => {
     const handleClickOutside = () => {
@@ -115,6 +112,32 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
       window.removeEventListener("click", handleClickOutside);
     };
   }, [showMenu]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (previewImageIndex !== null) {
+          setPreviewImageIndex(null);
+        }
+        if (isSearching) {
+          setIsSearching(false);
+          setSearchTerm('');
+          setSearchResults([]);
+          setCurrentResultIndex(0);
+        }
+      }
+    };
+
+    const shouldListen = previewImageIndex !== null || isSearching;
+
+    if (shouldListen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [previewImageIndex, isSearching]);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -201,13 +224,13 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
               });
               toast.dismiss(t.id);
             }}
-            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer"
           >
             Yes
           </button>
           <button
             onClick={() => toast.dismiss(t.id)}
-            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
           >
             No
           </button>
@@ -232,13 +255,13 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
               });
               toast.dismiss(t.id);
             }}
-            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer"
           >
             Yes
           </button>
           <button
             onClick={() => toast.dismiss(t.id)}
-            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
           >
             No
           </button>
@@ -246,6 +269,75 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
       </div>
     ));
   };
+
+  const handleLeaveGroup = () => {
+    if (!selectedConversation || !currentUser?._id) return;
+
+    // Kiểm tra nếu user hiện tại là admin
+    if (selectedConversation.adminId === currentUser._id) {
+      toast.error("You must transfer admin rights before leaving the group.");
+      return;
+    }
+
+    toast.custom((t) => (
+      <div className="bg-[#2a2a2a] text-white p-4 rounded-lg shadow-md w-72">
+        <p className="mb-2">Are you sure you want to leave this group?</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => {
+              socket.emit('leaveGroup', {
+                conversationId: selectedConversation._id,
+                userId: currentUser._id,
+              });
+              toast.dismiss(t.id);
+            }}
+            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    ));
+  };
+
+  const handleDeleteChat = () => {
+    if (!selectedConversation?._id || !currentUser?._id) return;
+
+    toast.custom((t) => (
+      <div className="bg-[#2a2a2a] text-white p-4 rounded-lg shadow-md w-72">
+        <p className="mb-2">Are you sure you want to delete this chat?</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => {
+              dispatch(
+                deleteConversation({
+                  conversationId: selectedConversation._id,
+                  userId: currentUser._id,
+                })
+              );
+              toast.dismiss(t.id);
+            }}
+            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    ));
+  };
+
 
   if (!selectedConversation) {
     return (
@@ -324,6 +416,83 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     });
   };
 
+  const handleSearch = () => {
+    if (!messages || searchTerm.trim() === '') {
+      setSearchResults([]);
+      return;
+    }
+
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    const foundIndexes = messages
+      .map((msg, index) =>
+        (typeof msg.content === 'string' &&
+          msg.type === 'text' &&
+          !msg.isDeleted &&
+          msg.content.toLowerCase().includes(lowerSearchTerm))
+          ? index
+          : -1
+      )
+      .filter(index => index !== -1);
+
+    setSearchResults(foundIndexes);
+    setCurrentResultIndex(0);
+
+    if (foundIndexes.length > 0) {
+      scrollToMessage(foundIndexes[0]);
+    }
+  };
+
+  const scrollToMessage = (index: number) => {
+    const target = document.getElementById(`message-${index}`);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
+  const handlePrevResult = () => {
+    if (searchResults.length === 0) return;
+    const prevIndex = (currentResultIndex - 1 + searchResults.length) % searchResults.length;
+    setCurrentResultIndex(prevIndex);
+    scrollToMessage(searchResults[prevIndex]);
+  };
+
+  const handleNextResult = () => {
+    if (searchResults.length === 0) return;
+    const nextIndex = (currentResultIndex + 1) % searchResults.length;
+    setCurrentResultIndex(nextIndex);
+    scrollToMessage(searchResults[nextIndex]);
+  };
+
+  const escapeRegExp = (string: string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  };
+
+  const highlightText = (text: string, keyword: string) => {
+    if (!keyword) return text;
+
+    const escapedKeyword = escapeRegExp(keyword);
+    const parts = text.split(new RegExp(`(${escapedKeyword})`, 'gi'));
+
+    return parts.map((part, index) => (
+      part.toLowerCase() === keyword.toLowerCase() ? (
+        <span key={index} className="bg-amber-600">{part}</span>
+      ) : (
+        <span key={index}>{part}</span>
+      )
+    ));
+  };
+
+  const mediaMessages = (selectedConversation.messages || [])
+    .filter(msg => (msg.type === 'image' || msg.type === 'video') && !msg.isDeleted)
+    .reverse(); // Mới nhất trước
+
+  const fileMessages = (selectedConversation.messages || [])
+    .filter(msg => msg.type === 'file' && !msg.isDeleted)
+    .reverse();
+
+  const imageMessages = messages?.filter(msg => msg.type === 'image' && !msg.isDeleted) || [];
+
+
 
   return (
     <div className={`flex ${showSidebar ? "w-full" : "w-3/4"}`}>
@@ -345,6 +514,47 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
               {selectedConversation.groupName}
             </h3>
           </div>
+
+          {isSearching && (
+            <div className="flex items-center gap-2 bg-gray-700 px-2 py-1 rounded-lg ml-2">
+              <input
+                type="text"
+                className="flex-1 bg-transparent p-1 pl-2 text-sm text-white outline-none focus:ring-0 placeholder-gray-400"
+                placeholder="Search messages..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSearch();
+                }}
+              />
+              <div className="flex items-center gap-1 text-gray-300 text-xs">
+                <ChevronUp
+                  size={18}
+                  onClick={handlePrevResult}
+                  className="cursor-pointer hover:text-green-400 transition"
+                />
+                <span className="px-1">{searchResults.length > 0 ? `${currentResultIndex + 1}/${searchResults.length}` : '0/0'}</span>
+                <ChevronDown
+                  size={18}
+                  onClick={handleNextResult}
+                  className="cursor-pointer hover:text-green-400 transition"
+                />
+              </div>
+              <X
+                size={20}
+                onClick={() => {
+                  setIsSearching(false);
+                  setSearchTerm('');
+                  setSearchResults([]);
+                  setCurrentResultIndex(0);
+                }}
+                className="cursor-pointer text-gray-400 hover:text-red-400 transition"
+              />
+            </div>
+          )}
+
+
+
 
           {/* Các icon bên phải */}
           <div className="flex items-center gap-4">
@@ -475,12 +685,21 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
             <Search
               size={20}
-              className="text-white cursor-pointer hover:text-gray-400 transition duration-200"
+              className={`cursor-pointer transition duration-200 ${isSearching
+                ? "text-green-400 scale-120"
+                : "text-white hover:text-green-300"
+                }`}
+              onClick={() => {
+                setIsSearching(!isSearching);
+                setSearchTerm('');
+                setSearchResults([]);
+                setCurrentResultIndex(0);
+              }}
             />
             <Columns2
               size={20}
               className={`cursor-pointer transition duration-200 ${showSidebar
-                ? "text-green-400"
+                ? "text-green-400 scale-120"
                 : "text-white hover:text-gray-400"
                 }`}
               onClick={toggleSidebar}
@@ -493,8 +712,9 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
           {messages?.map((msg, index) => (
             <div
               key={index}
+              id={`message-${index}`}
               className={`flex items-start gap-3 ${msg.isSentByUser ? "flex-row-reverse" : ""
-                }`}
+                } `}
             >
               {/* Nếu là tin nhắn của người khác, hiển thị avatar */}
               {!msg.isSentByUser && (
@@ -515,23 +735,22 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                   <p className="text-xs text-gray-400 mb-1">{msg.name}</p>
                 )}
 
-                {/* <div
-                  className={`p-3 rounded-lg text-white ${msg.isSentByUser ? "bg-green-600" : "bg-gray-600"
-                    } break-words`}
-                >
-                  {msg.content}
-                </div> */}
-
                 <div className={`p-3 rounded-lg text-white ${msg.isSentByUser ? "bg-green-600" : "bg-gray-600"} break-words`}
                   onContextMenu={(event) => handleMessageRightClick(event, msg)}
                 >
                   {/* Kiểm tra nếu msg.content là string */}
-                  {typeof msg.content === 'string' ? (
+                  {msg.isDeleted ? (
+                    <p className="italic text-gray-300">{msg.content}</p>
+                  ) : typeof msg.content === 'string' ? (
                     msg.type === "image" ? (
                       <img
                         src={typeof msg.content === 'string' ? msg.content : URL.createObjectURL(new Blob([msg.content]))}
                         alt="Image message"
-                        className="w-full max-h-[499px] object-cover rounded-lg"
+                        className="w-full max-h-[499px] object-cover rounded-lg cursor-pointer hover:opacity-80"
+                        onClick={() => {
+                          const imgIndex = imageMessages.findIndex(img => img._id === msg._id);
+                          if (imgIndex !== -1) setPreviewImageIndex(imgIndex);
+                        }}
                       />
                     ) : msg.type === "file" || msg.type === "video" || msg.type === "audio" ? (
                       <div className="flex items-center gap-3 bg-white p-3 rounded-lg shadow text-black max-w-[300px]">
@@ -558,7 +777,11 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <p>{msg.content}</p>
+                      <p>
+                        {typeof msg.content === 'string' && msg.type === 'text'
+                          ? (isSearching ? highlightText(msg.content, searchTerm) : msg.content)
+                          : msg.content}
+                      </p>
                     )
                   ) : (
                     <p>Invalid content type</p> // Trường hợp nếu không phải string
@@ -773,47 +996,78 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
             <div className="p-4 border-b border-gray-700">
               <h4 className="text-white font-medium mb-3">Image/Video</h4>
               <div className="grid grid-cols-3 gap-2">
-                {[1, 2, 3, 4, 5, 6].map((item) => (
-                  <div
-                    key={item}
-                    className="aspect-square bg-gray-700 rounded-md overflow-hidden"
-                  >
-                    <img
-                      src={`https://picsum.photos/200`}
-                      alt="placeholder"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
+                {(showAllMedia ? mediaMessages : mediaMessages.slice(0, 6)).map((msg) => {
+                  const msgIndex = selectedConversation.messages.findIndex(m => m._id === msg._id);
+                  return (
+                    <div
+                      key={msg._id}
+                      onClick={() => scrollToMessage(msgIndex)}
+                      className="aspect-square bg-gray-700 rounded-md overflow-hidden cursor-pointer hover:opacity-80"
+                    >
+                      {msg.type === 'image' ? (
+                        <img
+                          src={msg.content}
+                          alt="media"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <video
+                          src={msg.content}
+                          className="w-full h-full object-cover"
+                          muted
+                        />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              <button className="text-green-500 text-sm font-medium mt-2 hover:text-green-400 cursor-pointer">
-                Xem tất cả
-              </button>
+
+              {mediaMessages.length > 6 && (
+                <button
+                  className="text-green-500 text-sm font-medium mt-2 hover:text-green-400 cursor-pointer"
+                  onClick={() => setShowAllMedia(!showAllMedia)}
+                >
+                  {showAllMedia ? 'Show less' : 'View all'}
+                </button>
+              )}
             </div>
 
             <div className="p-4 border-b border-gray-700">
               <h4 className="text-white font-medium mb-3">File</h4>
               <div className="space-y-2">
-                {[1, 2, 3].map((item) => (
-                  <div
-                    key={item}
-                    className="bg-gray-800 p-2 rounded-md flex items-center"
-                  >
-                    <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-2">
-                      <File size={16} className="text-gray-400" />
+                {(showAllFiles ? fileMessages : fileMessages.slice(0, 3)).map((msg) => {
+                  const msgIndex = selectedConversation.messages.findIndex(m => m._id === msg._id);
+                  return (
+                    <div
+                      key={msg._id}
+                      onClick={() => scrollToMessage(msgIndex)}
+                      className="bg-gray-800 p-2 rounded-md flex items-center cursor-pointer hover:bg-gray-700"
+                    >
+                      <img
+                        src={getFileIcon(msg.fileName || getFileNameFromUrl(msg.content))}
+                        alt="file-icon"
+                        className="w-10 h-10 object-contain mr-2"
+                      />
+                      <div className="overflow-hidden">
+                        <p className="text-white text-sm truncate">
+                          {msg.fileName || getFileNameFromUrl(msg.content)}
+                        </p>
+                        <p className="text-gray-400 text-xs">
+                          {format(new Date(msg.timestamp), "dd/MM/yyyy")}
+                        </p>
+                      </div>
                     </div>
-                    <div className="overflow-hidden">
-                      <p className="text-white text-sm truncate">
-                        document-{item}.pdf
-                      </p>
-                      <p className="text-gray-400 text-xs">15/03/2025</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-              <button className="text-green-500 text-sm font-medium mt-2 hover:text-green-400 cursor-pointer">
-                Xem tất cả
-              </button>
+              {fileMessages.length > 3 && (
+                <button
+                  className="text-green-500 text-sm font-medium mt-2 hover:text-green-400 cursor-pointer"
+                  onClick={() => setShowAllFiles(!showAllFiles)}
+                >
+                  {showAllFiles ? 'Show less' : 'View all'}
+                </button>
+              )}
             </div>
 
             <div className="p-4">
@@ -843,13 +1097,17 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center text-white cursor-pointer hover:bg-gray-800 p-2 rounded-md">
+                <div className="flex items-center text-white cursor-pointer hover:bg-gray-800 p-2 rounded-md"
+                  onClick={handleDeleteChat}
+                >
                   <Trash2 size={16} className="mr-2 text-red-500" />
                   <span className="text-red-500">Delete chat</span>
                 </div>
                 {/* Nếu đang ở nhóm chat thì có thêm ntu1 này */}
                 {selectedConversation.isGroup && (
-                  <div className="flex items-center text-white cursor-pointer hover:bg-gray-800 p-2 rounded-md">
+                  <div className="flex items-center text-white cursor-pointer hover:bg-gray-800 p-2 rounded-md"
+                    onClick={handleLeaveGroup}
+                  >
                     <LogOut size={16} className="mr-2 text-red-500" />
                     <span className="text-red-500">Leave the group</span>
                   </div>
@@ -859,6 +1117,43 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
           </div>
         </div>
       )}
+      {previewImageIndex !== null && imageMessages[previewImageIndex] && (
+        <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+          <img
+            src={imageMessages[previewImageIndex].content}
+            alt="Preview"
+            className="w-[66%] h-[66%] rounded-lg"
+          />
+          <X
+            size={20}
+            className="absolute top-5 right-5 text-white text-xl cursor-pointer hover:text-red-400"
+            onClick={() => setPreviewImageIndex(null)}
+          />
+
+          {previewImageIndex > 0 && (
+            <ChevronLeft
+              size={36}
+              className="absolute left-5 text-white cursor-pointer hover:text-green-400"
+              onClick={(e) => {
+                e.stopPropagation();
+                setPreviewImageIndex((prev) => prev! - 1);
+              }}
+            />
+          )}
+
+          {previewImageIndex < imageMessages.length - 1 && (
+            <ChevronRight
+              size={36}
+              className="absolute right-5 text-white cursor-pointer hover:text-green-400"
+              onClick={(e) => {
+                e.stopPropagation();
+                setPreviewImageIndex((prev) => prev! + 1);
+              }}
+            />
+          )}
+        </div>
+      )}
+
       {showForwardModal && messageToForward && (
         <ForwardMessageModal
           message={messageToForward}
@@ -882,6 +1177,19 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                 fileName: message.fileName || '',
                 fileType: message.fileType || '',
               });
+
+              // 🔁 Tăng unreadCount cho từng thành viên nhóm nhận
+              const targetConversation = conversations.find(c => c._id === convId);
+              if (targetConversation) {
+                targetConversation.members.forEach(member => {
+                  if (member.userId !== currentUserId) {
+                    dispatch(incrementUnreadCount({
+                      conversationId: convId,
+                      userId: member.userId,
+                    }));
+                  }
+                });
+              }
             });
 
             toast.success("Message forwarded successfully");

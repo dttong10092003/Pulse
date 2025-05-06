@@ -11,7 +11,7 @@ interface Post {
   userId: string;
   createdAt: string;
   username: string;
-  avatar: string; 
+  avatar: string;   
 }
 
 interface PostState {
@@ -94,6 +94,34 @@ export const fetchAllPosts = createAsyncThunk(
     }
   }
 );
+export const editPost = createAsyncThunk(
+  "postProfile/editPost",
+  async (
+    data: { postId: string; content?: string; media?: string[] },
+    { getState, rejectWithValue }
+  ) => {
+    try {
+      const state: any = getState();
+      const token = state.auth.token;
+      const { postId, ...updateData } = data;
+
+      const res = await axios.put(
+        `${URI_API}/${postId}`,
+        updateData,
+        {
+          headers: {
+            Authorization: `${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      return res.data.post; // return post mới sau khi edit
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
 
 
 const postProfileSlice = createSlice({
@@ -135,7 +163,14 @@ const postProfileSlice = createSlice({
       .addCase(fetchAllPosts.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-      });
+      })
+      .addCase(editPost.fulfilled, (state, action: PayloadAction<Post>) => {
+        const index = state.posts.findIndex(post => post._id === action.payload._id);
+        if (index !== -1) {
+          state.posts[index] = action.payload; // Cập nhật lại bài post đã chỉnh sửa
+        }
+      })
+;      
   },
 });
 
