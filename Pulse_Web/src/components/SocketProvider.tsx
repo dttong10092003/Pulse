@@ -7,7 +7,7 @@ import {
   deleteMessageLocal, addConversation, setSelectedConversation,
   removeMemberFromConversation, updateAdminInConversation, removeConversation, addMemberToConversation,
   updateGroupAvatar, updateGroupName,
-  unhideConversation
+  unhideConversation, deleteConversation
 } from '../redux/slice/chatSlice';
 import { Message, Member } from '../redux/slice/types';
 import { toast } from 'react-toastify';
@@ -122,6 +122,17 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
     socket.on('memberAdded', ({ conversationId, newMembers }) => {
       dispatch(addMemberToConversation({ conversationId, newMembers }));
+
+      newMembers.forEach((member: Member) => {
+        if (member.userId === user._id) {
+          toast.info('You have been added to a group chat!');
+          
+          dispatch(deleteConversation({
+            conversationId,
+            userId: member.userId,
+          }));
+        }
+      });
     });
 
     socket.on('groupAvatarUpdated', ({ conversationId, avatar }) => {
