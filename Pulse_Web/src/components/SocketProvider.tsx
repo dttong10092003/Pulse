@@ -46,7 +46,10 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }, [user, dispatch]);
 
   useEffect(() => {
-    if (!user?._id || hasConnected.current) return;
+    if (!user?._id || hasConnected.current){
+      console.log('Socket already connected or user not logged in. Skipping connection.');
+      return;
+    } 
 
     socket.connect();
     socket.emit('setup', user._id);

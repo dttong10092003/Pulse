@@ -102,6 +102,12 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   }, [selectedConversation?._id]);
 
   useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages?.length]);
+
+  useEffect(() => {
     const handleClickOutside = () => {
       if (showMenu) setShowMenu(null);
     };
