@@ -3,7 +3,8 @@ import axios from 'axios';
 import { RootState } from '../store';
 import { Conversation, Message, Member } from './types';
 
-const CHAT_SERVICE_URL = 'http://localhost:3000/chat';
+// const CHAT_SERVICE_URL = 'http://localhost:3000/chat';
+const CHAT_SERVICE_URL = import.meta.env.VITE_API_URL + '/chat';
 
 
 // Define the state for Chat

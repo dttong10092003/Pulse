@@ -34,6 +34,7 @@
     "react-toastify": "^11.0.5",
     "react-transition-group": "^4.4.5",
     "redux-thunk": "^3.1.0",
+    "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "tailwindcss": "^4.0.6"
   },
