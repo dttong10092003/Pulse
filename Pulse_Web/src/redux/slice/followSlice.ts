@@ -2,7 +2,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const FOLLOW_API = 'http://localhost:3000/follow';
+// const FOLLOW_API = 'http://localhost:3000/follow';
+const FOLLOW_API = import.meta.env.VITE_API_URL + '/follow'
 
 interface UserBasicInfo {
   _id: string;

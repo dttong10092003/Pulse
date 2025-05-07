@@ -100,7 +100,7 @@ const RightSidebar = () => {
           ) : (
             <div className="flex flex-col items-center justify-center mt-10 text-center text-zinc-400">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-20 h-20 text-zinc-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 9.75h.008v.008H9.75V9.75zm4.5 0h.008v.008h-.008V9.75zM12 17.25c-2.5 0-4.5-1.5-4.5-4.5h9c0 3-2 4.5-4.5 4.5z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 14c2.21 0 4 1.79 4 4v1H4v-1c0-2.21 1.79-4 4-4m8-6a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
               <p className="text-lg font-medium">All users have been tracked!</p>
             </div>
@@ -119,7 +119,7 @@ const RightSidebar = () => {
             ) : followings.length === 0 ? (
               <div className="flex flex-col items-center justify-center mt-10 text-center text-zinc-400">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-20 h-20 text-zinc-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 9.75h.008v.008H9.75V9.75zm4.5 0h.008v.008h-.008V9.75zM12 17.25c-2.5 0-4.5-1.5-4.5-4.5h9c0 3-2 4.5-4.5 4.5z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 14c2.21 0 4 1.79 4 4v1H4v-1c0-2.21 1.79-4 4-4m8-6a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
               <p className="text-lg font-medium">No followings!</p>
             </div>
