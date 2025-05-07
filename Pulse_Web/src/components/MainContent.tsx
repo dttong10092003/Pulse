@@ -80,16 +80,21 @@ const MainContent = () => {
 
             setIsPosting(true);
             const base64Media = await Promise.all(mediaFiles.map(convertToBase64));
-
+            console.log("asdd");
+            
             await dispatch(createPost({
                 content: postContent,
                 media: base64Media.length ? base64Media : undefined,
             })).unwrap();
-
+            console.log("Post created successfullyzzz");
+            
             await dispatch(fetchAllPosts());
             setPostContent("");
             setMediaFiles([]);
             setIsExpanded(false);
+
+            console.log("Post created successfullyttttttttttttt");
+            
         } catch (err) {
             alert("Posting failed: " + err);
         } finally {

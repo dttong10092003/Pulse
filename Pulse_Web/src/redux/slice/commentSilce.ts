@@ -2,8 +2,8 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { RootState } from '../store';
 
-const COMMENT_SERVICE_URL = 'http://localhost:5004/comments';
 
+const COMMENT_SERVICE_URL = import.meta.env.VITE_API_URL + '/comments';
 interface Reply {
     _id?: string;
     userId: string;
