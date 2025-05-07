@@ -5,9 +5,9 @@ import { Posts, Featured, Media } from "./components";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../redux/store";
 import { io } from "socket.io-client";  // Kết nối WebSocket
-import { createNotification } from "../../redux/slice/notificationSlice"; // Import action createNotification
-
-const socket = io("http://localhost:5007");
+// import { createNotification } from "../../redux/slice/notificationSlice"; // Import action createNotification
+const URL_NOTI = import.meta.env.VITE_API_URL_NOTI; // Địa chỉ WebSocket
+const socket = io(URL_NOTI);
 import '../../global.css'
 
 import {
@@ -20,6 +20,7 @@ import { fetchUserDetailById, getTopUsersExcludingFollowed } from "../../redux/s
 import { fetchUserPosts } from "../../redux/slice/postProfileSlice";
 import { FollowItem } from "../../redux/slice/followSlice";
 import { getFollowingsByUserId } from "../../redux/slice/followSlice";
+import axios from "axios";
 
 const UserInfo_Follow = () => {
   const navigate = useNavigate();
@@ -36,6 +37,11 @@ const UserInfo_Follow = () => {
   const [modalTab, setModalTab] = useState<"followers" | "following">("followers"); // Dành cho modal
   const [userFollowings, setUserFollowings] = useState<FollowItem[]>([]);
 
+  const URL_NOTI = import.meta.env.VITE_API_URL_NOTI; // Địa chỉ WebSocket
+
+
+  const userShowId = userDetail?.userId   || ''; // id user đang xem 
+  const userLoginId = currentUser;// id user đang login 
   useEffect(() => {
     if (id) {
       dispatch(fetchUserDetailById(id));
@@ -72,9 +78,9 @@ const UserInfo_Follow = () => {
   useEffect(() => {
     // Khi người dùng A follow người dùng B, B sẽ nhận thông báo
     socket.on("new_notification", (notification) => {
-      if (notification.type === "follow" && notification.receiverId === currentUser) {
+      if (notification.type === "follow" && notification.receiverId === userLoginId) {
         alert(`${notification.senderId} followed you!`);  // Hiển thị thông báo
-        // Bạn có thể thay alert bằng cách hiển thị thông báo trong UI nếu cần
+       
       }
     });
 
@@ -83,53 +89,81 @@ const UserInfo_Follow = () => {
     };
   }, [currentUser]);
 
-  const handleFollowToggle = async () => {
-    if (!userDetail || !currentUser || !id) return;
 
-    const payload = {
-      followingId: userDetail.userId,
-      followerId: currentUser!,
-    };
 
-    if (isFollowing) {
-      const confirmUnfollow = window.confirm("Are you sure you want to unfollow this user?");
-      if (!confirmUnfollow) return;
-
-      const result = await dispatch(unfollowUser(payload));
-      if (unfollowUser.fulfilled.match(result)) {
-        alert("Unfollowed successfully");
-        setIsFollowing(false);
-        dispatch(getFollowers(id));
-        dispatch(getFollowings(currentUser));
-        dispatch(getTopUsersExcludingFollowed(currentUser!));
-      } else {
-        alert("Failed to unfollow");
-      }
-    } else {
-      const result = await dispatch(followUser(payload));
-      if (followUser.fulfilled.match(result)) {
-        alert("Followed successfully");
-        setIsFollowing(true);
-        dispatch(getFollowers(id));
-        dispatch(getFollowings(currentUser));
-        dispatch(getTopUsersExcludingFollowed(currentUser!));
-
-        // Gọi action tạo thông báo "follow"
-        const createdAt = new Date().toISOString();
-        // Chỉ tạo thông báo nếu bạn follow người khác
-        if (currentUser !== userDetail.userId) {
-          await dispatch(createNotification({
-            type: "follow",
-            senderId: currentUser!,
-            receiverId: userDetail.userId,
-            createdAt: createdAt,
-          }));
-        }
-      } else {
-        alert("Failed to follow");
-      }
+  const handleSendNotification = async () => {
+    try {
+      const senderId = userLoginId;
+      const receiverIds: string[] = [userShowId];
+      
+      await axios.post(`${URL_NOTI}/noti/create`, {
+        type: "follow",
+        senderId,
+        receiverIds,
+        messageContent: "",
+        postId: "",
+        commentContent: "",
+      });
+  
+      // alert('Gửi thông báo thành công!');
+     
+    } catch (err) {
+      console.error('Gửi thông báo thất bại', err);
+      alert('Gửi thông báo thất bại!');
     }
   };
+  const handleFollowToggle = async () => {
+    handleSendNotification();
+  }
+
+
+  // const handleFollowToggle = async () => {
+  //   if (!userDetail || !currentUser || !id) return;
+
+  //   const payload = {
+  //     followingId: userDetail.userId,
+  //     followerId: currentUser!,
+  //   };
+
+  //   if (isFollowing) {
+  //     const confirmUnfollow = window.confirm("Are you sure you want to unfollow this user?");
+  //     if (!confirmUnfollow) return;
+
+  //     const result = await dispatch(unfollowUser(payload));
+  //     if (unfollowUser.fulfilled.match(result)) {
+  //       alert("Unfollowed successfully");
+  //       setIsFollowing(false);
+  //       dispatch(getFollowers(id));
+  //       dispatch(getFollowings(currentUser));
+  //       dispatch(getTopUsersExcludingFollowed(currentUser!));
+  //     } else {
+  //       alert("Failed to unfollow");
+  //     }
+  //   } else {
+  //     const result = await dispatch(followUser(payload));
+  //     if (followUser.fulfilled.match(result)) {
+  //       alert("Followed successfully");
+  //       setIsFollowing(true);
+  //       dispatch(getFollowers(id));
+  //       dispatch(getFollowings(currentUser));
+  //       dispatch(getTopUsersExcludingFollowed(currentUser!));
+
+  //       // Gọi action tạo thông báo "follow"
+  //       // const createdAt = new Date().toISOString();
+  //       // Chỉ tạo thông báo nếu bạn follow người khác
+  //       if (currentUser !== userDetail.userId) {
+  //         // await dispatch(createNotification({
+  //         //   type: "follow",
+  //         //   senderId: currentUser!,
+  //         //   receiverId: userDetail.userId,
+  //         //   createdAt: createdAt,
+  //         // }));
+  //       }
+  //     } else {
+  //       alert("Failed to follow");
+  //     }
+  //   }
+  // };
 
   const handleUserClickInModal = (userId: string) => {
     if (userId === currentUser) {
