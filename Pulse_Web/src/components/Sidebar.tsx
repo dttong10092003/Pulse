@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch, store } from '../redux/store';
 import { logout } from '../redux/slice/authSlice';
 
-import { addNotification, markAllAsReadRedux,setAllNotifications  } from "../redux/slice/notificationSlice";
+import { addNotification,setAllNotifications  } from "../redux/slice/notificationSlice";
 // 🧠 Không còn import không dùng, không còn biến isHovered, toggleSidebar
 import api from "../services/api";
 import socket from "../utils/socket_noti";
