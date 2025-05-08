@@ -2,7 +2,6 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { RootState } from '../store';
 
-
 const COMMENT_SERVICE_URL = import.meta.env.VITE_API_URL + '/comments';
 interface Reply {
     _id?: string;
@@ -32,6 +31,12 @@ export interface CommentType {
     };
 }
 
+export interface UserInfo {
+    firstname: string;
+    lastname: string;
+    avatar: string;
+    username: string;
+  }  
 
 interface CommentState {
     comments: CommentType[];
@@ -65,28 +70,24 @@ export const getCommentsByPost = createAsyncThunk<CommentType[], string>(
     }
 );
 
-
-export const createComment = createAsyncThunk(
+export const createComment = createAsyncThunk<CommentType, { postId: string; text: string }, { state: RootState }>(
     'comments/create',
-    async ({ postId, text }: { postId: string; text: string }, { getState, rejectWithValue }) => {
-        const token = (getState() as RootState).auth.token;
-        console.log("🟢 Token:", token);
-        if (!token) return rejectWithValue('No token found');
-
-        try {
-            const res = await axios.post(
-                COMMENT_SERVICE_URL,
-                { postId, text },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            console.log("✅ API Response:", res.data);
-            return res.data.comment;
-        } catch (error: any) {
-            console.error("❌ API ERROR:", error.response?.data || error.message);
-            return rejectWithValue('Failed to create comment');
-        }
+    async ({ postId, text }, { getState, rejectWithValue }) => {
+      const token = getState().auth.token;
+      if (!token) return rejectWithValue('No token found');
+  
+      try {
+        const res = await axios.post(
+          COMMENT_SERVICE_URL,
+          { postId, text },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return res.data.comment; // ✅ đã có user trong response
+      } catch (error: any) {
+        return rejectWithValue('Failed to create comment');
+      }
     }
-);
+  );
 
 
 // 3️⃣ Thêm phản hồi vào comment
@@ -158,9 +159,9 @@ const commentSlice = createSlice({
             })
 
             .addCase(createComment.fulfilled, (state, action: PayloadAction<CommentType>) => {
-                state.comments.unshift(action.payload); // thêm vào đầu
+                const comment = action.payload;
+                state.comments.unshift(comment);
             })
-
             .addCase(addReply.fulfilled, (state, action: PayloadAction<{ commentId: string; reply: Reply }>) => {
                 const { commentId, reply } = action.payload;
                 const comment = state.comments.find((c) => c._id === commentId);
