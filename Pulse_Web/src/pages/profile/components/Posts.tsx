@@ -9,6 +9,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { deletePost, fetchUserPosts, editPost } from "../../../redux/slice/postProfileSlice";
 import { likePost, unlikePost, fetchLikeCounts } from "../../../redux/slice/likeSlice";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+
 import {
   getCommentCountsByPosts,
 } from "../../../redux/slice/commentSilce";
@@ -27,7 +29,7 @@ interface Post {
   userId: string;
 }
 
-const Posts = ({ posts, username, avatar, commentCounts }: { posts: Post[]; username: string; avatar: string; commentCounts: Record<string, number>; }) => {
+const Posts = ({ posts, username, avatar, commentCounts , onHoldLike }: { posts: Post[]; username: string; avatar: string; commentCounts: Record<string, number>; onHoldLike?: (postId: string) => void; }) => {
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
@@ -52,6 +54,7 @@ const Posts = ({ posts, username, avatar, commentCounts }: { posts: Post[]; user
           comments={commentCounts[post._id] || 0}
           media={post.media || []}
           tags={post.tags || []}
+          onHoldLike={onHoldLike} // ✅ THÊM DÒNG NÀY
           createdAt={post.createdAt}
         />
       ))}
@@ -70,6 +73,7 @@ const PostCard = ({
   comments,
   media,
   tags,
+  onHoldLike, // ✅ THÊM VÀO ĐÂY
 }: {
   postId: string;
   user: string;
@@ -81,6 +85,7 @@ const PostCard = ({
   comments: number;
   media: string[];
   tags: string[];
+  onHoldLike?: (postId: string) => void; // ✅ THÊM VÀO ĐÂY
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
@@ -99,7 +104,7 @@ const PostCard = ({
   const [editMediaFiles, setEditMediaFiles] = useState<string[]>(media || []);
   const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
-
+  const URL_NOTI = import.meta.env.VITE_API_URL_NOTI
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -122,14 +127,49 @@ const PostCard = ({
     }
   };
 
+    const userLoginId = useSelector((state: RootState) => state.auth.user?._id);
+    // console.log("userLoginId", userLoginId);
+    const userShowId = postUserId;
+    // console.log("userShowId", userShowId);
+  const handleSendNotification = async () => {
+    try {
+      const senderId = userLoginId;
+      const receiverIds: string[] = [userShowId];
+      
+      await axios.post(`${URL_NOTI}/noti/create`, {
+        type: "like",
+        senderId,
+        receiverIds,
+        messageContent: "",
+        postId: postId,
+        commentContent: "",
+      });
+  
+      // alert('Gửi thông báo thành công!');
+     
+    } catch (err) {
+      console.error('Gửi thông báo thất bại', err);
+      alert('Gửi thông báo thất bại!');
+    }
+  };
+
+
   const handleToggleLike = () => {
     if (!userId) return;
     if (isLiked) {
       dispatch(unlikePost(postId));
     } else {
+     
+      if(userLoginId !== userShowId) {
+        handleSendNotification(); 
+      }
       dispatch(likePost(postId));
+    
     }
+  
   };
+
+
   const handleSaveEdit = async () => {
     try {
       setIsSaving(true);
@@ -368,6 +408,14 @@ const PostCard = ({
                 <span key={i}>#{tag}</span>
               ))}
             </div>
+          )}
+           {onHoldLike && (
+            <p
+              onClick={() => onHoldLike(postId)}
+              className="text-xs text-zinc-400 cursor-pointer hover:underline mb-1"
+            >
+              Xem danh sách người đã like
+            </p>
           )}
 
           <div className="flex items-center gap-6 mt-3">

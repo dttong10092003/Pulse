@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import api from '../../services/api';
 
 const LIKE_API = import.meta.env.VITE_API_URL + '/likes';
 export const fetchUserLikedPosts = createAsyncThunk(
@@ -47,7 +48,16 @@ export const unlikePost = createAsyncThunk('likes/unlikePost', async (postId: st
   return postId;
 });
 
+export const fetchLikesByPost = createAsyncThunk(
+  'likes/fetchLikesByPost',
+  async (postId: string) => {
+    const response = await api.get(`/likes/${postId}`);
+    return response.data; // dạng [{ userId, timestamp }]
+  }
+);
+
 interface LikeState {
+  usersByPost: any;
   likedPostIds: string[];
   likeCounts: Record<string, number>;
 }
@@ -55,6 +65,7 @@ interface LikeState {
 const initialState: LikeState = {
   likedPostIds: [],
   likeCounts: {},
+  usersByPost: undefined
 };
 
 const likeSlice = createSlice({

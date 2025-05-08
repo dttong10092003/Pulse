@@ -8,6 +8,8 @@ import { AppDispatch, RootState } from "../../../redux/store";
 import { useDispatch, useSelector } from "react-redux";
 import { deletePost, fetchUserPosts, editPost } from "../../../redux/slice/postProfileSlice";
 import { likePost, unlikePost, fetchLikeCounts } from "../../../redux/slice/likeSlice";
+import axios from "axios";
+
 import { useNavigate } from "react-router-dom";
 import {
   getCommentCountsByPosts,
@@ -22,14 +24,14 @@ interface Post {
   comments?: number;
   media?: string[];
   tags?: string[];
-  username?: string;
-  avatar?: string;
-  userId: string;
+  userId: string; // ✅ thêm dòng này!
 }
+
+
 
 const Posts = ({ posts, username, avatar, commentCounts }: { posts: Post[]; username: string; avatar: string; commentCounts: Record<string, number>; }) => {
   const dispatch = useDispatch<AppDispatch>();
-
+ 
   useEffect(() => {
     if (posts.length > 0) {
       const postIds = posts.map((p) => p._id);
@@ -52,6 +54,7 @@ const Posts = ({ posts, username, avatar, commentCounts }: { posts: Post[]; user
           comments={commentCounts[post._id] || 0}
           media={post.media || []}
           tags={post.tags || []}
+
           createdAt={post.createdAt}
         />
       ))}
@@ -63,24 +66,24 @@ const PostCard = ({
   postId,
   user,
   avatar,
-  postUserId,
   content,
   time,
   createdAt,
   comments,
   media,
   tags,
+  postUserId, // ✅ thêm vào đây
 }: {
   postId: string;
   user: string;
   avatar: string;
-  postUserId: string;
   content: string;
   time: string;
   createdAt: string;
   comments: number;
   media: string[];
   tags: string[];
+  postUserId: string; // ✅ thêm vào đây
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
@@ -91,7 +94,7 @@ const PostCard = ({
   const dispatch = useDispatch<AppDispatch>();
   const userId = useSelector((state: RootState) => state.auth.user?._id);
   const likedPostIds = useSelector((state: RootState) => state.likes.likedPostIds);
-  const isLiked = likedPostIds.includes(postId);
+
   const likeCounts = useSelector((state: RootState) => state.likes.likeCounts); // thêm dòng này để lấy số like theo postId
   const likes = likeCounts[postId] || 0; // nếu chưa có thì mặc định 0
   const [isEditing, setIsEditing] = useState(false);
@@ -100,6 +103,8 @@ const PostCard = ({
   const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
 
+  const isLiked = likedPostIds.includes(postId);
+  const URL_NOTI = import.meta.env.VITE_API_URL_NOTI
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -122,12 +127,41 @@ const PostCard = ({
     }
   };
 
+  const userLoginId = useSelector((state: RootState) => state.auth.user?._id);
+  const userShowId = postUserId;
+
+const handleSendNotification = async () => {
+  try {
+    const senderId = userLoginId;
+    const receiverIds: string[] = userShowId ? [userShowId] : [];
+    
+    await axios.post(`${URL_NOTI}/noti/create`, {
+      type: "like",
+      senderId,
+      receiverIds,
+      messageContent: "",
+      postId: postId,
+      commentContent: "",
+    });
+
+   
+   
+  } catch (err) {
+    console.error('Gửi thông báo thất bại', err);
+    alert('Gửi thông báo thất bại!');
+  }
+};
+
   const handleToggleLike = () => {
     if (!userId) return;
     if (isLiked) {
       dispatch(unlikePost(postId));
     } else {
       dispatch(likePost(postId));
+      if(userLoginId && userShowId  && userLoginId !== userShowId) {
+        handleSendNotification();
+        
+      }
     }
   };
   const handleSaveEdit = async () => {
