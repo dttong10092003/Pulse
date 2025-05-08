@@ -65,7 +65,10 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const [showAllFiles, setShowAllFiles] = useState(false);
 
   const [previewImageIndex, setPreviewImageIndex] = useState<number | null>(null);
+  const prevMessageLength = useRef<number>(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [inVideoCall, setInVideoCall] = useState(false);
+
   console.log("User details:", userDetails);
 
   useEffect(() => {
@@ -73,6 +76,12 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
       inputRef.current.focus();
     }
   }, [editingName]);
+
+  useEffect(() => {
+    if (isSearching && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isSearching]);
 
   useEffect(() => {
     if (selectedConversation) {
@@ -100,9 +109,11 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   }, [selectedConversation?._id]);
 
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    const newLength = messages?.length || 0;
+    if (newLength > prevMessageLength.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
+    prevMessageLength.current = newLength;
   }, [messages?.length]);
 
   useEffect(() => {
@@ -310,6 +321,42 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     ));
   };
 
+  const handleDisbandGroup = () => {
+    if (!selectedConversation || !currentUser?._id) return;
+
+    if (selectedConversation.adminId !== currentUser._id) {
+      toast.error("Only the group admin can disband the group.");
+      return;
+    }
+
+    toast.custom((t) => (
+      <div className="bg-[#2a2a2a] text-white p-4 rounded-lg shadow-md w-72">
+        <p className="mb-2">Are you sure you want to disband this group?</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => {
+              socket.emit("disbandGroup", {
+                conversationId: selectedConversation._id,
+              });
+
+              toast.dismiss(t.id);
+            }}
+            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 cursor-pointer"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    ));
+  };
+
+
   const handleDeleteChat = () => {
     if (!selectedConversation?._id || !currentUser?._id) return;
 
@@ -319,7 +366,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
         <div className="flex justify-end gap-2">
           <button
             onClick={async () => {
-               await dispatch(
+              await dispatch(
                 deleteConversation({
                   conversationId: selectedConversation._id,
                   userId: currentUser._id,
@@ -479,7 +526,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   };
 
-  const highlightText = (text: string, keyword: string) => {
+  const highlightText = (text: string, keyword: string, isActive: boolean) => {
     if (!keyword) return text;
 
     const escapedKeyword = escapeRegExp(keyword);
@@ -487,7 +534,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
     return parts.map((part, index) => (
       part.toLowerCase() === keyword.toLowerCase() ? (
-        <span key={index} className="bg-amber-600">{part}</span>
+        <span key={index} className={`${isActive ? "bg-pink-400" : "bg-amber-600"}`}>{part}</span>
       ) : (
         <span key={index}>{part}</span>
       )
@@ -530,6 +577,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
           {isSearching && (
             <div className="flex items-center gap-2 bg-gray-700 px-2 py-1 rounded-lg ml-2">
               <input
+                ref={searchInputRef}
                 type="text"
                 className="flex-1 bg-transparent p-1 pl-2 text-sm text-white outline-none focus:ring-0 placeholder-gray-400"
                 placeholder="Search messages..."
@@ -676,7 +724,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                     ) : (
                       <p>
                         {typeof msg.content === 'string' && msg.type === 'text'
-                          ? (isSearching ? highlightText(msg.content, searchTerm) : msg.content)
+                          ? (isSearching ? highlightText(msg.content, searchTerm, index === searchResults[currentResultIndex]) : msg.content)
                           : msg.content}
                       </p>
                     )
@@ -1009,6 +1057,17 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                     <span className="text-red-500">Leave the group</span>
                   </div>
                 )}
+
+                {selectedConversation.isGroup && selectedConversation.adminId === currentUser._id && (
+                  <div
+                    className="flex items-center text-white cursor-pointer hover:bg-gray-800 p-2 rounded-md"
+                    onClick={handleDisbandGroup}
+                  >
+                    <Trash2 size={16} className="mr-2 text-red-500" />
+                    <span className="text-red-500">Disband group</span>
+                  </div>
+                )}
+
               </div>
             </div>
           </div>
