@@ -6,21 +6,19 @@ import { RootState, AppDispatch } from "../../../redux/store";
 import { deleteConversation, deleteMessageLocal, incrementUnreadCount, revokeMessageLocal, setConversationHidden } from "../../../redux/slice/chatSlice";
 import { Conversation, Member, Message } from '../../../redux/slice/types';
 import socket from '../../../utils/socket';
-import socketCall from '../../../utils/socketCall';
 import GroupMembersModal from './GroupMembersModal';
 import toast from 'react-hot-toast';
 import ForwardMessageModal from './ForwardMessageModal';
 import {
-  Phone, Search, Columns2, Video, X, Bell, UserPlus, Pin, EyeOff,
+  PhoneOff, Search, Columns2, Video, X, Bell, UserPlus, Pin, EyeOff,
   TriangleAlert, Trash2, LogOut, MessageCircle, Users, Pencil, Camera,
   ChevronDown,
   ChevronUp, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { fileIcons } from '../../../assets';
-import { startCall } from '../../../redux/slice/callSlice';
 import { getUserDetails } from '../../../redux/slice/userSlice';
 import AddMemberModal from "./AddMemberModal";
-
+import { VideoRoom } from './VideoRoom';
 interface ConversationDetailProps {
   selectedConversation: Conversation | null; // Thay đổi kiểu dữ liệu ở đây
 }
@@ -67,7 +65,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const [showAllFiles, setShowAllFiles] = useState(false);
 
   const [previewImageIndex, setPreviewImageIndex] = useState<number | null>(null);
-
+  const [inVideoCall, setInVideoCall] = useState(false);
   console.log("User details:", userDetails);
 
   useEffect(() => {
@@ -572,128 +570,13 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
           {/* Các icon bên phải */}
           <div className="flex items-center gap-4">
-            <Phone
+        
+
+          <Video
               size={20}
               className="text-white cursor-pointer hover:text-gray-400 transition duration-200"
-              onClick={() => {
-                if (!selectedConversation || !currentUser) return;
-
-                const isGroup = selectedConversation.isGroup;
-
-                const calleeName = isGroup
-                  ? selectedConversation.groupName
-                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.name || "Unknown";
-
-                const calleeAvatar = isGroup
-                  ? selectedConversation.avatar
-                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.avatar || "";
-
-                dispatch(startCall({
-                  isVideo: false,
-                  calleeName,
-                  calleeAvatar,
-                  toUserId: selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId,
-                  fromUserId: currentUser._id,
-                  fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
-                  fromAvatar: userDetails?.avatar || '',
-                  isGroup,
-                  groupName: selectedConversation.groupName,
-                }));
-
-
-                if (isGroup) {
-                  selectedConversation.members.forEach(member => {
-                    if (member.userId !== currentUser._id) {
-                      socketCall.emit("incomingCall", {
-                        toUserId: member.userId,
-                        fromUserId: currentUser._id,
-                        fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
-                        fromAvatar: userDetails?.avatar || "",
-                        isVideo: false,
-                        isGroup: true,
-                        groupName: selectedConversation.groupName,
-                        groupAvatar: selectedConversation.avatar,
-                      });
-                    }
-                  });
-                } else {
-                  const toUserId = selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId;
-                  if (toUserId) {
-                    socketCall.emit("incomingCall", {
-                      toUserId,
-                      fromUserId: currentUser._id,
-                      fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
-                      fromAvatar: userDetails?.avatar || "",
-                      isVideo: false,
-                      isGroup: false,
-                    });
-                  }
-                }
-              }}
+              onClick={() => setInVideoCall(true)}
             />
-
-            <Video
-              size={20}
-              className="text-white cursor-pointer hover:text-gray-400 transition duration-200"
-              onClick={() => {
-                if (!selectedConversation || !currentUser) return;
-
-                const isGroup = selectedConversation.isGroup;
-
-                const calleeName = isGroup
-                  ? selectedConversation.groupName
-                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.name || "Unknown";
-
-                const calleeAvatar = isGroup
-                  ? selectedConversation.avatar
-                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.avatar || "";
-
-                const toUserId = selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId;
-
-                dispatch(startCall({
-                  isVideo: false,
-                  calleeName,
-                  calleeAvatar,
-                  toUserId,
-                  fromUserId: currentUser._id,
-                  fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
-                  fromAvatar: userDetails?.avatar || '',
-                  isGroup,
-                  groupName: selectedConversation.groupName,
-                }));
-
-
-                if (isGroup) {
-                  selectedConversation.members.forEach(member => {
-                    if (member.userId !== currentUser._id) {
-                      socketCall.emit("incomingCall", {
-                        toUserId: member.userId,
-                        fromUserId: currentUser._id,
-                        fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
-                        fromAvatar: userDetails?.avatar || "",
-                        isVideo: true,
-                        isGroup: true,
-                        groupName: selectedConversation.groupName,
-                        groupAvatar: selectedConversation.avatar,
-                      });
-                    }
-                  });
-                } else {
-                  const toUserId = selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId;
-                  if (toUserId) {
-                    socketCall.emit("incomingCall", {
-                      toUserId,
-                      fromUserId: currentUser._id,
-                      fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
-                      fromAvatar: userDetails?.avatar || "",
-                      isVideo: true,
-                      isGroup: false,
-                    });
-                  }
-                }
-              }}
-            />
-
 
 
 
@@ -1211,6 +1094,25 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
             setMessageToForward(null);
           }}
         />
+      )}
+           {inVideoCall && (
+        <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center">
+          {/* Video grid */}
+          <div className="flex-1 w-full overflow-auto px-6 py-4">
+            <VideoRoom />
+          </div>
+
+          {/* Control buttons */}
+          <div className="w-full flex justify-center gap-6 pb-6">
+            <button
+              onClick={() => setInVideoCall(false)}
+              className="bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-lg transition flex items-center justify-center"
+            >
+              <PhoneOff size={24} />
+            </button>
+          </div>
+
+        </div>
       )}
     </div>
   );
