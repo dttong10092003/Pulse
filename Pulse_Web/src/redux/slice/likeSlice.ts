@@ -25,7 +25,9 @@ export const fetchLikeCounts = createAsyncThunk(
       const results: Record<string, number> = {};
       await Promise.all(
         postIds.map(async (postId) => {
-          const res = await axios.get(`${LIKE_API}/count/${postId}`);
+          const link = `${LIKE_API}/count/${postId}`;
+          console.log("link :",link);
+          const res = await axios.get(link);
           results[postId] = res.data.likeCount;
         })
       );
