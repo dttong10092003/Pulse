@@ -1,189 +1,250 @@
-import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "../../redux/store";
-import { getUserDetailsByIds } from "../../redux/slice/userSlice";
+import { useSelector, useDispatch } from 'react-redux';
+import { useEffect, useState } from 'react';
+import api from '../../services/api';
 import {
-  Notification as NotificationType,
-  markNotificationAsRead,
-  markMultipleNotificationsAsRead,
-  fetchUnreadCount,
-} from "../../redux/slice/notificationSlice";
-import type { AppDispatch } from "../../redux/store";
+  setAllNotifications,
+  markAllAsReadRedux,
+  markOneAsReadRedux,
+} from '../../redux/slice/notificationSlice';
+import { RootState, AppDispatch } from '../../redux/store';
+import { getUserDetails } from '../../redux/slice/userSlice';
+import { FaRegCommentDots, FaHeart, FaUserPlus, FaRegEnvelope } from 'react-icons/fa';
 
+import { useNavigate } from "react-router-dom";
+const tabs = ['all', 'message', 'like', 'comment', 'follow'] as const;
 
 const Notification = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>(); // Sử dụng AppDispatch cho dispatch
-  const { notifications, loading, error } = useSelector((state: RootState) => state.notification);
-  const userId = useSelector((state: RootState) => state.auth.user?._id);
+  const notifications = useSelector((state: RootState) => state.notification.notifications);
+  const userDetail = useSelector((state: RootState) => state.auth.user);
+  const userDetailId = userDetail?._id || '';
 
-  const [filter, setFilter] = useState<"all" | "message" | "like" | "comment" | "follow">("all");
-  const [filteredNotifications, setFilteredNotifications] = useState<NotificationType[]>([]);
-  const [senderMap, setSenderMap] = useState<
-    Record<string, { firstname: string; lastname: string; avatar: string }>
-  >({});
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'all' | 'message' | 'like' | 'comment' | 'follow'>('all');
+  const [error, setError] = useState<string | null>(null);
+  const [userMap, setUserMap] = useState<Record<string, any>>({});
+  const [postMap, setPostMap] = useState<Record<string, any>>({}); // ✅
 
-  useEffect(() => {
-    if (filter === "all") {
-      setFilteredNotifications(notifications);
-    } else {
-      setFilteredNotifications(notifications.filter(n => n.type === filter));
+  const getNotiStyle = (type: string, isRead: boolean) => {
+    if (isRead) return 'border-zinc-200 bg-gray text-white-800';
+    switch (type) {
+      case 'message': return 'border-blue-500 bg-blue-900/30 text-white';
+      case 'like': return 'border-red-500 bg-red-900/30 text-white';
+      case 'comment': return 'border-purple-500 bg-purple-900/30 text-white';
+      case 'follow': return 'border-green-500 bg-green-900/30 text-white';
+      default: return 'border-gray-700 bg-gray-800 text-white';
     }
-  }, [filter, notifications]);
+  };
 
-  // useEffect(() => {
-  //    dispatch(fetchRecentNotifications());
-  // },  [dispatch]);
-  
+  const getNotiIcon = (type: string) => {
+    switch (type) {
+      case 'message': return <FaRegEnvelope className="text-blue-400 text-3xl" />;
+      case 'like': return <FaHeart className="text-red-400 text-3xl" />;
+      case 'comment': return <FaRegCommentDots className="text-purple-400 text-3xl" />;
+      case 'follow': return <FaUserPlus className="text-green-400 text-3xl" />;
+      default: return null;
+    }
+  };
+
   useEffect(() => {
-    const fetchSenderInfo = async () => {
-      const senderIds = [...new Set(notifications.map((n) => n.senderId))];
-      if (senderIds.length === 0) return;
-
+    const fetchNotifications = async () => {
       try {
-        const res: any = await dispatch(getUserDetailsByIds(senderIds));
-        if (res.payload && Array.isArray(res.payload)) {
-          const map: Record<string, { firstname: string; lastname: string; avatar: string }> = {};
-          res.payload.forEach((user: any) => {
-            map[user.userId] = {
-              firstname: user.firstname,
-              lastname: user.lastname,
-              avatar: user.avatar,
-            };
-          });
-          setSenderMap(map);
+        if (userDetail?._id) {
+          const res = await api.get(`/noti/get-all?userId=${userDetail._id}`);
+          dispatch(setAllNotifications(res.data));
         }
-      } catch (err) {
-        console.error("❌ Lỗi khi gọi getUserDetailsByIds từ Redux:", err);
+      } catch (err: any) {
+        console.error(err);
+        setError(err?.message || 'Error fetching notifications');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNotifications();
+  }, [userDetail, dispatch]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const senderIds = [...new Set(notifications.map(n => n.senderId))];
+      for (const id of senderIds) {
+        if (!userMap[id]) {
+          try {
+            const user = await dispatch(getUserDetails(id)).unwrap();
+            setUserMap(prev => ({ ...prev, [id]: user }));
+          } catch (err) {
+            console.error("❌ Lỗi fetch user:", err);
+          }
+        }
+      }
+    };
+    if (notifications.length > 0) fetchUsers();
+  }, [notifications]);
+
+  // ✅ Fetch bài viết theo postId (chỉ nếu type là 'like')
+  useEffect(() => {
+    const fetchPosts = async () => {
+      const postIds = notifications
+        .filter(n => n.type === 'like' && n.postId)
+        .map(n => n.postId!);
+
+      const uniquePostIds = [...new Set(postIds)];
+
+      for (const id of uniquePostIds) {
+        if (!postMap[id]) {
+          try {
+            const res = await api.get(`/posts/${id}`);
+            const postData = res.data;
+            setPostMap(prev => ({
+              ...prev,
+              [id]: {
+                ...postData,
+                likesCount: postData.likes?.length || 1 // ✅ thêm likesCount
+              }
+            }));
+          } catch (error) {
+            console.error('❌ Error fetching post:', error);
+          }
+        }
       }
     };
 
-    fetchSenderInfo();
-  }, [notifications, dispatch]);
+    if (notifications.length > 0) fetchPosts();
+  }, [notifications]);
 
-  const handleBack = () => navigate(-1);
+  const handleReadAll = async () => {
+    const ids = notifications.map(n => n._id);
+    await api.patch('/noti/read-all', { ids, userId: userDetailId });
+    dispatch(markAllAsReadRedux());
+  };
+
+  // const handleReadOne = async (id: string) => {
+  //   await api.patch(`/noti/read-one/${id}`, { userId: userDetailId });
+  //   dispatch(markOneAsReadRedux(id));
+
+  // };
+
+  const handleReadOne = async (noti: typeof notifications[number]) => {
+    try {
+      await api.patch(`/noti/read-one/${noti._id}`, { userId: userDetailId });
+      dispatch(markOneAsReadRedux(noti._id));
+
+      // Điều hướng tùy loại thông báo
+      if (noti.type === 'like' || noti.type === 'follow') {
+        navigate(`/home/user-info/${noti.senderId}`);
+      } else if (noti.type === 'comment' && noti.postId) {
+        navigate(`/home/posts/${noti.postId}`);
+      }
+      // message thì không navigate
+    } catch (err) {
+      console.error("❌ handleReadOne error:", err);
+    }
+  };
+
+
+  const filtered = activeTab === 'all'
+    ? notifications
+    : notifications.filter(n => n.type === activeTab);
 
   return (
-    <div className="relative h-screen">
-      <div className="absolute inset-0 bg-black/50 z-0" />
+    <div className="w-full h-screen bg-zinc-900 text-white p-6 text-lg">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Notifications</h1>
+        <button onClick={handleReadAll} className="text-base text-white px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-md">
+          Read all
+        </button>
+      </div>
 
-      <main className="relative z-10 p-4 text-white h-full overflow-y-auto">
-        <div className="flex items-center gap-2 mb-4">
+      <div className="flex space-x-4 bg-zinc-800 p-3 rounded-md mb-6">
+        {tabs.map(tab => (
           <button
-            className="p-3 rounded-full text-white hover:bg-white/20 transition cursor-pointer"
-            onClick={handleBack}
+            key={tab}
+            className={`px-5 py-2 rounded-md text-base capitalize ${activeTab === tab ? 'bg-white text-black font-semibold' : 'text-white hover:text-gray-300'
+              }`}
+            onClick={() => setActiveTab(tab)}
           >
-            <ArrowLeft size={28} />
+            {tab}
           </button>
-          <h1 className="text-2xl font-bold">Notifications</h1>
-        </div>
+        ))}
+      </div>
 
-        <div className="bg-zinc-900 p-4 rounded-lg shadow-lg flex items-center justify-between">
-          <div className="flex gap-4">
-            {["all", "message", "like", "comment", "follow"].map((type) => (
-              <button
-                key={type}
-                onClick={() => setFilter(type as any)}
-                className={`px-4 py-2 rounded-lg transition font-semibold focus:outline-none ${filter === type ? "bg-white text-black" : "text-gray-400 hover:bg-white/10 cursor-pointer"
-                  }`}
-              >
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </button>
-            ))}
-          </div>
-          <button
-            className="text-sm text-gray-300 hover:underline cursor-pointer"
-            onClick={async () => {
-              let ids: string[] = [];
-              if (filter === "all") {
-                ids = notifications.filter(n => !n.isRead).map(n => n._id);
-              } else {
-                ids = notifications.filter(n => !n.isRead && n.type === filter).map(n => n._id);
-              }
-              if (ids.length > 0 && userId) {
-                // Đánh dấu nhiều thông báo là đã đọc
-                await dispatch(markMultipleNotificationsAsRead({ ids, userId }));
-
-                // Sau khi đánh dấu, cập nhật số lượng thông báo chưa đọc
-                await dispatch(fetchUnreadCount()); // Cập nhật số lượng thông báo chưa đọc
-              }
-            }}
-          >
-            Read all
-          </button>
-        </div>
-
-        <div className="mt-4 space-y-4">
-          {loading ? (
-            <p className="text-center text-gray-400">Loading notifications...</p>
-          ) : error ? (
-            <p className="text-center text-red-500">Error: {error}</p>
-          ) : filteredNotifications.length > 0 ? (
-            filteredNotifications.map((notification) => (
+      {loading ? (
+        <div className="text-center text-gray-400 mt-10 animate-pulse">Đang tải thông báo...</div>
+      ) : error ? (
+        <div className="text-center text-red-500 mt-10">Error: {error}</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center text-gray-400 mt-10 italic">Không có thông báo.</div>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map(noti => {
+            const sender = userMap[noti.senderId];
+            return (
               <div
-                key={notification._id}
-                className="p-4 border-b border-zinc-800 flex items-start gap-4 cursor-pointer hover:bg-white/5 transition"
-                onClick={async () => {
-                  if (!notification.isRead && userId) {
-                    await dispatch(markNotificationAsRead({ id: notification._id, userId }));
-                  }
-
-                  if (notification.type === "follow") {
-                    navigate(`/home/user-info/${notification.senderId}`);
-                  } else {
-                    navigate(`/home/user-info/${notification.senderId}`);
-                  }
-                }}
+                key={noti._id}
+                className={`px-6 py-4 rounded-xl border cursor-pointer transition flex items-center justify-between ${getNotiStyle(noti.type, noti.isRead)}`}
+                onClick={() => handleReadOne(noti)}
               >
-                {senderMap[notification.senderId]?.avatar ? (
+                <div className="flex items-center gap-5 overflow-hidden">
+                  <span>{getNotiIcon(noti.type)}</span>
                   <img
-                    src={senderMap[notification.senderId].avatar}
+                    src={sender?.avatar || "/default-avatar.png"}
                     alt="avatar"
-                    className="w-10 h-10 rounded-full object-cover"
+                    className="w-16 h-16 rounded-full object-cover shrink-0"
                   />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-white text-sm uppercase">
-                    {senderMap[notification.senderId]?.firstname.charAt(0) || "?"}
+                  <div className="flex flex-col">
+                    <span className="font-bold truncate">
+                      {sender ? `${sender.firstname} ${sender.lastname}` : "Đang tải..."}
+                    </span>
+                    <span className="truncate">
+                      {noti.type === 'like' ? (
+                        <>
+                          đã thích bài viết{' '}
+                          <span className="font-semibold text-blue-400">
+                            {postMap[noti.postId!]?.content || '...'}
+                          </span>
+                          {postMap[noti.postId!]?.likesCount > 1 && (
+                            <>
+                              {' '}cùng với{' '}
+                              <span className="font-semibold text-yellow-300">
+                                {postMap[noti.postId!]?.likesCount - 1}
+                              </span>{' '}
+                              người khác
+                            </>
+                          )}
+                        </>
+                      ) : noti.type === 'follow' ? (
+
+                        <>đã bắt đầu theo dõi bạn</>
+                      ) : noti.type === 'message' ? (
+                        <>
+                          đã gửi tin nhắn: "
+                          <span className="italic text-zinc-300">
+                            {noti.messageContent || '...'}
+                          </span>
+                          "
+                        </>
+                      ) : noti.type === 'comment' ? (
+                        <>
+                          đã bình luận: "
+                          <span className="italic text-purple-300">
+                            {noti.commentContent || '...'}
+                          </span>
+                          "
+                        </>
+                      ) : (
+                        <>thông báo không xác định</>
+                      )}
+                    </span>
                   </div>
-                )}
-
-                <div className="flex-1">
-                  <p className="mb-1">
-                    <strong>
-                      {senderMap[notification.senderId]
-                        ? `${senderMap[notification.senderId].firstname} ${senderMap[notification.senderId].lastname}`
-                        : notification.senderId}
-                    </strong>{" "}
-                    {notification.type === "like" && (
-                      <span className="text-blue-400">❤️ liked your post</span>
-                    )}
-                    {notification.type === "comment" && (
-                      <span className="text-yellow-400">💬 commented: {notification.commentContent}</span>
-                    )}
-                    {notification.type === "message" && (
-                      <span className="text-purple-400">📩 sent a message: {notification.messageContent}</span>
-                    )}
-                    {notification.type === "follow" && (
-                      <span className="text-pink-400">👤 started following you</span>
-                    )}
-                  </p>
-                  <span className="text-sm text-gray-400">
-                    {new Date(notification.createdAt).toLocaleString()}
-                  </span>
                 </div>
-
-                {!notification.isRead && (
-                  <span className="text-4xl text-green-400 mt-2">•</span>
-                )}
+                <div className={`text-sm italic shrink-0 ml-4 ${noti.isRead ? 'text-zinc-400' : 'text-white font-semibold'}`}>
+                  {noti.isRead ? 'Đã đọc' : 'Chưa đọc'}
+                </div>
               </div>
-            ))
-          ) : (
-            <p className="text-center text-gray-400">No notifications found</p>
-          )}
+            );
+          })}
         </div>
-      </main>
+      )}
     </div>
   );
 };

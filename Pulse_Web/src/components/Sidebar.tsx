@@ -2,12 +2,13 @@ import { Home, Bell, MessageSquare, Bookmark, User, LayoutDashboard, MoreHorizon
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../redux/store';
+import { RootState, AppDispatch, store } from '../redux/store';
 import { logout } from '../redux/slice/authSlice';
-import { fetchUnreadCount } from "../redux/slice/notificationSlice";
 
+import { addNotification,setAllNotifications  } from "../redux/slice/notificationSlice";
 // 🧠 Không còn import không dùng, không còn biến isHovered, toggleSidebar
-
+import api from "../services/api";
+import socket from "../utils/socket_noti";
 const Sidebar = () => {
     const dispatch = useDispatch<AppDispatch>();
     const [showSidebar] = useState(true);
@@ -15,7 +16,53 @@ const Sidebar = () => {
     const [showMenu, setShowMenu] = useState(false);
 
     const userDetail = useSelector((state: RootState) => state.auth.userDetail);
+   
     const unreadCount = useSelector((state: RootState) => state.notification.unreadCount);
+
+
+    const userDetailLogin = useSelector((state: RootState) => state.auth.userDetail); 
+    const userLoginID =   userDetailLogin?.userId || "";
+    useEffect(() => {
+        const fetchNoti = async () => {
+          if (userLoginID) {
+            try {
+              const res = await api.get(`/noti/get-all?userId=${userLoginID}`);
+              dispatch(setAllNotifications(res.data));
+            } catch (err) {
+              console.error("Lỗi lấy thông báo ban đầu:", err);
+            }
+          }
+        };
+      
+        if (userLoginID) {
+          socket.emit('register', userLoginID);
+        }
+      
+        socket.on('new_notification', (data) => {
+          if (data.receiverId === userLoginID) {
+            console.log("📥 Nhận thông báo mới:", data);
+      
+            // Kiểm tra notification đã tồn tại chưa
+            const state = store.getState(); // lấy state từ store.ts
+            const existing = state.notification.notifications.find(
+              (n) => n._id === data._id
+            );
+      
+            if (!existing) {
+              dispatch(addNotification(data));
+            } else {
+              // 🔁 Nếu đã có: chỉ cần refetch toàn bộ để cập nhật timestamp + unreadCount
+              fetchNoti();
+            }
+          }
+        });
+      
+        return () => {
+          socket.off('new_notification');
+        };
+      }, [userLoginID, dispatch]);
+      
+
 
     const getInitialActiveItem = () => {
         const item = localStorage.getItem("activeItem");
@@ -25,9 +72,6 @@ const Sidebar = () => {
 
     const [activeItem, setActiveItem] = useState(getInitialActiveItem);
 
-    useEffect(() => {
-        dispatch(fetchUnreadCount());
-    }, [dispatch]);
 
     useEffect(() => {
         const handleStorageChange = () => {
