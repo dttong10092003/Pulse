@@ -1,5 +1,5 @@
 // File: ImageModal.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   X,
   Heart,
@@ -19,7 +19,10 @@ import {
 } from "../../../redux/slice/commentSilce";
 import commentSocket from "../../../utils/socketComment";
 import { likePost, unlikePost } from "../../../redux/slice/likeSlice";
-
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import { Image as ImageIcon } from "lucide-react";
+dayjs.extend(relativeTime);
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -30,6 +33,7 @@ interface Props {
   content: string;
   fullView?: boolean;
   postId: string;
+  createdAt: string;
 }
 
 const ImageModal = ({
@@ -41,6 +45,7 @@ const ImageModal = ({
   avatar,
   content,
   postId,
+  createdAt,
 }: Props) => {
   const [index, setIndex] = useState(startIndex);
   const [commentText, setCommentText] = useState("");
@@ -53,10 +58,16 @@ const ImageModal = ({
   const likedPostIds = useSelector((state: RootState) => state.likes.likedPostIds);
   const isLiked = likedPostIds.includes(postId);
   const [expandedComments, setExpandedComments] = useState<{ [key: string]: boolean }>({});
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setIndex(startIndex);
-  }, [startIndex]);
+
+    if (isOpen) {
+      setCommentText("");
+      setReplyingToCommentId(null);
+    }
+  }, [isOpen, startIndex]);
 
   useEffect(() => {
     if (isOpen && postId) {
@@ -72,7 +83,17 @@ const ImageModal = ({
 
     if (postId) {
       const eventName = `receive-comment-${postId}`;
+      let receivedFirstComment = false;
+
       const handler = () => {
+        // Nếu vừa tạo comment trong vòng vài giây, không gọi lại để tránh đè
+        if (receivedFirstComment) return;
+        receivedFirstComment = true;
+
+        setTimeout(() => {
+          receivedFirstComment = false;
+        }, 1000); // sau 1 giây mới cho phép gọi lại
+
         dispatch(getCommentsByPost(postId));
       };
 
@@ -101,9 +122,13 @@ const ImageModal = ({
         setExpandedComments((prev) => ({ ...prev, [replyingToCommentId]: true }));
         setReplyingToCommentId(null);
       } else {
-        await dispatch(createComment({ postId, text: commentText.trim() }));
+        if (!authUser) return;
+        await dispatch(createComment({
+          postId,
+          text: commentText.trim(),
+        }));
       }
-      await dispatch(getCommentCountsByPosts([postId])); // vẫn giữ nếu bạn hiển thị tổng số comment
+      await dispatch(getCommentCountsByPosts([postId]));
 
       setCommentText("");
     } catch (err) {
@@ -111,7 +136,46 @@ const ImageModal = ({
     }
   };
 
-  const currentMedia = mediaList[index] || "";
+  // ✨ Hàm xử lý highlight mention trọn cụm tên
+  const renderMentionedText = (text: string, mentionNames: string[]) => {
+    const tokens = text.split(/(\s+)/); // giữ lại dấu cách
+    const result: React.ReactNode[] = [];
+
+    let i = 0;
+    while (i < tokens.length) {
+      const token = tokens[i];
+
+      if (token.startsWith("@")) {
+        let matched = "";
+        let matchLength = 0;
+
+        for (let len = 1; len <= 6 && i + len <= tokens.length; len++) {
+          const candidate = tokens.slice(i, i + len).join("").trim();
+          if (mentionNames.includes(candidate)) {
+            matched = candidate;
+            matchLength = len;
+          }
+        }
+
+        if (matched) {
+          result.push(
+            <strong key={`mention-${i}`} className="text-blue-300">
+              {matched}
+            </strong>, " "
+          );
+          i += matchLength;
+          continue;
+        }
+      }
+
+      result.push(token);
+      i++;
+    }
+
+    return result;
+  };
+
+  const currentMedia = mediaList?.[index] ?? "";
   const isVideo = /\.(mp4|webm|ogg)$/i.test(currentMedia);
 
   const goNext = () => setIndex((prev) => (prev + 1) % mediaList.length);
@@ -132,10 +196,24 @@ const ImageModal = ({
             </button>
           </>
         )}
-        {isVideo ? (
-          <video src={currentMedia} autoPlay controls className="w-auto max-w-[100%] h-auto max-h-[100%] object-contain rounded-xl" />
+        {!currentMedia ? (
+          <div className="w-full h-full flex items-center justify-center text-zinc-500">
+            <ImageIcon size={64} />
+          </div>
+        ) : isVideo ? (
+          <video
+            src={currentMedia}
+            autoPlay
+            controls
+            className="w-auto max-w-[100%] h-auto max-h-[100%] object-contain rounded-xl"
+          />
         ) : (
-          <img src={currentMedia} alt="preview" className="w-auto max-w-[100%] h-auto max-h-[100%] object-contain rounded-xl" />
+          <img
+            src={currentMedia}
+            alt="preview"
+            className="w-auto max-w-[100%] h-auto max-h-[100%] object-contain rounded-xl"
+            onError={(e) => (e.currentTarget.src = "https://i.postimg.cc/y6vYqSkq/image-placeholder.png")}
+          />
         )}
       </div>
 
@@ -145,7 +223,7 @@ const ImageModal = ({
             <img src={avatar} className="w-10 h-10 rounded-full object-cover" />
             <div>
               <p className="font-semibold text-base leading-4">{username}</p>
-              <p className="text-xs text-zinc-400 mt-1">2 giờ trước</p>
+              <p className="text-xs text-zinc-400 mt-1">{dayjs(createdAt).fromNow()}</p>
             </div>
           </div>
           <button onClick={onClose} className="text-zinc-400 hover:text-white cursor-pointer">
@@ -191,8 +269,9 @@ const ImageModal = ({
                   </div>
                   <button
                     onClick={() => {
-                      setCommentText(`@${comment.user?.firstname} ${comment.user?.lastname} `);
+                      setCommentText(`@${comment.user?.firstname}${comment.user?.lastname} `);
                       setReplyingToCommentId(comment._id);
+                      inputRef.current?.focus();
                     }}
                     className="text-xs text-blue-400 hover:underline mt-1 ml-2"
                   >
@@ -203,55 +282,39 @@ const ImageModal = ({
               {comment.replies?.length > 0 && (
                 <div className="flex flex-col gap-2 ml-[50px] mt-2">
                   {(expandedComments[comment._id] ? comment.replies : comment.replies.slice(0, 2)).map((reply) => (
-                    <div key={reply._id} className="flex items-start gap-2">
-                      <img src={reply.user?.avatar || "https://i.postimg.cc/7Y7ypVD2/avatar-mac-dinh.jpg"} className="w-7 h-7 rounded-full object-cover" alt="avatar" />
-                      <div className="bg-[#3a3b3c] px-3 py-2 rounded-2xl max-w-[260px]">
-                        <p className="text-sm font-semibold leading-none mb-1">
-                          {reply.user?.firstname} {reply.user?.lastname}
-                        </p>
-                        <p className="text-sm text-white">
-                          {(() => {
-                            const text = reply.text || "";
-                            const words = text.split(" ");
-
-                            const result: React.ReactNode[] = [];
-                            let mentionBuffer: string[] = [];
-
-                            for (let i = 0; i < words.length; i++) {
-                              const word = words[i];
-
-                              if (word.startsWith("@")) {
-                                mentionBuffer = [word]; // Bắt đầu một mention
-                              } else if (mentionBuffer.length > 0) {
-                                // Giả định tên có thể dài 3 từ
-                                mentionBuffer.push(word);
-
-                                // Nếu đã gom 2 hoặc 3 từ thì kết thúc mention
-                                if (mentionBuffer.length >= 1 || i === words.length - 1) {
-                                  result.push(
-                                    <strong key={i} className="text-blue-300">
-                                      {mentionBuffer.join(" ")}{" "}
-                                    </strong>
-                                  );
-                                  mentionBuffer = [];
-                                }
-                              } else {
-                                result.push(word + " ");
-                              }
-                            }
-
-                            return result;
-                          })()}
-                        </p>
+                    <div key={reply._id} className="flex flex-col items-start gap-1 ml-1">
+                      <div className="flex items-start gap-2">
+                        <img src={reply.user?.avatar || "https://i.postimg.cc/7Y7ypVD2/avatar-mac-dinh.jpg"} className="w-7 h-7 rounded-full object-cover" alt="avatar" />
+                        <div className="bg-[#3a3b3c] px-3 py-2 rounded-2xl max-w-[260px]">
+                          <p className="text-sm font-semibold leading-none mb-1">
+                            {reply.user?.firstname}{reply.user?.lastname}
+                          </p>
+                          <p className="text-sm text-white">
+                            {renderMentionedText(
+                              reply.text || "",
+                              comments.map((c) => `@${c.user?.firstname}${c.user?.lastname}`)
+                            )}
+                          </p>
+                        </div>
                       </div>
+                      <button
+                        onClick={() => {
+                          setCommentText(`@${reply.user?.firstname}${reply.user?.lastname} `);
+                          setReplyingToCommentId(comment._id);
+                          inputRef.current?.focus();
+                        }}
+                        className="text-xs text-blue-400 hover:underline mt-1 ml-11"
+                      >
+                        Reply
+                      </button>
                     </div>
                   ))}
                   {comment.replies.length > 2 && !expandedComments[comment._id] && (
                     <button
-                      className="text-xs text-blue-400 hover:underline ml-9"
+                      className="text-xs text-blue-400 hover:underline ml-2"
                       onClick={() => toggleExpand(comment._id)}
                     >
-                      Xem tất cả {comment.replies.length} phản hồi
+                      View all {comment.replies.length} reply
                     </button>
                   )}
                 </div>
@@ -264,6 +327,7 @@ const ImageModal = ({
           <div className="flex items-center gap-2">
             <img src={authUser?.avatar || "https://i.postimg.cc/7Y7ypVD2/avatar-mac-dinh.jpg"} className="w-9 h-9 rounded-full object-cover" alt="avatar" />
             <input
+              ref={inputRef}
               type="text"
               placeholder="Viết bình luận..."
               className="flex-1 px-4 py-2 bg-zinc-800 text-white rounded-full outline-none text-sm"

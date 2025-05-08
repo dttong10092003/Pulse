@@ -35,7 +35,8 @@ const UserInfo_Follow = () => {
   const [profileTab, setProfileTab] = useState("Posts"); // Dành cho Posts/Featured/Media
   const [modalTab, setModalTab] = useState<"followers" | "following">("followers"); // Dành cho modal
   const [userFollowings, setUserFollowings] = useState<FollowItem[]>([]);
-
+  const commentCounts = useSelector((state: RootState) => state.comments.commentCounts);
+  
   useEffect(() => {
     if (id) {
       dispatch(fetchUserDetailById(id));
@@ -280,7 +281,7 @@ const UserInfo_Follow = () => {
       <div className="mt-4">
         {profileTab === "Posts" && (
           <div className="max-h-[65vh] overflow-y-auto scrollbar-dark px-2">
-            <Posts posts={userPosts} username={fullName} avatar={avatar} />
+            <Posts posts={userPosts} username={fullName} avatar={avatar} commentCounts={commentCounts}/>
           </div>
         )}
         {profileTab === "Featured" && <Featured />}
