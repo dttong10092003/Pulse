@@ -41,6 +41,7 @@ const UserInfo_Follow = () => {
 
 
   const userShowId = userDetail?.userId   || ''; // id user đang xem 
+ 
   const userLoginId = currentUser;// id user đang login 
   useEffect(() => {
     if (id) {
@@ -112,58 +113,51 @@ const UserInfo_Follow = () => {
       alert('Gửi thông báo thất bại!');
     }
   };
-  const handleFollowToggle = async () => {
-    handleSendNotification();
-  }
-
-
   // const handleFollowToggle = async () => {
-  //   if (!userDetail || !currentUser || !id) return;
+  //   handleSendNotification();
+  // }
 
-  //   const payload = {
-  //     followingId: userDetail.userId,
-  //     followerId: currentUser!,
-  //   };
 
-  //   if (isFollowing) {
-  //     const confirmUnfollow = window.confirm("Are you sure you want to unfollow this user?");
-  //     if (!confirmUnfollow) return;
+  const handleFollowToggle = async () => {
+    if (!userDetail || !currentUser || !id) return;
 
-  //     const result = await dispatch(unfollowUser(payload));
-  //     if (unfollowUser.fulfilled.match(result)) {
-  //       alert("Unfollowed successfully");
-  //       setIsFollowing(false);
-  //       dispatch(getFollowers(id));
-  //       dispatch(getFollowings(currentUser));
-  //       dispatch(getTopUsersExcludingFollowed(currentUser!));
-  //     } else {
-  //       alert("Failed to unfollow");
-  //     }
-  //   } else {
-  //     const result = await dispatch(followUser(payload));
-  //     if (followUser.fulfilled.match(result)) {
-  //       alert("Followed successfully");
-  //       setIsFollowing(true);
-  //       dispatch(getFollowers(id));
-  //       dispatch(getFollowings(currentUser));
-  //       dispatch(getTopUsersExcludingFollowed(currentUser!));
+    const payload = {
+      followingId: userDetail.userId,
+      followerId: currentUser!,
+    };
 
-  //       // Gọi action tạo thông báo "follow"
-  //       // const createdAt = new Date().toISOString();
-  //       // Chỉ tạo thông báo nếu bạn follow người khác
-  //       if (currentUser !== userDetail.userId) {
-  //         // await dispatch(createNotification({
-  //         //   type: "follow",
-  //         //   senderId: currentUser!,
-  //         //   receiverId: userDetail.userId,
-  //         //   createdAt: createdAt,
-  //         // }));
-  //       }
-  //     } else {
-  //       alert("Failed to follow");
-  //     }
-  //   }
-  // };
+    if (isFollowing) {
+      const confirmUnfollow = window.confirm("Are you sure you want to unfollow this user?");
+      if (!confirmUnfollow) return;
+
+      const result = await dispatch(unfollowUser(payload));
+      if (unfollowUser.fulfilled.match(result)) {
+        alert("Unfollowed successfully");
+        setIsFollowing(false);
+        dispatch(getFollowers(id));
+        dispatch(getFollowings(currentUser));
+        dispatch(getTopUsersExcludingFollowed(currentUser!));
+      } else {
+        alert("Failed to unfollow");
+      }
+    } else {
+      const result = await dispatch(followUser(payload));
+      if (followUser.fulfilled.match(result)) {
+        alert("Followed successfully");
+        setIsFollowing(true);
+        dispatch(getFollowers(id));
+        dispatch(getFollowings(currentUser));
+        dispatch(getTopUsersExcludingFollowed(currentUser!));
+
+
+        // Gửi thông báo cho người dùng được follow
+        handleSendNotification();
+        
+      } else {
+        alert("Failed to follow");
+      }
+    }
+  };
 
   const handleUserClickInModal = (userId: string) => {
     if (userId === currentUser) {
@@ -314,7 +308,7 @@ const UserInfo_Follow = () => {
       <div className="mt-4">
         {profileTab === "Posts" && (
           <div className="max-h-[65vh] overflow-y-auto scrollbar-dark px-2">
-            <Posts posts={userPosts} username={fullName} avatar={avatar} />
+            <Posts posts={userPosts} username={fullName} avatar={avatar}  />
           </div>
         )}
         {profileTab === "Featured" && <Featured />}

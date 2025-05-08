@@ -94,7 +94,14 @@ const Notification = () => {
         if (!postMap[id]) {
           try {
             const res = await api.get(`/posts/${id}`);
-            setPostMap(prev => ({ ...prev, [id]: res.data }));
+            const postData = res.data;
+            setPostMap(prev => ({
+              ...prev,
+              [id]: {
+                ...postData,
+                likesCount: postData.likes?.length || 1 // ✅ thêm likesCount
+              }
+            }));
           } catch (error) {
             console.error('❌ Error fetching post:', error);
           }
@@ -114,14 +121,14 @@ const Notification = () => {
   // const handleReadOne = async (id: string) => {
   //   await api.patch(`/noti/read-one/${id}`, { userId: userDetailId });
   //   dispatch(markOneAsReadRedux(id));
-    
+
   // };
 
   const handleReadOne = async (noti: typeof notifications[number]) => {
     try {
       await api.patch(`/noti/read-one/${noti._id}`, { userId: userDetailId });
       dispatch(markOneAsReadRedux(noti._id));
-  
+
       // Điều hướng tùy loại thông báo
       if (noti.type === 'like' || noti.type === 'follow') {
         navigate(`/home/user-info/${noti.senderId}`);
@@ -134,7 +141,7 @@ const Notification = () => {
     }
   };
 
-  
+
   const filtered = activeTab === 'all'
     ? notifications
     : notifications.filter(n => n.type === activeTab);
@@ -190,16 +197,23 @@ const Notification = () => {
                     </span>
                     <span className="truncate">
                       {noti.type === 'like' ? (
-                        
                         <>
                           đã thích bài viết{' '}
                           <span className="font-semibold text-blue-400">
                             {postMap[noti.postId!]?.content || '...'}
-                          </span>{' '}
-                          của bạn
+                          </span>
+                          {postMap[noti.postId!]?.likesCount > 1 && (
+                            <>
+                              {' '}cùng với{' '}
+                              <span className="font-semibold text-yellow-300">
+                                {postMap[noti.postId!]?.likesCount - 1}
+                              </span>{' '}
+                              người khác
+                            </>
+                          )}
                         </>
                       ) : noti.type === 'follow' ? (
-                       
+
                         <>đã bắt đầu theo dõi bạn</>
                       ) : noti.type === 'message' ? (
                         <>

@@ -7,6 +7,8 @@ import { RootState, AppDispatch } from '../../redux/store';
 import { fetchUserPosts, createPost } from "../../redux/slice/postProfileSlice";
 import { fetchUserLikedPosts } from "../../redux/slice/likeSlice";
 import { getFollowers, getFollowings } from "../../redux/slice/followSlice";
+import api from "../../services/api";
+import { getUserDetails } from "../../redux/slice/userSlice";
 
 
 const MyProfile = () => {
@@ -27,7 +29,42 @@ const MyProfile = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeFollowTab, setActiveFollowTab] = useState<"followers" | "following">("followers");
     const commentCounts = useSelector((state: RootState) => state.comments.commentCounts);
+    const [likedUsers, setLikedUsers] = useState<any[]>([]);
+    const [likeModalOpen, setLikeModalOpen] = useState(false);
+    const [isLoadingLikes, setIsLoadingLikes] = useState(false);
 
+    const handleHoldLike = async (postId: string) => {
+        try {
+          setIsLoadingLikes(true);
+      
+          const res = await api.get(`/likes/${postId}`); // [{ userId, timestamp }]
+          const likeList = res.data;
+      
+          const userDetails: any[] = [];
+      
+          for (const like of likeList) {
+            try {
+              const user = await dispatch(getUserDetails(like.userId)).unwrap();
+              userDetails.push({
+                ...user,
+                timestamp: like.timestamp
+              });
+            } catch (err) {
+              console.error("❌ Lỗi fetch userId:", like.userId, err);
+            }
+          }
+      
+          setLikedUsers(userDetails);
+          setLikeModalOpen(true);
+        } catch (err) {
+          console.error("🔥 Lỗi lấy danh sách like:", err);
+        } finally {
+          setIsLoadingLikes(false);
+        }
+      };
+      
+
+    
     useEffect(() => {
         if (userId) {
             dispatch(getFollowers(userId));
@@ -357,9 +394,47 @@ const MyProfile = () => {
                             username={username}
                             avatar={userDetail?.avatar ?? "default-avatar-url"}
                             commentCounts={commentCounts}
+                            onHoldLike={handleHoldLike}
                         />
                     </div>
                 )}
+                {likeModalOpen && (
+                    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setLikeModalOpen(false)}>
+                        <div className="bg-zinc-900 p-6 rounded-lg w-96 max-h-[70vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
+                            <h2 className="text-xl font-semibold mb-4 text-white text-center">
+                                Người đã like bài viết ({likedUsers.length})
+                            </h2>
+                            <button className="absolute top-4 right-4 text-white" onClick={() => setLikeModalOpen(false)}>
+                                <X size={24} />
+                            </button>
+
+                            {isLoadingLikes ? (
+                                <p className="text-center text-zinc-400">Đang tải danh sách...</p>
+                            ) : likedUsers.length === 0 ? (
+                                <p className="text-center text-zinc-400">Chưa có ai like bài viết này.</p>
+                            ) : (
+                                <ul className="space-y-3">
+
+                                    {likedUsers.map((user, idx) => (
+                                
+                                        <li
+                                            key={idx}
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // chống click lan ra modal
+                                                navigate(`/home/user-info/${user._id}`);
+                                            }}
+                                            className="flex items-center gap-3 p-2 hover:bg-zinc-800 rounded cursor-pointer"
+                                        >
+                                            <img src={user.avatar || "https://i.pravatar.cc/100"} className="w-8 h-8 rounded-full object-cover" />
+                                            <span className="text-white">{user.firstname} {user.lastname}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
+                )}
+
             </main>
         </>
     );
