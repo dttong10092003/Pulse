@@ -9,25 +9,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { deletePost, fetchUserPosts, editPost } from "../../../redux/slice/postProfileSlice";
 import { likePost, unlikePost, fetchLikeCounts } from "../../../redux/slice/likeSlice";
 import { useNavigate } from "react-router-dom";
-
+import {
+  getCommentCountsByPosts,
+} from "../../../redux/slice/commentSilce";
 dayjs.extend(relativeTime);
-
-const timeAgo = (dateString: string): string => {
-  const now = dayjs();
-  const created = dayjs(dateString);
-  const diffInSeconds = now.diff(created, "second");
-  if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
-  const diffInMinutes = now.diff(created, "minute");
-  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-  const diffInHours = now.diff(created, "hour");
-  if (diffInHours < 24) return `${diffInHours}h ago`;
-  const diffInDays = now.diff(created, "day");
-  if (diffInDays < 30) return `${diffInDays}d ago`;
-  const diffInMonths = now.diff(created, "month");
-  if (diffInMonths < 12) return `${diffInMonths}mo ago`;
-  const diffInYears = now.diff(created, "year");
-  return `${diffInYears}y ago`;
-};
 
 interface Post {
   _id: string;
@@ -49,6 +34,7 @@ const Posts = ({ posts, username, avatar, commentCounts }: { posts: Post[]; user
     if (posts.length > 0) {
       const postIds = posts.map((p) => p._id);
       dispatch(fetchLikeCounts(postIds));
+      dispatch(getCommentCountsByPosts(postIds));
     }
   }, [posts]);
 
@@ -62,10 +48,11 @@ const Posts = ({ posts, username, avatar, commentCounts }: { posts: Post[]; user
           avatar={avatar}
           postUserId={post.userId}
           content={post.content}
-          time={timeAgo(post.createdAt)}
+          time={dayjs(post.createdAt).fromNow()}
           comments={commentCounts[post._id] || 0}
           media={post.media || []}
           tags={post.tags || []}
+          createdAt={post.createdAt}
         />
       ))}
     </div>
@@ -79,6 +66,7 @@ const PostCard = ({
   postUserId,
   content,
   time,
+  createdAt,
   comments,
   media,
   tags,
@@ -89,6 +77,7 @@ const PostCard = ({
   postUserId: string;
   content: string;
   time: string;
+  createdAt: string;
   comments: number;
   media: string[];
   tags: string[];
@@ -419,6 +408,7 @@ const PostCard = ({
           content={content}
           fullView
           postId={postId}
+          createdAt={createdAt}
         />
       </div>
     </div>
