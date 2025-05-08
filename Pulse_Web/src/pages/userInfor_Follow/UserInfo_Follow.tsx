@@ -43,6 +43,8 @@ const UserInfo_Follow = () => {
   const userShowId = userDetail?.userId   || ''; // id user đang xem 
  
   const userLoginId = currentUser;// id user đang login 
+  const commentCounts = useSelector((state: RootState) => state.comments.commentCounts);
+  
   useEffect(() => {
     if (id) {
       dispatch(fetchUserDetailById(id));
@@ -308,7 +310,8 @@ const UserInfo_Follow = () => {
       <div className="mt-4">
         {profileTab === "Posts" && (
           <div className="max-h-[65vh] overflow-y-auto scrollbar-dark px-2">
-            <Posts posts={userPosts} username={fullName} avatar={avatar}  />
+          
+            <Posts posts={userPosts} username={fullName} avatar={avatar} commentCounts={commentCounts}/>
           </div>
         )}
         {profileTab === "Featured" && <Featured />}

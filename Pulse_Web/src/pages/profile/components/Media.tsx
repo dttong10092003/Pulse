@@ -14,17 +14,24 @@ const Media = () => {
     const [modalUsername, setModalUsername] = useState("");
     const [modalAvatar, setModalAvatar] = useState("");
     const [modalPostId, setModalPostId] = useState("");
+    const [modalCreatedAt, setModalCreatedAt] = useState("");
 
-    const handleOpenModal = (mediaList: string[], index: number, content: string, postId: string) => {
+    const handleOpenModal = (
+        mediaList: string[],
+        index: number,
+        content: string,
+        postId: string,
+        createdAt: string // thêm dòng này
+      ) => {
         setModalMediaList(mediaList);
         setModalStartIndex(index);
         setModalPostContent(content);
         setModalUsername(`${userDetail?.firstname} ${userDetail?.lastname}`);
         setModalAvatar(userDetail?.avatar || "");
         setModalPostId(postId);
+        setModalCreatedAt(createdAt); // gán createdAt vào state
         setModalOpen(true);
-    };
-
+      };
     // 👉 Tạo danh sách media từ các bài post
     const allMedia = posts.flatMap(post =>
         (post.media || []).map((src: string, idx: number) => ({
@@ -48,7 +55,9 @@ const Media = () => {
                         <div
                             key={`${item.src}-${i}`}
                             className="relative w-full rounded-lg overflow-hidden aspect-[16/9] bg-black cursor-pointer"
-                            onClick={() => handleOpenModal(item.mediaList || [], item.index, item.content, item.postId)}
+                            onClick={() =>
+                                handleOpenModal(item.mediaList || [], item.index, item.content, item.postId, posts.find(p => p._id === item.postId)?.createdAt || "")
+                              }
                         >
                             {item.src.includes("video") || item.src.includes(".mp4") ? (
                                 <video
@@ -80,6 +89,7 @@ const Media = () => {
                 username={modalUsername}
                 avatar={modalAvatar}
                 postId={modalPostId}
+                createdAt={modalCreatedAt}
             />
         </div>
     );

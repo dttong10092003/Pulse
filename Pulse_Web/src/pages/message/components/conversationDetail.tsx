@@ -6,21 +6,19 @@ import { RootState, AppDispatch } from "../../../redux/store";
 import { deleteConversation, deleteMessageLocal, incrementUnreadCount, revokeMessageLocal, setConversationHidden } from "../../../redux/slice/chatSlice";
 import { Conversation, Member, Message } from '../../../redux/slice/types';
 import socket from '../../../utils/socket';
-import socketCall from '../../../utils/socketCall';
 import GroupMembersModal from './GroupMembersModal';
 import toast from 'react-hot-toast';
 import ForwardMessageModal from './ForwardMessageModal';
 import {
-  Phone, Search, Columns2, Video, X, Bell, UserPlus, Pin, EyeOff,
+  PhoneOff, Search, Columns2, Video, X, Bell, UserPlus, Pin, EyeOff,
   TriangleAlert, Trash2, LogOut, MessageCircle, Users, Pencil, Camera,
   ChevronDown,
   ChevronUp, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { fileIcons } from '../../../assets';
-import { startCall } from '../../../redux/slice/callSlice';
 import { getUserDetails } from '../../../redux/slice/userSlice';
 import AddMemberModal from "./AddMemberModal";
-
+import { VideoRoom } from './VideoRoom';
 interface ConversationDetailProps {
   selectedConversation: Conversation | null; // Thay đổi kiểu dữ liệu ở đây
 }
@@ -67,6 +65,9 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const [showAllFiles, setShowAllFiles] = useState(false);
 
   const [previewImageIndex, setPreviewImageIndex] = useState<number | null>(null);
+  const prevMessageLength = useRef<number>(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [inVideoCall, setInVideoCall] = useState(false);
 
   console.log("User details:", userDetails);
 
@@ -75,6 +76,12 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
       inputRef.current.focus();
     }
   }, [editingName]);
+
+  useEffect(() => {
+    if (isSearching && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isSearching]);
 
   useEffect(() => {
     if (selectedConversation) {
@@ -102,9 +109,11 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   }, [selectedConversation?._id]);
 
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    const newLength = messages?.length || 0;
+    if (newLength > prevMessageLength.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
+    prevMessageLength.current = newLength;
   }, [messages?.length]);
 
   useEffect(() => {
@@ -312,6 +321,42 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     ));
   };
 
+  const handleDisbandGroup = () => {
+    if (!selectedConversation || !currentUser?._id) return;
+
+    if (selectedConversation.adminId !== currentUser._id) {
+      toast.error("Only the group admin can disband the group.");
+      return;
+    }
+
+    toast.custom((t) => (
+      <div className="bg-[#2a2a2a] text-white p-4 rounded-lg shadow-md w-72">
+        <p className="mb-2">Are you sure you want to disband this group?</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => {
+              socket.emit("disbandGroup", {
+                conversationId: selectedConversation._id,
+              });
+
+              toast.dismiss(t.id);
+            }}
+            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 cursor-pointer"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    ));
+  };
+
+
   const handleDeleteChat = () => {
     if (!selectedConversation?._id || !currentUser?._id) return;
 
@@ -321,7 +366,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
         <div className="flex justify-end gap-2">
           <button
             onClick={async () => {
-               await dispatch(
+              await dispatch(
                 deleteConversation({
                   conversationId: selectedConversation._id,
                   userId: currentUser._id,
@@ -481,7 +526,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   };
 
-  const highlightText = (text: string, keyword: string) => {
+  const highlightText = (text: string, keyword: string, isActive: boolean) => {
     if (!keyword) return text;
 
     const escapedKeyword = escapeRegExp(keyword);
@@ -489,7 +534,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
     return parts.map((part, index) => (
       part.toLowerCase() === keyword.toLowerCase() ? (
-        <span key={index} className="bg-amber-600">{part}</span>
+        <span key={index} className={`${isActive ? "bg-pink-400" : "bg-amber-600"}`}>{part}</span>
       ) : (
         <span key={index}>{part}</span>
       )
@@ -532,6 +577,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
           {isSearching && (
             <div className="flex items-center gap-2 bg-gray-700 px-2 py-1 rounded-lg ml-2">
               <input
+                ref={searchInputRef}
                 type="text"
                 className="flex-1 bg-transparent p-1 pl-2 text-sm text-white outline-none focus:ring-0 placeholder-gray-400"
                 placeholder="Search messages..."
@@ -572,128 +618,13 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
           {/* Các icon bên phải */}
           <div className="flex items-center gap-4">
-            <Phone
+        
+
+          <Video
               size={20}
               className="text-white cursor-pointer hover:text-gray-400 transition duration-200"
-              onClick={() => {
-                if (!selectedConversation || !currentUser) return;
-
-                const isGroup = selectedConversation.isGroup;
-
-                const calleeName = isGroup
-                  ? selectedConversation.groupName
-                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.name || "Unknown";
-
-                const calleeAvatar = isGroup
-                  ? selectedConversation.avatar
-                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.avatar || "";
-
-                dispatch(startCall({
-                  isVideo: false,
-                  calleeName,
-                  calleeAvatar,
-                  toUserId: selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId,
-                  fromUserId: currentUser._id,
-                  fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
-                  fromAvatar: userDetails?.avatar || '',
-                  isGroup,
-                  groupName: selectedConversation.groupName,
-                }));
-
-
-                if (isGroup) {
-                  selectedConversation.members.forEach(member => {
-                    if (member.userId !== currentUser._id) {
-                      socketCall.emit("incomingCall", {
-                        toUserId: member.userId,
-                        fromUserId: currentUser._id,
-                        fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
-                        fromAvatar: userDetails?.avatar || "",
-                        isVideo: false,
-                        isGroup: true,
-                        groupName: selectedConversation.groupName,
-                        groupAvatar: selectedConversation.avatar,
-                      });
-                    }
-                  });
-                } else {
-                  const toUserId = selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId;
-                  if (toUserId) {
-                    socketCall.emit("incomingCall", {
-                      toUserId,
-                      fromUserId: currentUser._id,
-                      fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
-                      fromAvatar: userDetails?.avatar || "",
-                      isVideo: false,
-                      isGroup: false,
-                    });
-                  }
-                }
-              }}
+              onClick={() => setInVideoCall(true)}
             />
-
-            <Video
-              size={20}
-              className="text-white cursor-pointer hover:text-gray-400 transition duration-200"
-              onClick={() => {
-                if (!selectedConversation || !currentUser) return;
-
-                const isGroup = selectedConversation.isGroup;
-
-                const calleeName = isGroup
-                  ? selectedConversation.groupName
-                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.name || "Unknown";
-
-                const calleeAvatar = isGroup
-                  ? selectedConversation.avatar
-                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.avatar || "";
-
-                const toUserId = selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId;
-
-                dispatch(startCall({
-                  isVideo: false,
-                  calleeName,
-                  calleeAvatar,
-                  toUserId,
-                  fromUserId: currentUser._id,
-                  fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
-                  fromAvatar: userDetails?.avatar || '',
-                  isGroup,
-                  groupName: selectedConversation.groupName,
-                }));
-
-
-                if (isGroup) {
-                  selectedConversation.members.forEach(member => {
-                    if (member.userId !== currentUser._id) {
-                      socketCall.emit("incomingCall", {
-                        toUserId: member.userId,
-                        fromUserId: currentUser._id,
-                        fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
-                        fromAvatar: userDetails?.avatar || "",
-                        isVideo: true,
-                        isGroup: true,
-                        groupName: selectedConversation.groupName,
-                        groupAvatar: selectedConversation.avatar,
-                      });
-                    }
-                  });
-                } else {
-                  const toUserId = selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId;
-                  if (toUserId) {
-                    socketCall.emit("incomingCall", {
-                      toUserId,
-                      fromUserId: currentUser._id,
-                      fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
-                      fromAvatar: userDetails?.avatar || "",
-                      isVideo: true,
-                      isGroup: false,
-                    });
-                  }
-                }
-              }}
-            />
-
 
 
 
@@ -793,7 +724,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                     ) : (
                       <p>
                         {typeof msg.content === 'string' && msg.type === 'text'
-                          ? (isSearching ? highlightText(msg.content, searchTerm) : msg.content)
+                          ? (isSearching ? highlightText(msg.content, searchTerm, index === searchResults[currentResultIndex]) : msg.content)
                           : msg.content}
                       </p>
                     )
@@ -1126,6 +1057,17 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                     <span className="text-red-500">Leave the group</span>
                   </div>
                 )}
+
+                {selectedConversation.isGroup && selectedConversation.adminId === currentUser._id && (
+                  <div
+                    className="flex items-center text-white cursor-pointer hover:bg-gray-800 p-2 rounded-md"
+                    onClick={handleDisbandGroup}
+                  >
+                    <Trash2 size={16} className="mr-2 text-red-500" />
+                    <span className="text-red-500">Disband group</span>
+                  </div>
+                )}
+
               </div>
             </div>
           </div>
@@ -1211,6 +1153,25 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
             setMessageToForward(null);
           }}
         />
+      )}
+           {inVideoCall && (
+        <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center">
+          {/* Video grid */}
+          <div className="flex-1 w-full overflow-auto px-6 py-4">
+            <VideoRoom />
+          </div>
+
+          {/* Control buttons */}
+          <div className="w-full flex justify-center gap-6 pb-6">
+            <button
+              onClick={() => setInVideoCall(false)}
+              className="bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-lg transition flex items-center justify-center"
+            >
+              <PhoneOff size={24} />
+            </button>
+          </div>
+
+        </div>
       )}
     </div>
   );
