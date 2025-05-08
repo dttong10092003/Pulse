@@ -146,6 +146,12 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
       dispatch(updateGroupName({ conversationId, groupName }));
     });
 
+    socket.on('groupDisbanded', ({ conversationId, groupName }) => {
+      toast.error(`Group "${groupName}" has been disbanded.`);
+      dispatch(removeConversation(conversationId));
+      dispatch(setSelectedConversation(null));
+    });
+
     return () => {
       socket.off('receiveMessage', handleReceiveMessage);
       socket.off('newConversation');
@@ -157,6 +163,7 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
       socket.off('groupAvatarUpdated');
       socket.off('groupNameUpdated');
       socket.off('memberLeft');
+      socket.off('groupDisbanded');
       socket.disconnect();
       hasConnected.current = false;
     };
