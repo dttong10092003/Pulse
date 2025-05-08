@@ -324,12 +324,12 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
   const handleDisbandGroup = () => {
     if (!selectedConversation || !currentUser?._id) return;
-  
+
     if (selectedConversation.adminId !== currentUser._id) {
       toast.error("Only the group admin can disband the group.");
       return;
     }
-  
+
     toast.custom((t) => (
       <div className="bg-[#2a2a2a] text-white p-4 rounded-lg shadow-md w-72">
         <p className="mb-2">Are you sure you want to disband this group?</p>
@@ -339,7 +339,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
               socket.emit("disbandGroup", {
                 conversationId: selectedConversation._id,
               });
-  
+
               toast.dismiss(t.id);
             }}
             className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 cursor-pointer"
@@ -356,7 +356,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
       </div>
     ));
   };
-  
+
 
   const handleDeleteChat = () => {
     if (!selectedConversation?._id || !currentUser?._id) return;
@@ -527,7 +527,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   };
 
-  const highlightText = (text: string, keyword: string) => {
+  const highlightText = (text: string, keyword: string, isActive: boolean) => {
     if (!keyword) return text;
 
     const escapedKeyword = escapeRegExp(keyword);
@@ -535,7 +535,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
     return parts.map((part, index) => (
       part.toLowerCase() === keyword.toLowerCase() ? (
-        <span key={index} className="bg-amber-600">{part}</span>
+        <span key={index} className={`${isActive ? "bg-pink-400" : "bg-amber-600"}`}>{part}</span>
       ) : (
         <span key={index}>{part}</span>
       )
@@ -840,7 +840,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                     ) : (
                       <p>
                         {typeof msg.content === 'string' && msg.type === 'text'
-                          ? (isSearching ? highlightText(msg.content, searchTerm) : msg.content)
+                          ? (isSearching ? highlightText(msg.content, searchTerm, index === searchResults[currentResultIndex]) : msg.content)
                           : msg.content}
                       </p>
                     )
