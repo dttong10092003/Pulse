@@ -21,19 +21,15 @@ export const fetchLikeCounts = createAsyncThunk(
   'likes/fetchLikeCounts',
   async (postIds: string[], { rejectWithValue }) => {
     try {
-      const results: Record<string, number> = {};
-      await Promise.all(
-        postIds.map(async (postId) => {
-          const res = await axios.get(`${LIKE_API}/count/${postId}`);
-          results[postId] = res.data.likeCount;
-        })
-      );
-      return results;
+      const res = await axios.post(`${LIKE_API}/count-by-posts`, { postIds });
+      return res.data; // { [postId]: likeCount }
     } catch (err: any) {
-      return rejectWithValue(err.message);
+      console.error("❌ Failed to fetch like counts:", err.response?.data || err.message);
+      return rejectWithValue('Failed to fetch like counts');
     }
   }
 );
+
 
 export const likePost = createAsyncThunk('likes/likePost', async (postId: string) => {
   const token = localStorage.getItem('token');

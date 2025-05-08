@@ -36,7 +36,7 @@ const Posts = ({ posts, username, avatar, commentCounts }: { posts: Post[]; user
       dispatch(fetchLikeCounts(postIds));
       dispatch(getCommentCountsByPosts(postIds));
     }
-  }, [posts]);
+  }, [dispatch, posts]);
 
   return (
     <div className="divide-zinc-800">
