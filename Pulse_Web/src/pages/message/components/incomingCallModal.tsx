@@ -22,7 +22,32 @@ const IncomingCallModal = () => {
     };
     useCallEndedListener(); // Custom hook để lắng nghe sự kiện kết thúc cuộc gọi
 
-
+    useEffect(() => {
+        const handleUserPublished = async (user: any, mediaType: 'video' | 'audio') => {
+            try {
+                await agoraClient.subscribe(user, mediaType);
+                console.log(`📡 Subscribed to ${user.uid} - ${mediaType}`);
+    
+                if (mediaType === 'video') {
+                    const remoteContainer = document.getElementById("remote-player");
+                    if (remoteContainer) {
+                        user.videoTrack?.play(remoteContainer);
+                    }
+                } else {
+                    user.audioTrack?.play();
+                }
+            } catch (error) {
+                console.error("❌ Failed to subscribe to remote user:", error);
+            }
+        };
+    
+        agoraClient.on("user-published", handleUserPublished);
+    
+        return () => {
+            agoraClient.off("user-published", handleUserPublished);
+        };
+    }, []);
+    
 
     useEffect(() => {
         if (call.visible) {
