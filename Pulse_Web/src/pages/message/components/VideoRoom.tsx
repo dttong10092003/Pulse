@@ -14,7 +14,7 @@ interface ExtendedUser {
 
 const APP_ID = '660ae1f6941a4d9fa5714e4233cef2c5';
 const TOKEN =
-  '007eJxTYNi0U46tg7e8cI/W9fpjgV0tiuaB/4MCA+ave3ZKZoXY/RAFBjMzg8RUwzQzSxPDRJMUy7REU3NDk1QTI2Pj5NQ0o2RTL3+ZjIZARoYF94JYGRkgEMRnZihPyWJgAADiXx31';
+  '007eJxTYChRyZyU+P1K/o1SXn3m3QEvp0j8+rblwclVeme4M/SC3j1RYDAzM0hMNUwzszQxTDRJsUxLNDU3NEk1MTI2Tk5NM0o2/bVcNqMhkJFB5IsEMyMDBIL4zAzlKVkMDACTECBK';
 const CHANNEL = 'wdj';
 
 AgoraRTC.setLogLevel(4);
@@ -99,7 +99,8 @@ const createAgoraClient = ({
 
 export const VideoRoom: React.FC = () => {
   const [users, setUsers] = useState<ExtendedUser[]>([]);
-  const [, setUid] = useState<string | number | null>(null);
+  const uidState = useState<string | number | null>(null);
+const setUid = uidState[1];
 
   useEffect(() => {
     const onVideoTrack = (user: ExtendedUser) => {
@@ -141,28 +142,13 @@ export const VideoRoom: React.FC = () => {
   }, []);
 
   return (
-    <>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-        }}
-      >
-        <div
-          className="grid gap-6 p-4 justify-center"
-          style={{
-            gridTemplateColumns: 'repeat(2, minmax(400px, 1fr))',
-          }}
-        >
-          {users.map((user) => (
-            <VideoPlayer key={user.uid} user={user} />
-          ))}
-        </div>
-
-
-
-
+    <div className="flex flex-col items-center justify-center w-full min-h-screen bg-[#1a1a1a]">
+      <div className="w-full max-w-screen-lg p-4 grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+        {users.map((user) => (
+          <VideoPlayer key={user.uid} user={user} />
+        ))}
       </div>
-    </>
+    </div>
   );
+  
 };
