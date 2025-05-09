@@ -5,7 +5,7 @@ import { AppDispatch, RootState } from "../redux/store";
 import { fetchAllPosts, createPost } from "../redux/slice/postProfileSlice";
 import SearchBar from "../pages/explore/components/SearchBar";
 import Posts from "../pages/profile/components/Posts";
-import { fetchLikeCounts, fetchUserLikedPosts } from "../redux/slice/likeSlice";
+import { fetchLikeCounts,fetchUserLikedPosts } from "../redux/slice/likeSlice";
 import { getCommentCountsByPosts } from "../redux/slice/commentSilce"
 import commentSocket from "../utils/socketComment";
 
@@ -26,23 +26,27 @@ const MainContent = () => {
         dispatch(fetchAllPosts());
     }, [dispatch]);
 
-    // Khi posts đã có, gọi lấy like
+    useEffect(() => {
+        dispatch(fetchUserLikedPosts());
+    }, [dispatch]);
+
     useEffect(() => {
         if (posts.length > 0) {
-            const ids = posts.map((post) => post._id);
-            dispatch(fetchLikeCounts(ids));
-            dispatch(fetchUserLikedPosts());
-            dispatch(getCommentCountsByPosts(ids));
+            const postIds = posts.map((p) => p._id);
+            dispatch(fetchLikeCounts(postIds));
+            dispatch(getCommentCountsByPosts(postIds));
         }
     }, [dispatch, posts]);
 
     useEffect(() => {
+        commentSocket.connect();
         commentSocket.on("newComment", ({ postId }) => {
             dispatch(getCommentCountsByPosts([postId]));
         });
 
         return () => {
             commentSocket.off("newComment"); // Cleanup khi component bị unmount
+            commentSocket.disconnect();
         };
     }, [dispatch]);
 
@@ -81,33 +85,33 @@ const MainContent = () => {
             setIsPosting(true);
             const base64Media = await Promise.all(mediaFiles.map(convertToBase64));
             console.log("asdd");
-            
+
             await dispatch(createPost({
                 content: postContent,
                 media: base64Media.length ? base64Media : undefined,
             })).unwrap();
             console.log("Post created successfullyzzz");
-            
+
             await dispatch(fetchAllPosts());
             setPostContent("");
             setMediaFiles([]);
             setIsExpanded(false);
 
             console.log("Post created successfullyttttttttttttt");
-            
+
         } catch (err) {
             alert("Posting failed: " + err);
         } finally {
             setIsPosting(false);
         }
-    }; 
-    
+    };
+
     const filteredPosts = posts.filter((post) => {
         const contentMatch = post.content?.toLowerCase().includes(searchTerm.toLowerCase());
         const usernameMatch = post.username?.toLowerCase().includes(searchTerm.toLowerCase());
         return contentMatch || usernameMatch;
     });
-    
+
 
     return (
         <main className="bg-zinc-900 text-white min-h-screen">
@@ -220,16 +224,15 @@ const MainContent = () => {
                 {!loading && !error && (
                     filteredPosts.map((post) => (
                         <Posts
-                            posts={filteredPosts}
+                            key={post._id}
+                            posts={[post]} // truyền mảng 1 phần tử
                             username={post.username || "Ẩn danh"}
                             avatar={post.avatar || "https://picsum.photos/200"}
                             commentCounts={commentCounts}
                         />
-
                     ))
                 )}
             </div>
-
         </main>
     );
 };
