@@ -7,13 +7,10 @@ import ImageModal from "./ImageModal";
 import { AppDispatch, RootState } from "../../../redux/store";
 import { useDispatch, useSelector } from "react-redux";
 import { deletePost, fetchUserPosts, editPost } from "../../../redux/slice/postProfileSlice";
-import { likePost, unlikePost, fetchLikeCounts } from "../../../redux/slice/likeSlice";
+import { likePost, unlikePost } from "../../../redux/slice/likeSlice";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-import {
-  getCommentCountsByPosts,
-} from "../../../redux/slice/commentSilce";
 dayjs.extend(relativeTime);
 
 interface Post {
@@ -30,15 +27,6 @@ interface Post {
 }
 
 const Posts = ({ posts, username, avatar, commentCounts , onHoldLike }: { posts: Post[]; username: string; avatar: string; commentCounts: Record<string, number>; onHoldLike?: (postId: string) => void; }) => {
-  const dispatch = useDispatch<AppDispatch>();
-
-  useEffect(() => {
-    if (posts.length > 0) {
-      const postIds = posts.map((p) => p._id);
-      dispatch(fetchLikeCounts(postIds));
-      dispatch(getCommentCountsByPosts(postIds));
-    }
-  }, [dispatch, posts]);
 
   return (
     <div className="divide-zinc-800">

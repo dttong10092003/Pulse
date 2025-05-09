@@ -1,6 +1,6 @@
 import { Share2, MessageSquare, Users, UserRoundPen, ArrowLeft, ChevronDown, Image, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Posts } from "./components"; // ✅ Xoá Featured và Media vì chưa dùng
+import { Posts } from "./components";
 import { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../redux/store';
