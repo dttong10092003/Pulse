@@ -99,7 +99,8 @@ const createAgoraClient = ({
 
 export const VideoRoom: React.FC = () => {
   const [users, setUsers] = useState<ExtendedUser[]>([]);
-  const [, setUid] = useState<string | number | null>(null);
+  const uidState = useState<string | number | null>(null);
+const setUid = uidState[1];
 
   useEffect(() => {
     const onVideoTrack = (user: ExtendedUser) => {
@@ -141,28 +142,13 @@ export const VideoRoom: React.FC = () => {
   }, []);
 
   return (
-    <>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-        }}
-      >
-        <div
-          className="grid gap-6 p-4 justify-center"
-          style={{
-            gridTemplateColumns: 'repeat(2, minmax(400px, 1fr))',
-          }}
-        >
-          {users.map((user) => (
-            <VideoPlayer key={user.uid} user={user} />
-          ))}
-        </div>
-
-
-
-
+    <div className="flex flex-col items-center justify-center w-full min-h-screen bg-[#1a1a1a]">
+      <div className="w-full max-w-screen-lg p-4 grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+        {users.map((user) => (
+          <VideoPlayer key={user.uid} user={user} />
+        ))}
       </div>
-    </>
+    </div>
   );
+  
 };
