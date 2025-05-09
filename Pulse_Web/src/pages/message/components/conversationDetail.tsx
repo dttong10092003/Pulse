@@ -10,7 +10,7 @@ import GroupMembersModal from './GroupMembersModal';
 import toast from 'react-hot-toast';
 import ForwardMessageModal from './ForwardMessageModal';
 import {
-  PhoneOff, Search, Columns2, Video, X, Bell, UserPlus, Pin, EyeOff,
+  Search, Columns2, Video, X, Bell, UserPlus, Pin, EyeOff,
   TriangleAlert, Trash2, LogOut, MessageCircle, Users, Pencil, Camera,
   ChevronDown,
   ChevronUp, ChevronLeft, ChevronRight,
@@ -18,9 +18,12 @@ import {
 import { fileIcons } from '../../../assets';
 import { getUserDetails } from '../../../redux/slice/userSlice';
 import AddMemberModal from "./AddMemberModal";
-import { VideoRoom } from './VideoRoom';
+// import { VideoRoom } from './VideoRoom';
+import { startCall } from "../../../redux/slice/callSlice";
+import socketCall from "../../../utils/socketCall";
 interface ConversationDetailProps {
   selectedConversation: Conversation | null; // Thay đổi kiểu dữ liệu ở đây
+  setInVideoCall: (v: boolean) => void;
 }
 
 const ConversationDetail: React.FC<ConversationDetailProps> = ({
@@ -67,7 +70,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const [previewImageIndex, setPreviewImageIndex] = useState<number | null>(null);
   const prevMessageLength = useRef<number>(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [inVideoCall, setInVideoCall] = useState(false);
+  const setInVideoCall = useState(false)[1];
 
   console.log("User details:", userDetails);
 
@@ -613,17 +616,68 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
             </div>
           )}
 
-
-
-
           {/* Các icon bên phải */}
           <div className="flex items-center gap-4">
-        
-
-          <Video
+            <Video
               size={20}
               className="text-white cursor-pointer hover:text-gray-400 transition duration-200"
-              onClick={() => setInVideoCall(true)}
+              // onClick={() => setInVideoCall(true)}
+              onClick={() => {
+                setInVideoCall(true);
+                if (!selectedConversation || !currentUser) return;
+
+                const isGroup = selectedConversation.isGroup;
+
+                const calleeName = isGroup
+                  ? selectedConversation.groupName
+                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.name || "Unknown";
+
+                const calleeAvatar = isGroup
+                  ? selectedConversation.avatar
+                  : selectedConversation.members.find(m => m.userId !== currentUser._id)?.avatar || "";
+
+                dispatch(startCall({
+                  isVideo: false,
+                  calleeName,
+                  calleeAvatar,
+                  toUserId: selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId,
+                  fromUserId: currentUser._id,
+                  fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                  fromAvatar: userDetails?.avatar || '',
+                  isGroup,
+                  groupName: selectedConversation.groupName,
+                }));
+
+
+                if (isGroup) {
+                  selectedConversation.members.forEach(member => {
+                    if (member.userId !== currentUser._id) {
+                      socketCall.emit("incomingCall", {
+                        toUserId: member.userId,
+                        fromUserId: currentUser._id,
+                        fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                        fromAvatar: userDetails?.avatar || "",
+                        isVideo: false,
+                        isGroup: true,
+                        groupName: selectedConversation.groupName,
+                        groupAvatar: selectedConversation.avatar,
+                      });
+                    }
+                  });
+                } else {
+                  const toUserId = selectedConversation.members.find(m => m.userId !== currentUser._id)?.userId;
+                  if (toUserId) {
+                    socketCall.emit("incomingCall", {
+                      toUserId,
+                      fromUserId: currentUser._id,
+                      fromName: `${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`,
+                      fromAvatar: userDetails?.avatar || "",
+                      isVideo: false,
+                      isGroup: false,
+                    });
+                  }
+                }
+              }}
             />
 
 
@@ -732,6 +786,9 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                     <p>Invalid content type</p> // Trường hợp nếu không phải string
                   )}
                 </div>
+
+
+
 
                 {/* Hiển thị thời gian */}
                 <p
@@ -1154,14 +1211,13 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
           }}
         />
       )}
-           {inVideoCall && (
+      {/* {inVideoCall && (
         <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center">
-          {/* Video grid */}
+     
           <div className="flex-1 w-full overflow-auto px-6 py-4">
             <VideoRoom />
           </div>
 
-          {/* Control buttons */}
           <div className="w-full flex justify-center gap-6 pb-6">
             <button
               onClick={() => setInVideoCall(false)}
@@ -1172,7 +1228,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
           </div>
 
         </div>
-      )}
+      )} */}
     </div>
   );
 };
