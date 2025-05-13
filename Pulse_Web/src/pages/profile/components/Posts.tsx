@@ -1,6 +1,6 @@
 // File: Posts.tsx
 import { useEffect, useRef, useState } from "react";
-import { Heart, MessageCircle, Bookmark, MoreHorizontal, X, ChevronDown, Image } from "lucide-react";
+import { Heart, MessageCircle, Bookmark, MoreHorizontal, X, ChevronDown, Image, Share2 } from "lucide-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import ImageModal from "./ImageModal";
@@ -10,7 +10,7 @@ import { deletePost, fetchUserPosts, editPost } from "../../../redux/slice/postP
 import { likePost, unlikePost } from "../../../redux/slice/likeSlice";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
+import ShareModal from "../../../components/ShareModal";
 dayjs.extend(relativeTime);
 
 interface Post {
@@ -24,9 +24,16 @@ interface Post {
   username?: string;
   avatar?: string;
   userId: string;
+  sharedPost?: {
+    _id: string;
+    content: string;
+    media?: string[];
+    username: string;
+    avatar: string;
+  };
 }
 
-const Posts = ({ posts, username, avatar, commentCounts , onHoldLike }: { posts: Post[]; username: string; avatar: string; commentCounts: Record<string, number>; onHoldLike?: (postId: string) => void; }) => {
+const Posts = ({ posts, username, avatar, commentCounts, onHoldLike }: { posts: Post[]; username: string; avatar: string; commentCounts: Record<string, number>; onHoldLike?: (postId: string) => void; }) => {
 
   return (
     <div className="divide-zinc-800">
@@ -44,6 +51,7 @@ const Posts = ({ posts, username, avatar, commentCounts , onHoldLike }: { posts:
           tags={post.tags || []}
           onHoldLike={onHoldLike} // ✅ THÊM DÒNG NÀY
           createdAt={post.createdAt}
+          sharedPost={post.sharedPost}
         />
       ))}
     </div>
@@ -62,6 +70,7 @@ const PostCard = ({
   media,
   tags,
   onHoldLike, // ✅ THÊM VÀO ĐÂY
+  sharedPost,
 }: {
   postId: string;
   user: string;
@@ -74,6 +83,14 @@ const PostCard = ({
   media: string[];
   tags: string[];
   onHoldLike?: (postId: string) => void; // ✅ THÊM VÀO ĐÂY
+  sharedPost?: {
+    _id: string;
+    content: string;
+    media?: string[];
+    username: string;
+    avatar: string;
+  };
+
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
@@ -91,6 +108,7 @@ const PostCard = ({
   const [editContent, setEditContent] = useState(content);
   const [editMediaFiles, setEditMediaFiles] = useState<string[]>(media || []);
   const [isSaving, setIsSaving] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const navigate = useNavigate();
   const URL_NOTI = import.meta.env.VITE_API_URL_NOTI
   useEffect(() => {
@@ -115,15 +133,15 @@ const PostCard = ({
     }
   };
 
-    const userLoginId = useSelector((state: RootState) => state.auth.user?._id);
-    // console.log("userLoginId", userLoginId);
-    const userShowId = postUserId;
-    // console.log("userShowId", userShowId);
+  const userLoginId = useSelector((state: RootState) => state.auth.user?._id);
+  // console.log("userLoginId", userLoginId);
+  const userShowId = postUserId;
+  // console.log("userShowId", userShowId);
   const handleSendNotification = async () => {
     try {
       const senderId = userLoginId;
       const receiverIds: string[] = [userShowId];
-      
+
       await axios.post(`${URL_NOTI}/noti/create`, {
         type: "like",
         senderId,
@@ -132,9 +150,9 @@ const PostCard = ({
         postId: postId,
         commentContent: "",
       });
-  
+
       // alert('Gửi thông báo thành công!');
-     
+
     } catch (err) {
       console.error('Gửi thông báo thất bại', err);
       alert('Gửi thông báo thất bại!');
@@ -147,14 +165,14 @@ const PostCard = ({
     if (isLiked) {
       dispatch(unlikePost(postId));
     } else {
-     
-      if(userLoginId !== userShowId) {
-        handleSendNotification(); 
+
+      if (userLoginId !== userShowId) {
+        handleSendNotification();
       }
       dispatch(likePost(postId));
-    
+
     }
-  
+
   };
 
 
@@ -386,6 +404,35 @@ const PostCard = ({
                   })}
                 </div>
               )}
+
+              {sharedPost && (
+                <div className="mt-4 p-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-sm hover:shadow-md transition">
+                  <div className="flex items-center gap-3 mb-3">
+                    <img
+                      src={sharedPost.avatar}
+                      className="w-8 h-8 rounded-full object-cover border border-white"
+                      alt="Shared Avatar"
+                    />
+                    <span className="text-sm font-semibold text-white truncate max-w-[70%]">
+                      {sharedPost.username}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                    {sharedPost.content}
+                  </p>
+
+                  {sharedPost.media?.[0] && (
+                    <div className="mt-3">
+                      <img
+                        src={sharedPost.media[0]}
+                        className="w-full object-cover rounded-xl border border-zinc-700"
+                        alt="Shared media"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </>
 
           )}
@@ -397,7 +444,7 @@ const PostCard = ({
               ))}
             </div>
           )}
-           {onHoldLike && (
+          {onHoldLike && (
             <p
               onClick={() => onHoldLike(postId)}
               className="text-xs text-zinc-400 cursor-pointer hover:underline mb-1"
@@ -429,6 +476,14 @@ const PostCard = ({
             <button className="text-zinc-500 cursor-pointer">
               <Bookmark size={20} />
             </button>
+
+            <button
+              className="text-zinc-500 cursor-pointer"
+              onClick={() => setIsShareOpen(true)}
+            >
+              <Share2 size={20} />
+            </button>
+
           </div>
         </div>
       </div>
@@ -447,6 +502,13 @@ const PostCard = ({
           createdAt={createdAt}
         />
       </div>
+      {isShareOpen && (
+        <ShareModal
+          sharedPost={{ _id: postId, content, media, username: user, avatar }}
+          onClose={() => setIsShareOpen(false)}
+        />
+      )}
+
     </div>
   );
 };
