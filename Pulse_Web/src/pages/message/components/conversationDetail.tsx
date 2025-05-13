@@ -72,6 +72,10 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const setInVideoCall = useState(false)[1];
 
+  const pinnedMessages = messages?.filter(msg => msg.isPinned).slice(0, 3) || [];
+  const [showPinnedDropdown, setShowPinnedDropdown] = useState(false);
+
+
   console.log("User details:", userDetails);
 
   useEffect(() => {
@@ -109,6 +113,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "auto" });
     }
+    setShowPinnedDropdown(false);
   }, [selectedConversation?._id]);
 
   useEffect(() => {
@@ -225,6 +230,52 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     setMessageToForward(message);
     setShowForwardModal(true);
   };
+
+  const handlePinMessage = (messageId: string) => {
+    if (!selectedConversation) return;
+
+    if (pinnedMessages.length >= 3) {
+      toast.error("You can only pin up to 3 messages. Please unpin one first.");
+      return;
+    }
+
+    socket.emit("pinMessage", {
+      conversationId: selectedConversation._id,
+      messageId,
+    });
+  };
+
+  const handleUnpinMessage = (messageId: string) => {
+    if (!selectedConversation) return;
+
+    toast.custom((t) => (
+      <div className="bg-[#2a2a2a] text-white p-4 rounded-lg shadow-md w-72">
+        <p className="mb-2">Are you sure you want to unpin this message?</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => {
+              socket.emit("unpinMessage", {
+                conversationId: selectedConversation._id,
+                messageId,
+              });
+              toast.dismiss(t.id);
+            }}
+            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    ));
+  };
+
+
 
   const handleRemoveMember = (userId: string) => {
     console.log("Remove member:", userId);
@@ -554,8 +605,6 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
   const imageMessages = messages?.filter(msg => msg.type === 'image' && !msg.isDeleted) || [];
 
-
-
   return (
     <div className={`flex ${showSidebar ? "w-full" : "w-3/4"}`}>
       {/* Main chat area */}
@@ -707,7 +756,80 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
         </div>
 
         {/* Chat Content */}
-        <div className="flex-1 p-5 overflow-y-auto space-y-4">
+        <div className="flex-1 pt-0 p-5 overflow-y-auto space-y-4">
+          {pinnedMessages.length > 0 && (
+            <div
+              className={`sticky top-0 z-30 mb-4 rounded-md shadow-sm border border-gray-700 bg-gray-800 
+                px-4 py-2 transition-all duration-300}`}>
+              <div className="flex justify-between items-center gap-3">
+                <div className="flex items-center gap-1 overflow-hidden">
+                  <Pin className="text-yellow-400 shrink-0" size={14} />
+                  <span className="text-white font-medium text-xs shrink-0">Pinned:</span>
+                </div>
+
+                {pinnedMessages.length > 1 && (
+                  <button
+                    onClick={() => setShowPinnedDropdown(prev => !prev)}
+                    className="text-xs text-gray-300 hover:text-white cursor-pointer "
+                  >
+                    {showPinnedDropdown ? "Collapse" : `+${pinnedMessages.length - 1} more`}
+                  </button>
+                )}
+              </div>
+
+              <div className="mt-1 space-y-1">
+                {(showPinnedDropdown ? pinnedMessages : [pinnedMessages[0]]).map(msg => (
+                  <div
+                    key={msg._id}
+                    onClick={() => {
+                      const index = messages?.findIndex(m => m._id === msg._id);
+                      if (index !== undefined && index !== -1) scrollToMessage(index);
+                    }}
+                    className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-xs text-white flex justify-between items-center cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <span className="text-gray-400 font-medium">Message:</span>
+                      <span className="font-medium text-gray-300 truncate">
+                        {msg.name ? `${msg.name}: ` : ""}
+                      </span>
+
+                      {msg.type === 'image' ? (
+                        <img
+                          src={msg.content}
+                          alt="pinned-img"
+                          className="w-8 h-8 object-cover rounded-md"
+                        />
+                      ) : msg.type === 'file' || msg.type === 'audio' || msg.type === 'video' ? (
+                        <>
+                          <img
+                            src={getFileIcon(msg.fileName || getFileNameFromUrl(msg.content))}
+                            alt="file-icon"
+                            className="w-6 h-6 object-contain"
+                          />
+                          <span className="truncate">{msg.fileName || getFileNameFromUrl(msg.content)}</span>
+                        </>
+                      ) : (
+                        <>
+
+                          <span className="truncate">{msg.content}</span>
+                        </>
+                      )}
+                    </div>
+                    <button
+                      className="unpin-btn text-gray-400 hover:text-red-500 ml-2 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (msg._id) handleUnpinMessage(msg._id);
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {messages?.map((msg, index) => (
             <div
               key={index}
@@ -825,23 +947,57 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
           className="absolute bg-gray-800 text-white p-2 rounded-lg shadow-lg"
           style={{ top: menuPosition.top, left: menuPosition.left, zIndex: 999 }}
         >
-          {showMenu.senderId === currentUserId && (
+          {showMenu.isDeleted ? (
+            <div
+              onClick={() => handleDeleteMessage(showMenu._id!)}
+              className="cursor-pointer p-1 hover:bg-gray-700"
+            >
+              Delete Message
+            </div>
+          ) : (
             <>
-              <div onClick={() => handleDeleteMessage(showMenu._id!)} className="cursor-pointer p-1 hover:bg-gray-700">
-                Delete Message
-              </div>
-              <div onClick={() => handleRevokeMessage(showMenu._id!)} className="cursor-pointer p-1 hover:bg-gray-700">
-                Revoke Message
+              {showMenu.senderId === currentUserId && (
+                <>
+                  <div
+                    onClick={() => handleDeleteMessage(showMenu._id!)}
+                    className="cursor-pointer p-1 hover:bg-gray-700"
+                  >
+                    Delete Message
+                  </div>
+                  <div
+                    onClick={() => handleRevokeMessage(showMenu._id!)}
+                    className="cursor-pointer p-1 hover:bg-gray-700"
+                  >
+                    Revoke Message
+                  </div>
+                </>
+              )}
+
+              {!showMenu.isPinned && (
+                <div
+                  onClick={() => handlePinMessage(showMenu._id!)}
+                  className="cursor-pointer p-1 hover:bg-gray-700"
+                >
+                  Pin Message
+                </div>
+              )}
+              {showMenu.isPinned && (
+                <div
+                  onClick={() => handleUnpinMessage(showMenu._id!)}
+                  className="cursor-pointer p-1 hover:bg-gray-700"
+                >
+                  Unpin Message
+                </div>
+              )}
+
+              <div
+                onClick={() => handleForwardMessage(showMenu)}
+                className="cursor-pointer p-1 hover:bg-gray-700"
+              >
+                Forward Message
               </div>
             </>
           )}
-          {/* 👉 Luôn hiển thị với mọi tin nhắn */}
-          <div
-            onClick={() => handleForwardMessage(showMenu)}
-            className="cursor-pointer p-1 hover:bg-gray-700"
-          >
-            Forward Message
-          </div>
         </div>
       )}
 
