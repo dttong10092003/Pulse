@@ -1,6 +1,6 @@
 import { Share2, MessageSquare, Users, UserRoundPen, ArrowLeft, ChevronDown, Image, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Posts } from "./components";
+import { Media, Posts } from "./components";
 import { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../redux/store';
@@ -35,36 +35,36 @@ const MyProfile = () => {
 
     const handleHoldLike = async (postId: string) => {
         try {
-          setIsLoadingLikes(true);
-      
-          const res = await api.get(`/likes/${postId}`); // [{ userId, timestamp }]
-          const likeList = res.data;
-      
-          const userDetails: any[] = [];
-      
-          for (const like of likeList) {
-            try {
-              const user = await dispatch(getUserDetails(like.userId)).unwrap();
-              userDetails.push({
-                ...user,
-                timestamp: like.timestamp
-              });
-            } catch (err) {
-              console.error("❌ Lỗi fetch userId:", like.userId, err);
-            }
-          }
-      
-          setLikedUsers(userDetails);
-          setLikeModalOpen(true);
-        } catch (err) {
-          console.error("🔥 Lỗi lấy danh sách like:", err);
-        } finally {
-          setIsLoadingLikes(false);
-        }
-      };
-      
+            setIsLoadingLikes(true);
 
-    
+            const res = await api.get(`/likes/${postId}`); // [{ userId, timestamp }]
+            const likeList = res.data;
+
+            const userDetails: any[] = [];
+
+            for (const like of likeList) {
+                try {
+                    const user = await dispatch(getUserDetails(like.userId)).unwrap();
+                    userDetails.push({
+                        ...user,
+                        timestamp: like.timestamp
+                    });
+                } catch (err) {
+                    console.error("❌ Lỗi fetch userId:", like.userId, err);
+                }
+            }
+
+            setLikedUsers(userDetails);
+            setLikeModalOpen(true);
+        } catch (err) {
+            console.error("🔥 Lỗi lấy danh sách like:", err);
+        } finally {
+            setIsLoadingLikes(false);
+        }
+    };
+
+
+
     useEffect(() => {
         if (userId) {
             dispatch(getFollowers(userId));
@@ -398,6 +398,11 @@ const MyProfile = () => {
                         />
                     </div>
                 )}
+                {activeTab === "Media" && (
+                    <div className="max-h-[60vh] overflow-y-auto scrollbar-dark px-4">
+                        <Media />
+                    </div>
+                )}
                 {likeModalOpen && (
                     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setLikeModalOpen(false)}>
                         <div className="bg-zinc-900 p-6 rounded-lg w-96 max-h-[70vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
@@ -416,7 +421,7 @@ const MyProfile = () => {
                                 <ul className="space-y-3">
 
                                     {likedUsers.map((user, idx) => (
-                                
+
                                         <li
                                             key={idx}
                                             onClick={(e) => {
