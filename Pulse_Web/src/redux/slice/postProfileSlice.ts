@@ -11,7 +11,14 @@ interface Post {
   userId: string;
   createdAt: string;
   username: string;
-  avatar: string;   
+  avatar: string;
+  sharedPost?: {
+    _id: string;
+    content: string;
+    media?: string[];
+    username: string;
+    avatar: string;
+  };   
 }
 
 interface PostState {
@@ -43,7 +50,7 @@ export const fetchUserPosts = createAsyncThunk(
 export const createPost = createAsyncThunk(
   "postProfile/createPost",
   async (
-    data: { content: string; media?: string[]; tags?: string[] },
+    data: { content: string; media?: string[]; tags?: string[]; sharedPostId?: string },
     { getState, rejectWithValue }
   ) => {
     try {
@@ -65,6 +72,7 @@ export const createPost = createAsyncThunk(
     }
   }
 );
+
 
 export const deletePost = createAsyncThunk(
   "postProfile/deletePost",
