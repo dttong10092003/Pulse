@@ -9,7 +9,7 @@ import { fetchUserLikedPosts } from "../../redux/slice/likeSlice";
 import { getFollowers, getFollowings } from "../../redux/slice/followSlice";
 import api from "../../services/api";
 import { getUserDetails } from "../../redux/slice/userSlice";
-
+import toast from "react-hot-toast";
 
 const MyProfile = () => {
     const navigate = useNavigate();
@@ -32,6 +32,15 @@ const MyProfile = () => {
     const [likedUsers, setLikedUsers] = useState<any[]>([]);
     const [likeModalOpen, setLikeModalOpen] = useState(false);
     const [isLoadingLikes, setIsLoadingLikes] = useState(false);
+    const [selectedTag, setSelectedTag] = useState("Beauty");
+    const [showTagDropdown, setShowTagDropdown] = useState(false);
+
+    const tagOptions = [
+        { label: "Beauty", color: "bg-pink-500" },
+        { label: "Food", color: "bg-yellow-400" },
+        { label: "Photography", color: "bg-blue-400" },
+        { label: "Travel", color: "bg-green-400" },
+    ];
 
     const handleHoldLike = async (postId: string) => {
         try {
@@ -140,14 +149,16 @@ const MyProfile = () => {
             await dispatch(createPost({
                 content: postContent,
                 media: base64Media.length ? base64Media : undefined,
+                tags: [selectedTag],
             })).unwrap();
 
             await dispatch(fetchUserPosts(userId!));
             setPostContent("");
             setMediaFiles([]);
             setIsExpanded(false);
+            toast.success("Post created successfully!");
         } catch (err) {
-            alert("Posting failed: " + err);
+            toast.error("Posting failed: " + err);
         } finally {
             setIsPosting(false); // 🔴 Kết thúc loading
         }
@@ -366,11 +377,43 @@ const MyProfile = () => {
                                             multiple
                                         />
                                     </>
-                                    <div className="flex items-center gap-2 bg-zinc-700 hover:bg-zinc-600 px-3 py-2 rounded-lg text-white cursor-pointer ">
+                                    {/* <div className="flex items-center gap-2 bg-zinc-700 hover:bg-zinc-600 px-3 py-2 rounded-lg text-white cursor-pointer ">
                                         <div className="w-3 h-3 bg-pink-500 rounded-full"></div>
                                         <span>Beauty</span>
                                         <ChevronDown size={16} />
+                                    </div> */}
+                                    <div className="relative inline-block text-left">
+                                        <button
+                                            onClick={() => setShowTagDropdown(!showTagDropdown)}
+                                            className="flex items-center gap-2 bg-zinc-700 hover:bg-zinc-600 px-3 py-2 rounded-lg text-white cursor-pointer"
+                                        >
+                                            <div className={`w-3 h-3 ${tagOptions.find(t => t.label === selectedTag)?.color} rounded-full`}></div>
+                                            <span>{selectedTag}</span>
+                                            <ChevronDown size={16} />
+                                        </button>
+
+                                        {showTagDropdown && (
+                                            <div className="absolute z-10 mt-2 w-40 rounded-md shadow-lg bg-zinc-800 ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                                <ul className="py-1 text-white">
+                                                    {tagOptions.map((tag) => (
+                                                        <li
+                                                            key={tag.label}
+                                                            onClick={() => {
+                                                                setSelectedTag(tag.label);
+                                                                setShowTagDropdown(false);
+                                                            }}
+                                                            className="flex items-center gap-2 px-4 py-2 hover:bg-zinc-700 cursor-pointer"
+                                                        >
+                                                            <div className={`w-3 h-3 ${tag.color} rounded-full`}></div>
+                                                            <span>{tag.label}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
                                     </div>
+
+
                                 </div>
                                 <button
                                     className={`px-5 py-2 rounded-3xl transition ${postContent.trim() && !isPosting

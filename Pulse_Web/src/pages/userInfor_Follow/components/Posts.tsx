@@ -26,7 +26,7 @@ interface Post {
   userId: string;
 }
 
-const Posts = ({ posts, username, avatar, commentCounts , onHoldLike }: { posts: Post[]; username: string; avatar: string; commentCounts: Record<string, number>; onHoldLike?: (postId: string) => void; }) => {
+const Posts = ({ posts, username, avatar, commentCounts, onHoldLike }: { posts: Post[]; username: string; avatar: string; commentCounts: Record<string, number>; onHoldLike?: (postId: string) => void; }) => {
 
   return (
     <div className="divide-zinc-800">
@@ -60,7 +60,7 @@ const PostCard = ({
   createdAt,
   comments,
   media,
-  tags,
+  // tags,
   onHoldLike, // ✅ THÊM VÀO ĐÂY
 }: {
   postId: string;
@@ -93,6 +93,8 @@ const PostCard = ({
   const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
   const URL_NOTI = import.meta.env.VITE_API_URL_NOTI
+  const isOwner = userId === postUserId;
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -115,15 +117,15 @@ const PostCard = ({
     }
   };
 
-    const userLoginId = useSelector((state: RootState) => state.auth.user?._id);
-    // console.log("userLoginId", userLoginId);
-    const userShowId = postUserId;
-    // console.log("userShowId", userShowId);
+  const userLoginId = useSelector((state: RootState) => state.auth.user?._id);
+  // console.log("userLoginId", userLoginId);
+  const userShowId = postUserId;
+  // console.log("userShowId", userShowId);
   const handleSendNotification = async () => {
     try {
       const senderId = userLoginId;
       const receiverIds: string[] = [userShowId];
-      
+
       await axios.post(`${URL_NOTI}/noti/create`, {
         type: "like",
         senderId,
@@ -132,9 +134,9 @@ const PostCard = ({
         postId: postId,
         commentContent: "",
       });
-  
+
       // alert('Gửi thông báo thành công!');
-     
+
     } catch (err) {
       console.error('Gửi thông báo thất bại', err);
       alert('Gửi thông báo thất bại!');
@@ -147,14 +149,14 @@ const PostCard = ({
     if (isLiked) {
       dispatch(unlikePost(postId));
     } else {
-     
-      if(userLoginId !== userShowId) {
-        handleSendNotification(); 
+
+      if (userLoginId !== userShowId) {
+        handleSendNotification();
       }
       dispatch(likePost(postId));
-    
+
     }
-  
+
   };
 
 
@@ -211,7 +213,7 @@ const PostCard = ({
                 <MoreHorizontal size={20} />
               </button>
 
-              {showMenu && (
+              {/* {showMenu && (
                 <div
                   ref={menuRef}
                   className="absolute right-0 mt-2 w-36 bg-zinc-800 shadow-lg rounded-lg z-50 py-2"
@@ -234,7 +236,36 @@ const PostCard = ({
 
                   </button>
                 </div>
+              )} */}
+              {showMenu && isOwner && (
+                <div
+                  ref={menuRef}
+                  className="absolute right-0 mt-2 w-36 bg-zinc-800 shadow-lg rounded-lg z-50 py-2"
+                >
+                  <button
+                    className="flex justify-between items-center w-full px-4 py-2 hover:bg-zinc-700 text-white cursor-pointer"
+                    onClick={() => {
+                      setIsEditing(true);
+                      setShowMenu(false);
+                    }}
+                  >
+                    Edit
+                    <svg className="w-4 h-4 text-zinc-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM21.41 6.34a1.25 1.25 0 000-1.77l-2.98-2.98a1.25 1.25 0 00-1.77 0l-1.83 1.83 4.75 4.75 1.83-1.83z" />
+                    </svg>
+                  </button>
+                  <button
+                    className="flex justify-between items-center w-full px-4 py-2 hover:bg-zinc-700 text-red-400 cursor-pointer"
+                    onClick={handleDeletePost}
+                  >
+                    Delete
+                    <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12zm3-9h2v7H9V10zm4 0h2v7h-2v-7zm5-5h-3.5l-1-1h-5l-1 1H5v2h14V5z" />
+                    </svg>
+                  </button>
+                </div>
               )}
+
             </div>
           </div>
 
@@ -390,19 +421,20 @@ const PostCard = ({
 
           )}
 
-          {tags.length > 0 && (
+          {/* {tags.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2 text-sm text-green-400">
               {tags.map((tag, i) => (
                 <span key={i}>#{tag}</span>
               ))}
             </div>
-          )}
-           {onHoldLike && (
+          )} */}
+
+          {onHoldLike && (
             <p
               onClick={() => onHoldLike(postId)}
               className="text-xs text-zinc-400 cursor-pointer hover:underline mb-1"
             >
-              Xem danh sách người đã like
+              View list of people who liked
             </p>
           )}
 

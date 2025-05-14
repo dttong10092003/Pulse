@@ -105,7 +105,12 @@ export const fetchAllPosts = createAsyncThunk(
 export const editPost = createAsyncThunk(
   "postProfile/editPost",
   async (
-    data: { postId: string; content?: string; media?: string[] },
+    data: {
+      postId: string;
+      content?: string;
+      media?: string[];
+      tags?: string[]; // ✅ thêm dòng này
+    },
     { getState, rejectWithValue }
   ) => {
     try {
@@ -124,12 +129,13 @@ export const editPost = createAsyncThunk(
         }
       );
 
-      return res.data.post; // return post mới sau khi edit
+      return res.data.post;
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || err.message);
     }
   }
 );
+
 
 
 const postProfileSlice = createSlice({

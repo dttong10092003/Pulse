@@ -219,7 +219,7 @@ const UserInfo_Follow = () => {
         <div className="mt-4 flex items-center justify-between w-full text-zinc-400">
           <div className="flex items-center gap-6">
             <span className="flex items-center gap-1 cursor-pointer">
-              <MessageSquare size={18} /> {userPosts.length} bài viết
+              <MessageSquare size={18} /> {userPosts.length} posts
             </span>
             <span className="flex items-center gap-1 cursor-pointer" onClick={handleFollowersClick}>
               <Users size={18} /> {followers.length} followers

@@ -11,7 +11,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ categories, activeCateg
                 <button
                     key={category}
                     onClick={() => setActiveCategory(category)}
-                    className={`px-4 py-2 rounded-full transition ${
+                    className={`px-4 py-2 rounded-full transition cursor-pointer ${
                         activeCategory === category ? "bg-white text-black" : "bg-zinc-700 text-white"
                     }`}
                 >
