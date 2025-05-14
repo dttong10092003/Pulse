@@ -565,6 +565,28 @@ const chatSlice = createSlice({
   name: 'chat',
   initialState,
   reducers: {
+    updateMessagePinned: (
+      state,
+      action: PayloadAction<{ conversationId: string; messageId: string; pinned: boolean }>
+    ) => {
+      const { conversationId, messageId, pinned } = action.payload;
+
+      // Cập nhật trong selectedConversation
+      if (state.selectedConversation?._id === conversationId) {
+        state.selectedConversation.messages = state.selectedConversation.messages.map((msg) =>
+          msg._id === messageId ? { ...msg, isPinned: pinned } : msg
+        );
+      }
+
+      // Cập nhật trong danh sách conversations (nếu có)
+      const conv = state.conversations.find((c) => c._id === conversationId);
+      if (conv && conv.messages) {
+        conv.messages = conv.messages.map((msg) =>
+          msg._id === messageId ? { ...msg, isPinned: pinned } : msg
+        );
+      }
+    },
+
     unhideConversation: (state, action: PayloadAction<string>) => {
       const conversation = state.conversations.find(c => c._id === action.payload);
       if (conversation) {
@@ -1131,5 +1153,5 @@ export const { addMessageToState, setSelectedConversation,
   deleteMessageLocal, addConversation,
   removeMemberFromConversation, updateAdminInConversation,
   addMemberToConversation, updateGroupAvatar, updateGroupName,
-  unhideConversation, setConversationHidden } = chatSlice.actions;
+  unhideConversation, setConversationHidden, updateMessagePinned } = chatSlice.actions;
 export default chatSlice.reducer;

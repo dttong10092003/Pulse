@@ -7,7 +7,8 @@ import {
   deleteMessageLocal, addConversation, setSelectedConversation,
   removeMemberFromConversation, updateAdminInConversation, removeConversation, addMemberToConversation,
   updateGroupAvatar, updateGroupName,
-  unhideConversation, deleteConversation
+  unhideConversation, deleteConversation,
+  updateMessagePinned
 } from '../redux/slice/chatSlice';
 import { Message, Member } from '../redux/slice/types';
 import { toast } from 'react-toastify';
@@ -46,10 +47,10 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }, [user, dispatch]);
 
   useEffect(() => {
-    if (!user?._id || hasConnected.current){
+    if (!user?._id || hasConnected.current) {
       console.log('Socket already connected or user not logged in. Skipping connection.');
       return;
-    } 
+    }
 
     socket.connect();
     socket.emit('setup', user._id);
@@ -129,7 +130,7 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
       newMembers.forEach((member: Member) => {
         if (member.userId === user._id) {
           toast.info('You have been added to a group chat!');
-          
+
           dispatch(deleteConversation({
             conversationId,
             userId: member.userId,
@@ -152,6 +153,15 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
       dispatch(setSelectedConversation(null));
     });
 
+    socket.on("messagePinned", ({ messageId, conversationId }) => {
+      dispatch(updateMessagePinned({ conversationId, messageId, pinned: true }));
+    });
+
+    socket.on("messageUnpinned", ({ messageId, conversationId }) => {
+      dispatch(updateMessagePinned({ conversationId, messageId, pinned: false }));
+    });
+
+
     return () => {
       socket.off('receiveMessage', handleReceiveMessage);
       socket.off('newConversation');
@@ -164,6 +174,8 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
       socket.off('groupNameUpdated');
       socket.off('memberLeft');
       socket.off('groupDisbanded');
+      socket.off('messagePinned');
+      socket.off('messageUnpinned');
       socket.disconnect();
       hasConnected.current = false;
     };
