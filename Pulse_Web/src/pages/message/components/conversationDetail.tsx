@@ -873,7 +873,14 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                           if (imgIndex !== -1) setPreviewImageIndex(imgIndex);
                         }}
                       />
-                    ) : msg.type === "file" || msg.type === "video" || msg.type === "audio" ? (
+                    ) : msg.type === "audio" ? (
+                      <audio
+                        controls
+                        src={msg.content}
+                        className="w-[300px] bg-transparent border-none outline-none rounded-lg"
+                        style={{ appearance: "none" }}
+                      />
+                    ) : msg.type === "file" || msg.type === "video" ? (
                       <div className="flex items-center gap-3 bg-white p-3 rounded-lg shadow text-black max-w-[300px]">
                         <img
                           src={getFileIcon(msg.fileName || getFileNameFromUrl(msg.content))}

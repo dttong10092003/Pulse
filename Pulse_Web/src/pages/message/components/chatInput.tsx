@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, SendHorizonal, Smile, Trash2 } from 'lucide-react';
+import { Upload, SendHorizonal, Smile, Trash2, Mic } from 'lucide-react';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch, RootState } from '../../../redux/store';
@@ -7,14 +7,71 @@ import socket from '../../../utils/socket';
 import { Message } from '../../../redux/slice/types';
 import { fileIcons } from '../../../assets';
 import { incrementUnreadCount } from '../../../redux/slice/chatSlice';
+import { useReactMediaRecorder } from 'react-media-recorder';
 
 const ChatInput: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [message, setMessage] = useState('');
   const [isEmojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+  const [isVoicePanelOpen, setIsVoicePanelOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+
   const userDetail = useSelector((state: RootState) => state.auth.userDetail);
   const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
+
+  const { startRecording, stopRecording, clearBlobUrl } = useReactMediaRecorder({
+    audio: true,
+    onStop: (_, blob: Blob) => {
+      setAudioBlob(blob);
+    }
+  });
+
+  const handleSendVoice = async () => {
+    if (!selectedConversation || !userDetail || !audioBlob) return;
+
+    const audioFile = new File([audioBlob], "voice-message.webm", { type: "audio/webm" });
+
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(audioFile); 
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+    });
+
+    const voiceMessage: Message = {
+      conversationId: selectedConversation._id,
+      senderId: userDetail.userId,
+      name: `${userDetail.firstname} ${userDetail.lastname}`,
+      content: base64,
+      type: 'audio',
+      timestamp: new Date().toISOString(),
+      isDeleted: false,
+      isSentByUser: true,
+      isPinned: false,
+      senderAvatar: userDetail?.avatar,
+      fileName: 'voice-message.webm',
+      fileType: 'audio/webm',
+    };
+
+    socket.emit('sendMessage', voiceMessage);
+
+    selectedConversation.members.forEach(member => {
+      if (member.userId !== userDetail.userId) {
+        dispatch(incrementUnreadCount({ userId: member.userId, conversationId: selectedConversation._id }));
+      }
+    });
+
+    setAudioBlob(null);
+    setIsVoicePanelOpen(false);
+    setIsRecording(false);
+    clearBlobUrl();
+  };
+
+
+
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -202,12 +259,73 @@ const ChatInput: React.FC = () => {
 
   return (
     <div className="p-3 bg-[#282828b2] flex flex-col rounded-xl">
+
+      {/* Voice recording panel giống Zalo */}
+      {isVoicePanelOpen && (
+        <div className="mb-2 bg-[#1f1f1f] p-3 rounded-lg flex items-center gap-4 text-white">
+          <div className="flex items-center gap-4">
+            {!isRecording ? (
+              <button
+                onClick={() => {
+                  startRecording();
+                  setIsRecording(true);
+                }}
+                className="bg-gray-700 px-4 py-2 rounded hover:bg-gray-600 cursor-pointer"
+              >
+                🎙️ Start Recording
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  stopRecording();
+                  setIsRecording(false);
+                }}
+                className="bg-yellow-600 px-4 py-2 rounded hover:bg-yellow-500 cursor-pointer"
+              >
+                ⏹️ Stop Recording
+              </button>
+            )}
+
+            <button
+              onClick={handleSendVoice}
+              disabled={!audioBlob}
+              className={`px-4 py-2 rounded ${audioBlob ? 'bg-green-600 hover:bg-green-500 cursor-pointer' : 'bg-gray-500 cursor-not-allowed'}`}
+            >
+              ✅ Send
+            </button>
+
+            <button
+              onClick={() => {
+                stopRecording();
+                setAudioBlob(null);
+                setIsVoicePanelOpen(false);
+                setIsRecording(false);
+                clearBlobUrl();
+              }}
+              className="bg-red-600 px-4 py-2 rounded hover:bg-red-500 cursor-pointer"
+            >
+              ❌ Cancle
+            </button>
+          </div>
+
+          {/* 👉 THÊM audio preview ở đây */}
+          {audioBlob && (
+            <audio controls src={URL.createObjectURL(audioBlob)} className="w-full max-w-[52%] h-[100%] rounded" />
+          )}
+        </div>
+      )}
+
       <div className='p-3 bg-[#282828b2] flex items-center rounded-xl w-full'>
         {/* Nút Upload */}
         <input type="file" className="hidden" id="fileInput" multiple onChange={handleFileChange} />
         <label htmlFor="fileInput" className="cursor-pointer">
           <Upload size={20} className="text-white" />
         </label>
+
+        {/* Voice icon mở panel */}
+        <button onClick={() => setIsVoicePanelOpen(prev => !prev)} className="ml-2 text-white">
+          <Mic size={20} />
+        </button>
 
         {/* Input text with Emoji button inside */}
         <div className="relative flex-1 mx-2 w-full">
