@@ -565,6 +565,9 @@ const chatSlice = createSlice({
   name: 'chat',
   initialState,
   reducers: {
+    setOnlineUsers: (state, action: PayloadAction<string[]>) => {
+      state.onlineUsers = action.payload;
+    },
     updateMessagePinned: (
       state,
       action: PayloadAction<{ conversationId: string; messageId: string; pinned: boolean }>
@@ -1153,5 +1156,6 @@ export const { addMessageToState, setSelectedConversation,
   deleteMessageLocal, addConversation,
   removeMemberFromConversation, updateAdminInConversation,
   addMemberToConversation, updateGroupAvatar, updateGroupName,
-  unhideConversation, setConversationHidden, updateMessagePinned } = chatSlice.actions;
+  unhideConversation, setConversationHidden, updateMessagePinned,
+  setOnlineUsers } = chatSlice.actions;
 export default chatSlice.reducer;
