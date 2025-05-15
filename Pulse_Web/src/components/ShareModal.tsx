@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "../redux/store";
-import { createPost, fetchUserPosts } from "../redux/slice/postProfileSlice";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "../redux/store";
+import { createPost, fetchAllPosts } from "../redux/slice/postProfileSlice";
+import toast from "react-hot-toast";
 
 interface ShareModalProps {
   onClose: () => void;
@@ -18,22 +19,27 @@ interface ShareModalProps {
 const ShareModal: React.FC<ShareModalProps> = ({ onClose, sharedPost }) => {
   const [content, setContent] = useState("");
   const dispatch = useDispatch<AppDispatch>();
-  const userId = useSelector((state: RootState) => state.auth.user?._id);
+  // const userId = useSelector((state: RootState) => state.auth.user?._id);
 
-  const handleShare = async () => {
-    try {
-      await dispatch(
-        createPost({
-          content,
-          sharedPostId: sharedPost._id,
-        })
-      ).unwrap();
-      await dispatch(fetchUserPosts(userId!));
-      onClose();
-    } catch (err) {
-      alert("Chia sẻ thất bại: " + err);
-    }
-  };
+const handleShare = async () => {
+  try {
+    await dispatch(
+      createPost({
+        content,
+        sharedPostId: sharedPost._id,
+        tags: ["Share"],
+      })
+    ).unwrap();
+    await dispatch(fetchAllPosts());
+    // await dispatch(fetchUserPosts(userId!));
+
+    toast.success("Share successfully!");
+    onClose();
+  } catch (err) {
+    toast.error("Share failure: " + err);
+  }
+};
+
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
@@ -49,7 +55,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, sharedPost }) => {
 
         <textarea
           className="w-full bg-zinc-800 p-4 rounded-lg text-white placeholder:text-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
-          placeholder="Bạn đang nghĩ gì về bài viết này?"
+          placeholder="What do you think about this article?"
           rows={4}
           value={content}
           onChange={(e) => setContent(e.target.value)}
