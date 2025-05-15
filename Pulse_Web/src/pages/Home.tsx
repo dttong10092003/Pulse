@@ -10,9 +10,10 @@ import Notification from "./notification/Notification";
 import UserInfo_Follow from "./userInfor_Follow/UserInfo_Follow";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { getUserProfile} from '../redux/slice/authSlice';
-import {  AppDispatch } from '../redux/store';
+import { getUserProfile } from '../redux/slice/authSlice';
+import { AppDispatch } from '../redux/store';
 import { useDispatch } from 'react-redux';
+import PostDetail from "./profile/components/PostDetail";
 const Home = () => {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
@@ -38,12 +39,14 @@ const Home = () => {
           <Route path="/setting" element={<Setting />} />
           <Route path="/notifications" element={<Notification />} />
           <Route path="/user-info/:id" element={<UserInfo_Follow />} />
+          <Route path="post/:postId" element={<PostDetail />} />
+
         </Routes>
       </div>
 
       {/* Right Sidebar chỉ hiển thị nếu không phải trang Message */}
       {!isHiddenRightSidebar && <RightSidebar />}
-      </div>
+    </div>
   );
 };
 

@@ -432,15 +432,26 @@ const MyProfile = () => {
 
                 {activeTab === "Posts" && (
                     <div className="max-h-[60vh] overflow-y-auto scrollbar-dark px-4">
-                        <Posts
-                            posts={userPosts}
-                            username={username}
-                            avatar={userDetail?.avatar ?? "default-avatar-url"}
-                            commentCounts={commentCounts}
-                            onHoldLike={handleHoldLike}
-                        />
+                        {userPosts.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center text-zinc-400 py-10">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.121 17.804A7.5 7.5 0 0112 3a7.5 7.5 0 016.879 14.804M15 12l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <p className="text-lg">No posts found!</p>
+                            </div>
+                        ) : (
+                            <Posts
+                                posts={userPosts}
+                                username={username}
+                                avatar={userDetail?.avatar ?? "default-avatar-url"}
+                                commentCounts={commentCounts}
+                                onHoldLike={handleHoldLike}
+                            />
+                        )}
                     </div>
                 )}
+
+
                 {activeTab === "Media" && (
                     <div className="max-h-[60vh] overflow-y-auto scrollbar-dark px-4">
                         <Media />
