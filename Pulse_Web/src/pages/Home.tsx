@@ -8,6 +8,7 @@ import Explore from "./explore/Explore";
 import Setting from "./setting/AccountSettings";
 import Notification from "./notification/Notification";
 import UserInfo_Follow from "./userInfor_Follow/UserInfo_Follow";
+import Admin from "./admin/AdminPage";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { getUserProfile} from '../redux/slice/authSlice';
@@ -16,7 +17,9 @@ import { useDispatch } from 'react-redux';
 const Home = () => {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
-  const isHiddenRightSidebar = location.pathname === "/home/message" || location.pathname === "/home/setting";
+  const isHiddenRightSidebar = ["/message", "/setting", "/admin"].some(path =>
+    location.pathname.startsWith(`/home${path}`)
+  );  
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -38,6 +41,7 @@ const Home = () => {
           <Route path="/setting" element={<Setting />} />
           <Route path="/notifications" element={<Notification />} />
           <Route path="/user-info/:id" element={<UserInfo_Follow />} />
+          <Route path="/admin" element={<Admin />} />
         </Routes>
       </div>
 

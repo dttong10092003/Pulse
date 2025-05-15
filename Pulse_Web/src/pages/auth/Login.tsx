@@ -87,8 +87,12 @@ const Login = () => {
       .then((res) => {
         // Token đã được lưu vào localStorage trong reducer
         // console.log("Login successful, token:", res.token);
-
+        if (res.user.isAdmin) {
+          navigate('/admin');
+          return; // ✅ không cần gọi getUserProfile nữa
+        }
         // Gọi API để lấy thông tin chi tiết người dùng
+        
         dispatch(getUserProfile(res.token))
           .unwrap()
           .then(async (profileRes) => {

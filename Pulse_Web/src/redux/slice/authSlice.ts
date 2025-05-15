@@ -8,7 +8,8 @@ const URI_API = import.meta.env.VITE_API_URL + '/auth';
 
 // Define the type for the auth state
 interface AuthState {
-  user: { _id: string, username: string, googleId?: string } | null;
+  // user: { _id: string, username: string, googleId?: string } | null;
+  user: AuthUser | null;
   token: string | null; // Lưu token từ localStorage
   loading: boolean;
   error: string | null;
@@ -18,6 +19,13 @@ interface AuthState {
   resetMessage?: string | null;
   userDetail?: UserDetail | null;
   phoneNumber?: string | null;
+}
+
+interface AuthUser {
+  _id: string;
+  username: string;
+  googleId?: string;
+  isAdmin?: boolean; // ✅ thêm trường này
 }
 
 
@@ -104,8 +112,12 @@ export const loginUser = createAsyncThunk(
 
 
         return {
-          user: { _id: response.data.user._id, username: response.data.user.username },   // Lưu thông tin user
-          token: response.data.token,   // Lưu token
+          user: {
+            _id: response.data.user._id,
+            username: response.data.user.username,
+            isAdmin: response.data.user.isAdmin, // ✅ thêm dòng này
+          },
+          token: response.data.token,
         };
       } else {
         return rejectWithValue('Token hoặc user không được trả về từ server');
@@ -365,12 +377,19 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(loginUser.fulfilled, (state, action: PayloadAction<{ user: { _id: string, username: string }, token: string }>) => {
+      // .addCase(loginUser.fulfilled, (state, action: PayloadAction<{ user: { _id: string, username: string }, token: string }>) => {
+      //   state.loading = false;
+      //   state.user = action.payload.user;
+      //   state.token = action.payload.token;
+      //   localStorage.setItem('token', action.payload.token);
+      // })
+      .addCase(loginUser.fulfilled, (state, action: PayloadAction<{ user: AuthUser, token: string }>) => {
         state.loading = false;
-        state.user = action.payload.user;
+        state.user = action.payload.user; // đã có isAdmin nếu backend trả về
         state.token = action.payload.token;
         localStorage.setItem('token', action.payload.token);
       })
+      
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
