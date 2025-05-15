@@ -21,7 +21,8 @@ import { fetchUserPosts } from "../../redux/slice/postProfileSlice";
 import { FollowItem } from "../../redux/slice/followSlice";
 import { getFollowingsByUserId } from "../../redux/slice/followSlice";
 import axios from "axios";
-
+import api from "../../services/api";
+import { getUserDetails } from "../../redux/slice/userSlice";
 const UserInfo_Follow = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
@@ -36,18 +37,54 @@ const UserInfo_Follow = () => {
   const [profileTab, setProfileTab] = useState("Posts"); // Dành cho Posts/Featured/Media
   const [modalTab, setModalTab] = useState<"followers" | "following">("followers"); // Dành cho modal
   const [userFollowings, setUserFollowings] = useState<FollowItem[]>([]);
-
   const URL_NOTI = import.meta.env.VITE_API_URL_NOTI; // Địa chỉ WebSocket
-
-
-  const userShowId = userDetail?.userId   || ''; // id user đang xem 
- 
+  const [profileUser, setProfileUser] = useState<any>(null);
+  const userShowId = profileUser?.userId || '';
   const userLoginId = currentUser;// id user đang login 
   const commentCounts = useSelector((state: RootState) => state.comments.commentCounts);
-  
+  const [likeModalOpen, setLikeModalOpen] = useState(false);
+  const [likedUsers, setLikedUsers] = useState<any[]>([]);
+  const [isLoadingLikes, setIsLoadingLikes] = useState(false);
+
+
+  const handleHoldLike = async (postId: string) => {
+    try {
+      setIsLoadingLikes(true);
+
+      const res = await api.get(`/likes/${postId}`); // [{ userId, timestamp }]
+      const likeList = res.data;
+
+      const userDetails: any[] = [];
+
+      for (const like of likeList) {
+        try {
+          const user = await dispatch(getUserDetails(like.userId)).unwrap();
+          userDetails.push({
+            ...user,
+            timestamp: like.timestamp
+          });
+        } catch (err) {
+          console.error("❌ Lỗi fetch userId:", like.userId, err);
+        }
+      }
+
+      setLikedUsers(userDetails);
+      setLikeModalOpen(true);
+    } catch (err) {
+      console.error("🔥 Lỗi lấy danh sách like:", err);
+    } finally {
+      setIsLoadingLikes(false);
+    }
+  };
+
+
   useEffect(() => {
     if (id) {
-      dispatch(fetchUserDetailById(id));
+      dispatch(fetchUserDetailById(id)).then((res) => {
+        if (fetchUserDetailById.fulfilled.match(res)) {
+          setProfileUser(res.payload);  // 🔥 dùng local state, không dùng store nữa
+        }
+      });
       dispatch(fetchUserPosts(id));
       dispatch(getFollowers(id));
     }
@@ -59,10 +96,10 @@ const UserInfo_Follow = () => {
         if (Array.isArray(res.payload)) {
           setUserFollowings(res.payload);
         }
-      });      
+      });
     }
   }, [modalTab, id, dispatch]);
-  
+
   useEffect(() => {
     if (currentUser && id) {
       dispatch(getFollowers(id))
@@ -83,7 +120,7 @@ const UserInfo_Follow = () => {
     socket.on("new_notification", (notification) => {
       if (notification.type === "follow" && notification.receiverId === userLoginId) {
         alert(`${notification.senderId} followed you!`);  // Hiển thị thông báo
-       
+
       }
     });
 
@@ -98,7 +135,7 @@ const UserInfo_Follow = () => {
     try {
       const senderId = userLoginId;
       const receiverIds: string[] = [userShowId];
-      
+
       await axios.post(`${URL_NOTI}/noti/create`, {
         type: "follow",
         senderId,
@@ -107,9 +144,9 @@ const UserInfo_Follow = () => {
         postId: "",
         commentContent: "",
       });
-  
+
       // alert('Gửi thông báo thành công!');
-     
+
     } catch (err) {
       console.error('Gửi thông báo thất bại', err);
       alert('Gửi thông báo thất bại!');
@@ -154,7 +191,7 @@ const UserInfo_Follow = () => {
 
         // Gửi thông báo cho người dùng được follow
         handleSendNotification();
-        
+
       } else {
         alert("Failed to follow");
       }
@@ -179,9 +216,10 @@ const UserInfo_Follow = () => {
 
   if (!userDetail) return <p className="text-white p-4">Đang tải thông tin người dùng...</p>;
 
-  const fullName = `${userDetail.firstname} ${userDetail.lastname}`;
-  const avatar = userDetail.avatar?.trim() || "https://i.pravatar.cc/300";
-  const background = userDetail.backgroundAvatar || "https://picsum.photos/200";
+  const fullName = `${profileUser?.firstname} ${profileUser?.lastname}`;
+  const avatar = profileUser?.avatar?.trim() || "https://i.pravatar.cc/300";
+  const background = profileUser?.backgroundAvatar || "https://picsum.photos/200";
+
 
   const handleFollowersClick = () => {
     setModalTab("followers");
@@ -233,7 +271,7 @@ const UserInfo_Follow = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50" onClick={closeModal}>
-          <div className="bg-black p-6 rounded-lg max-w-sm w-full relative" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-black p-6 rounded-lg max-w-sm w-full relative">
             <button onClick={closeModal} className="absolute top-4 right-4 text-white cursor-pointer">
               <X size={24} />
             </button>
@@ -308,15 +346,65 @@ const UserInfo_Follow = () => {
       </div>
 
       <div className="mt-4">
-        {profileTab === "Posts" && (
+        {/* {profileTab === "Posts" && (
           <div className="max-h-[65vh] overflow-y-auto scrollbar-dark px-2">
           
             <Posts posts={userPosts} username={fullName} avatar={avatar} commentCounts={commentCounts}/>
           </div>
+        )} */}
+        {profileTab === "Posts" && (
+          <div className="max-h-[65vh] overflow-y-auto scrollbar-dark px-2">
+            {userPosts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center text-zinc-400 py-10">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.121 17.804A7.5 7.5 0 0112 3a7.5 7.5 0 016.879 14.804M15 12l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="text-lg">No posts found!</p>
+              </div>
+            ) : (
+              <Posts posts={userPosts} username={fullName} avatar={avatar} commentCounts={commentCounts} onHoldLike={handleHoldLike} />
+            )}
+          </div>
         )}
+
         {profileTab === "Featured" && <Featured />}
         {profileTab === "Media" && <Media />}
       </div>
+      {likeModalOpen && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setLikeModalOpen(false)}>
+          <div className="bg-zinc-900 p-6 rounded-lg w-96 max-h-[70vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-semibold mb-4 text-white text-center">
+              People who liked the post ({likedUsers.length})
+            </h2>
+            <button className="absolute top-4 right-4 text-white" onClick={() => setLikeModalOpen(false)}>
+              <X size={24} />
+            </button>
+
+            {isLoadingLikes ? (
+              <p className="text-center text-zinc-400">Loading list...</p>
+            ) : likedUsers.length === 0 ? (
+              <p className="text-center text-zinc-400">No one has liked this post yet.</p>
+            ) : (
+              <ul className="space-y-3">
+                {likedUsers.map((user, idx) => (
+                  <li
+                    key={idx}
+                    onClick={() => navigate(`/home/user-info/${user._id}`)}
+                    className="flex items-center gap-3 p-2 hover:bg-zinc-800 rounded cursor-pointer"
+                  >
+                    <img
+                      src={user.avatar || "https://i.pravatar.cc/100"}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                    <span className="text-white">{user.firstname} {user.lastname}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
     </main>
   );
 };

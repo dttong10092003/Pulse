@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ShareModal from "../../../components/ShareModal";
 import toast from "react-hot-toast";
+
 dayjs.extend(relativeTime);
 
 interface Post {
@@ -123,6 +124,7 @@ const PostCard = ({
   //   Photography: "bg-blue-400",
   //   Travel: "bg-green-400",
   // };
+
   useEffect(() => {
     if (isEditing) {
       setSelectedTags([...tags]);
@@ -186,7 +188,9 @@ const PostCard = ({
     } else {
 
       if (userLoginId !== userShowId) {
+   
         handleSendNotification();
+       
       }
       dispatch(likePost(postId));
 
@@ -220,6 +224,8 @@ const PostCard = ({
       reader.onerror = (error) => reject(error);
     });
   };
+
+
   return (
     <div className="p-4 hover:bg-zinc-900/50">
       <div className="flex items-start gap-3">
@@ -491,7 +497,10 @@ const PostCard = ({
               )}
 
               {sharedPost && (
-                <div className="mt-4 p-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-sm hover:shadow-md transition">
+                <div
+                  onClick={() => navigate(`/home/post/${sharedPost._id}`)}
+                  className="mt-4 p-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-sm hover:shadow-md transition cursor-pointer"
+                >
                   <div className="flex items-center gap-3 mb-3">
                     <img
                       src={sharedPost.avatar}
@@ -502,11 +511,9 @@ const PostCard = ({
                       {sharedPost.username}
                     </span>
                   </div>
-
                   <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
                     {sharedPost.content}
                   </p>
-
                   {sharedPost.media?.[0] && (
                     <div className="mt-3">
                       <img
@@ -518,6 +525,7 @@ const PostCard = ({
                   )}
                 </div>
               )}
+
             </>
 
           )}
@@ -593,6 +601,7 @@ const PostCard = ({
           fullView
           postId={postId}
           createdAt={createdAt}
+          idUserShow={postUserId}
         />
       </div>
       {isShareOpen && (

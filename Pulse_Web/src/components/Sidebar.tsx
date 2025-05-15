@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch, store } from '../redux/store';
 import { logout } from '../redux/slice/authSlice';
 
-import { addNotification,setAllNotifications  } from "../redux/slice/notificationSlice";
+import { addNotification, setAllNotifications } from "../redux/slice/notificationSlice";
 // 🧠 Không còn import không dùng, không còn biến isHovered, toggleSidebar
 import api from "../services/api";
 import socket from "../utils/socket_noti";
@@ -16,52 +16,90 @@ const Sidebar = () => {
     const [showMenu, setShowMenu] = useState(false);
 
     const userDetail = useSelector((state: RootState) => state.auth.userDetail);
-   
+
     const unreadCount = useSelector((state: RootState) => state.notification.unreadCount);
 
 
-    const userDetailLogin = useSelector((state: RootState) => state.auth.userDetail); 
-    const userLoginID =   userDetailLogin?.userId || "";
+    // const userDetailLogin = useSelector((state: RootState) => state.auth.userDetail); 
+    // const userLoginID =   userDetailLogin?.userId || "";
+    const userLoginID = useSelector((state: RootState) => state.auth.user?._id) || "";
+ 
+
+    // cũ 
+    // useEffect(() => {
+    //     const fetchNoti = async () => {
+    //       if (userLoginID) {
+    //         try {
+    //           const res = await api.get(`/noti/get-all?userId=${userLoginID}`);
+    //           dispatch(setAllNotifications(res.data));
+    //           console.log("📥 Lấy thông báo ban đầu:", res.data);
+    //         } catch (err) {
+    //           console.error("Lỗi lấy thông báo ban đầu:", err);
+    //         }
+    //       }
+    //     };
+
+    //     if (userLoginID) {
+    //       socket.emit('register', userLoginID);
+    //     }
+
+    //     socket.on('new_notification', (data) => {
+    //       if (data.receiverId === userLoginID) {
+    //         console.log("📥 Nhận thông báo mới:", data);
+
+    //         // Kiểm tra notification đã tồn tại chưa
+    //         const state = store.getState(); // lấy state từ store.ts
+    //         const existing = state.notification.notifications.find(
+    //           (n) => n._id === data._id
+    //         );
+
+    //         if (!existing) {
+    //           dispatch(addNotification(data));
+    //         } else {
+
+    //           fetchNoti();
+    //         }
+    //       }
+    //     });
+
+    //     return () => {
+    //       socket.off('new_notification');
+    //     };
+    //   }, [userLoginID, dispatch]);
+
+
     useEffect(() => {
+        if (!userLoginID) return; // 👈 ngăn chạy sớm
+
         const fetchNoti = async () => {
-          if (userLoginID) {
             try {
-              const res = await api.get(`/noti/get-all?userId=${userLoginID}`);
-              dispatch(setAllNotifications(res.data));
+                const res = await api.get(`/noti/get-all?userId=${userLoginID}`);
+                dispatch(setAllNotifications(res.data));
+                // console.log("📥 Lấy thông báo ban đầu:", res.data);
             } catch (err) {
-              console.error("Lỗi lấy thông báo ban đầu:", err);
+                console.error("Lỗi lấy thông báo ban đầu:", err);
             }
-          }
         };
-      
-        if (userLoginID) {
-          socket.emit('register', userLoginID);
-        }
-      
-        socket.on('new_notification', (data) => {
-          if (data.receiverId === userLoginID) {
-            console.log("📥 Nhận thông báo mới:", data);
-      
-            // Kiểm tra notification đã tồn tại chưa
-            const state = store.getState(); // lấy state từ store.ts
-            const existing = state.notification.notifications.find(
-              (n) => n._id === data._id
-            );
-      
-            if (!existing) {
-              dispatch(addNotification(data));
-            } else {
-              // 🔁 Nếu đã có: chỉ cần refetch toàn bộ để cập nhật timestamp + unreadCount
-              fetchNoti();
+
+        socket.emit("register", userLoginID);
+        fetchNoti();
+
+        socket.on("new_notification", (data) => {
+            if (data.receiverId === userLoginID) {
+                const state = store.getState();
+                const existing = state.notification.notifications.find(
+                    (n) => n._id === data._id
+                );
+
+                if (!existing) dispatch(addNotification(data));
+                else fetchNoti();
             }
-          }
         });
-      
+
         return () => {
-          socket.off('new_notification');
+            socket.off("new_notification");
         };
-      }, [userLoginID, dispatch]);
-      
+    }, [userLoginID, dispatch]);
 
 
     const getInitialActiveItem = () => {
@@ -172,7 +210,7 @@ const SidebarItem = ({
         >
             {icon}
             {showSidebar && <span className="text-lg">{label}</span>}
-            {(label === "Notifications" || label === "Messages") && (unreadCount ?? 0) > 0 && (
+            {(unreadCount ?? 0) > 0 && (
                 <span className="ml-2 bg-red-500 text-white text-xs px-2 rounded-full">{unreadCount}</span>
             )}
         </button>
