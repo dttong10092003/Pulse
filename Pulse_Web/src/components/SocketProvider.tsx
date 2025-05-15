@@ -202,6 +202,11 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
       dispatch(updateMessagePinned({ conversationId, messageId, pinned: false }));
     });
 
+    socket.on("rateLimitExceeded", (data) => {
+      toast.error(data.message ||
+        "You are sending messages too quickly. Please slow down.", {toastId: "rate-limit"});
+    });
+
 
     return () => {
       socket.off('receiveMessage', handleReceiveMessage);
@@ -217,6 +222,7 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
       socket.off('groupDisbanded');
       socket.off('messagePinned');
       socket.off('messageUnpinned');
+      socket.off("rateLimitExceeded");
       socket.disconnect();
       hasConnected.current = false;
     };

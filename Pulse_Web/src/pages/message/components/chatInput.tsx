@@ -8,6 +8,7 @@ import { Message } from '../../../redux/slice/types';
 import { fileIcons } from '../../../assets';
 import { incrementUnreadCount } from '../../../redux/slice/chatSlice';
 import { useReactMediaRecorder } from 'react-media-recorder';
+import { toast } from 'react-toastify';
 
 const ChatInput: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -36,7 +37,7 @@ const ChatInput: React.FC = () => {
 
     const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
-      reader.readAsDataURL(audioFile); 
+      reader.readAsDataURL(audioFile);
       reader.onloadend = () => resolve(reader.result as string);
       reader.onerror = reject;
     });
@@ -177,8 +178,18 @@ const ChatInput: React.FC = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const filesArray = Array.from(e.target.files); // Chuyển đổi files thành mảng
-      setSelectedFiles((prevFiles) => [...prevFiles, ...filesArray]); // Thêm ảnh mới vào mảng đã có
+      const filesArray = Array.from(e.target.files);
+
+      const newFiles = [...selectedFiles, ...filesArray];
+
+      if (newFiles.length > 8) {
+        toast.error("You can only send up to 8 files at a time", {
+          toastId: "file-limit",
+        });
+        return;
+      }
+
+      setSelectedFiles(newFiles);
     }
   };
 
