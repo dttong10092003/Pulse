@@ -1,4 +1,4 @@
-import { Home, Bell, MessageSquare, Bookmark, User, LayoutDashboard, MoreHorizontal, Settings, LogOut, ShieldCheck } from "lucide-react";
+import { Home, Bell, MessageSquare, Bookmark, User, LayoutDashboard, MoreHorizontal, Settings, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from 'react-redux';
@@ -128,7 +128,7 @@ const Sidebar = () => {
 
     return (
         <aside
-            className={`fixed top-0 left-0 h-screen ${showSidebar ? 'w-72' : 'w-20'} bg-[#1F1F1F] text-white p-3 flex flex-col justify-between border-r border-zinc-800 transition-all duration-300`}
+            className={`fixed top-0 left-0 h-screen ${showSidebar ? 'w-72' : 'w-20'} bg-[#1F1F1F] text-white p-6 flex flex-col justify-between border-r border-zinc-800 transition-all duration-300`}
         >
             <div>
                 <a href="/home" className={`text-[#00FF7F] ${showSidebar ? 'text-3xl' : 'text-sm'} font-bold`}>
@@ -141,7 +141,6 @@ const Sidebar = () => {
                     <SidebarItem icon={<Bookmark size={24} />} label="Bookmarks" active={activeItem === "Bookmarks"} navigate={() => handleNavigation("Bookmarks", "/home/bookmarks")} showSidebar={showSidebar} />
                     <SidebarItem icon={<User size={24} />} label="My Profile" active={activeItem === "My Profile"} navigate={() => handleNavigation("My Profile", "/home/my-profile")} showSidebar={showSidebar} />
                     <SidebarItem icon={<LayoutDashboard size={24} />} label="Explore" active={activeItem === "Explore"} navigate={() => handleNavigation("Explore", "/home/explore")} showSidebar={showSidebar} />
-                    <SidebarItem icon={<ShieldCheck size={24} />} label="Admin" active={activeItem === "Admin"} navigate={() => handleNavigation("Admin", "/home/admin")} showSidebar={showSidebar} />
                 </nav>
             </div>
 
