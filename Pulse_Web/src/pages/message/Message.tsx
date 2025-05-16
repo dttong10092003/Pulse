@@ -159,7 +159,7 @@ const Message: React.FC = () => {
                       senderId: userDetail.userId,
                       name: `${userDetail.firstname} ${userDetail.lastname}`,
                       content: `📞 The call has ended ${durationText}`,
-                      type: "text",
+                      type: "call",
                       timestamp: new Date().toISOString(),
                       isDeleted: false,
                       isSentByUser: true,
