@@ -4,13 +4,16 @@ import Posts from "../components/Posts";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
 import axios from "axios";
-
+import { fetchLikeCounts, fetchUserLikedPosts } from "../../../redux/slice/likeSlice";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "../../../redux/store";
 const PostDetail = () => {
     const { postId } = useParams<{ postId: string }>();
     const [post, setPost] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const commentCounts = useSelector((state: RootState) => state.comments.commentCounts);
+    const dispatch = useDispatch<AppDispatch>();
 
     useEffect(() => {
         const fetchPost = async () => {
@@ -18,6 +21,7 @@ const PostDetail = () => {
                 const res = await axios.get(`${import.meta.env.VITE_API_URL}/posts/${postId}`);
                 setPost(res.data);
                 setLoading(false);
+                dispatch(fetchLikeCounts([res.data._id]));
             } catch (err: any) {
                 setError("Failed to load post.");
                 setLoading(false);
@@ -26,6 +30,7 @@ const PostDetail = () => {
 
         if (postId) {
             fetchPost();
+            dispatch(fetchUserLikedPosts());
         }
     }, [postId]);
 
