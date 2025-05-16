@@ -13,7 +13,7 @@ export interface Member {
     name: string; // Tên người gửi (nếu là nhóm)
     senderAvatar: string;
     isSentByUser: boolean;
-    type: 'text' | 'emoji' | 'image' | 'file' | 'video' | 'audio';
+    type: 'text' | 'emoji' | 'image' | 'file' | 'video' | 'audio' | 'call';
     isDeleted: boolean;
     isPinned: boolean;
     fileName?: string; // Tên file (nếu có)
