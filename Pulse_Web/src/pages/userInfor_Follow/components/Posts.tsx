@@ -7,13 +7,10 @@ import ImageModal from "./ImageModal";
 import { AppDispatch, RootState } from "../../../redux/store";
 import { useDispatch, useSelector } from "react-redux";
 import { deletePost, fetchUserPosts, editPost } from "../../../redux/slice/postProfileSlice";
-import { likePost, unlikePost, fetchLikeCounts } from "../../../redux/slice/likeSlice";
+import { likePost, unlikePost } from "../../../redux/slice/likeSlice";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-import { useNavigate } from "react-router-dom";
-import {
-  getCommentCountsByPosts,
-} from "../../../redux/slice/commentSilce";
 dayjs.extend(relativeTime);
 
 interface Post {
@@ -24,21 +21,12 @@ interface Post {
   comments?: number;
   media?: string[];
   tags?: string[];
-  userId: string; // ✅ thêm dòng này!
+  username?: string;
+  avatar?: string;
+  userId: string;
 }
 
-
-
-const Posts = ({ posts, username, avatar, commentCounts }: { posts: Post[]; username: string; avatar: string; commentCounts: Record<string, number>; }) => {
-  const dispatch = useDispatch<AppDispatch>();
- 
-  useEffect(() => {
-    if (posts.length > 0) {
-      const postIds = posts.map((p) => p._id);
-      dispatch(fetchLikeCounts(postIds));
-      dispatch(getCommentCountsByPosts(postIds));
-    }
-  }, [posts]);
+const Posts = ({ posts, username, avatar, commentCounts, onHoldLike }: { posts: Post[]; username: string; avatar: string; commentCounts: Record<string, number>; onHoldLike?: (postId: string) => void; }) => {
 
   return (
     <div className="divide-zinc-800">
@@ -54,7 +42,7 @@ const Posts = ({ posts, username, avatar, commentCounts }: { posts: Post[]; user
           comments={commentCounts[post._id] || 0}
           media={post.media || []}
           tags={post.tags || []}
-
+          onHoldLike={onHoldLike} // ✅ THÊM DÒNG NÀY
           createdAt={post.createdAt}
         />
       ))}
@@ -66,24 +54,26 @@ const PostCard = ({
   postId,
   user,
   avatar,
+  postUserId,
   content,
   time,
   createdAt,
   comments,
   media,
-  tags,
-  postUserId, // ✅ thêm vào đây
+  // tags,
+  onHoldLike, // ✅ THÊM VÀO ĐÂY
 }: {
   postId: string;
   user: string;
   avatar: string;
+  postUserId: string;
   content: string;
   time: string;
   createdAt: string;
   comments: number;
   media: string[];
   tags: string[];
-  postUserId: string; // ✅ thêm vào đây
+  onHoldLike?: (postId: string) => void; // ✅ THÊM VÀO ĐÂY
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
@@ -94,7 +84,7 @@ const PostCard = ({
   const dispatch = useDispatch<AppDispatch>();
   const userId = useSelector((state: RootState) => state.auth.user?._id);
   const likedPostIds = useSelector((state: RootState) => state.likes.likedPostIds);
-
+  const isLiked = likedPostIds.includes(postId);
   const likeCounts = useSelector((state: RootState) => state.likes.likeCounts); // thêm dòng này để lấy số like theo postId
   const likes = likeCounts[postId] || 0; // nếu chưa có thì mặc định 0
   const [isEditing, setIsEditing] = useState(false);
@@ -102,9 +92,9 @@ const PostCard = ({
   const [editMediaFiles, setEditMediaFiles] = useState<string[]>(media || []);
   const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
-
-  const isLiked = likedPostIds.includes(postId);
   const URL_NOTI = import.meta.env.VITE_API_URL_NOTI
+  const isOwner = userId === postUserId;
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -128,42 +118,48 @@ const PostCard = ({
   };
 
   const userLoginId = useSelector((state: RootState) => state.auth.user?._id);
+  // console.log("userLoginId", userLoginId);
   const userShowId = postUserId;
+  // console.log("userShowId", userShowId);
+  const handleSendNotification = async () => {
+    try {
+      const senderId = userLoginId;
+      const receiverIds: string[] = [userShowId];
 
-const handleSendNotification = async () => {
-  try {
-    const senderId = userLoginId;
-    const receiverIds: string[] = userShowId ? [userShowId] : [];
-    
-    await axios.post(`${URL_NOTI}/noti/create`, {
-      type: "like",
-      senderId,
-      receiverIds,
-      messageContent: "",
-      postId: postId,
-      commentContent: "",
-    });
+      await axios.post(`${URL_NOTI}/noti/create`, {
+        type: "like",
+        senderId,
+        receiverIds,
+        messageContent: "",
+        postId: postId,
+        commentContent: "",
+      });
 
-   
-   
-  } catch (err) {
-    console.error('Gửi thông báo thất bại', err);
-    alert('Gửi thông báo thất bại!');
-  }
-};
+      // alert('Gửi thông báo thành công!');
+
+    } catch (err) {
+      console.error('Gửi thông báo thất bại', err);
+      alert('Gửi thông báo thất bại!');
+    }
+  };
+
 
   const handleToggleLike = () => {
     if (!userId) return;
     if (isLiked) {
       dispatch(unlikePost(postId));
     } else {
-      dispatch(likePost(postId));
-      if(userLoginId && userShowId  && userLoginId !== userShowId) {
+
+      if (userLoginId !== userShowId) {
         handleSendNotification();
-        
       }
+      dispatch(likePost(postId));
+
     }
+
   };
+
+
   const handleSaveEdit = async () => {
     try {
       setIsSaving(true);
@@ -217,7 +213,7 @@ const handleSendNotification = async () => {
                 <MoreHorizontal size={20} />
               </button>
 
-              {showMenu && (
+              {/* {showMenu && (
                 <div
                   ref={menuRef}
                   className="absolute right-0 mt-2 w-36 bg-zinc-800 shadow-lg rounded-lg z-50 py-2"
@@ -240,7 +236,36 @@ const handleSendNotification = async () => {
 
                   </button>
                 </div>
+              )} */}
+              {showMenu && isOwner && (
+                <div
+                  ref={menuRef}
+                  className="absolute right-0 mt-2 w-36 bg-zinc-800 shadow-lg rounded-lg z-50 py-2"
+                >
+                  <button
+                    className="flex justify-between items-center w-full px-4 py-2 hover:bg-zinc-700 text-white cursor-pointer"
+                    onClick={() => {
+                      setIsEditing(true);
+                      setShowMenu(false);
+                    }}
+                  >
+                    Edit
+                    <svg className="w-4 h-4 text-zinc-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM21.41 6.34a1.25 1.25 0 000-1.77l-2.98-2.98a1.25 1.25 0 00-1.77 0l-1.83 1.83 4.75 4.75 1.83-1.83z" />
+                    </svg>
+                  </button>
+                  <button
+                    className="flex justify-between items-center w-full px-4 py-2 hover:bg-zinc-700 text-red-400 cursor-pointer"
+                    onClick={handleDeletePost}
+                  >
+                    Delete
+                    <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12zm3-9h2v7H9V10zm4 0h2v7h-2v-7zm5-5h-3.5l-1-1h-5l-1 1H5v2h14V5z" />
+                    </svg>
+                  </button>
+                </div>
               )}
+
             </div>
           </div>
 
@@ -396,12 +421,21 @@ const handleSendNotification = async () => {
 
           )}
 
-          {tags.length > 0 && (
+          {/* {tags.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2 text-sm text-green-400">
               {tags.map((tag, i) => (
                 <span key={i}>#{tag}</span>
               ))}
             </div>
+          )} */}
+
+          {onHoldLike && (
+            <p
+              onClick={() => onHoldLike(postId)}
+              className="text-xs text-zinc-400 cursor-pointer hover:underline mb-1"
+            >
+              View list of people who liked
+            </p>
           )}
 
           <div className="flex items-center gap-6 mt-3">

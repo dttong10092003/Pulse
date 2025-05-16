@@ -1,6 +1,6 @@
 import { Share2, MessageSquare, Users, UserRoundPen, ArrowLeft, ChevronDown, Image, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Posts } from "./components"; // ✅ Xoá Featured và Media vì chưa dùng
+import { Media, Posts } from "./components";
 import { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../redux/store';
@@ -9,7 +9,7 @@ import { fetchUserLikedPosts } from "../../redux/slice/likeSlice";
 import { getFollowers, getFollowings } from "../../redux/slice/followSlice";
 import api from "../../services/api";
 import { getUserDetails } from "../../redux/slice/userSlice";
-
+import toast from "react-hot-toast";
 
 const MyProfile = () => {
     const navigate = useNavigate();
@@ -32,39 +32,48 @@ const MyProfile = () => {
     const [likedUsers, setLikedUsers] = useState<any[]>([]);
     const [likeModalOpen, setLikeModalOpen] = useState(false);
     const [isLoadingLikes, setIsLoadingLikes] = useState(false);
+    const [selectedTag, setSelectedTag] = useState("Beauty");
+    const [showTagDropdown, setShowTagDropdown] = useState(false);
+
+    const tagOptions = [
+        { label: "Beauty", color: "bg-pink-500" },
+        { label: "Food", color: "bg-yellow-400" },
+        { label: "Photography", color: "bg-blue-400" },
+        { label: "Travel", color: "bg-green-400" },
+    ];
 
     const handleHoldLike = async (postId: string) => {
         try {
-          setIsLoadingLikes(true);
-      
-          const res = await api.get(`/likes/${postId}`); // [{ userId, timestamp }]
-          const likeList = res.data;
-      
-          const userDetails: any[] = [];
-      
-          for (const like of likeList) {
-            try {
-              const user = await dispatch(getUserDetails(like.userId)).unwrap();
-              userDetails.push({
-                ...user,
-                timestamp: like.timestamp
-              });
-            } catch (err) {
-              console.error("❌ Lỗi fetch userId:", like.userId, err);
-            }
-          }
-      
-          setLikedUsers(userDetails);
-          setLikeModalOpen(true);
-        } catch (err) {
-          console.error("🔥 Lỗi lấy danh sách like:", err);
-        } finally {
-          setIsLoadingLikes(false);
-        }
-      };
-      
+            setIsLoadingLikes(true);
 
-    
+            const res = await api.get(`/likes/${postId}`); // [{ userId, timestamp }]
+            const likeList = res.data;
+
+            const userDetails: any[] = [];
+
+            for (const like of likeList) {
+                try {
+                    const user = await dispatch(getUserDetails(like.userId)).unwrap();
+                    userDetails.push({
+                        ...user,
+                        timestamp: like.timestamp
+                    });
+                } catch (err) {
+                    console.error("❌ Lỗi fetch userId:", like.userId, err);
+                }
+            }
+
+            setLikedUsers(userDetails);
+            setLikeModalOpen(true);
+        } catch (err) {
+            console.error("🔥 Lỗi lấy danh sách like:", err);
+        } finally {
+            setIsLoadingLikes(false);
+        }
+    };
+
+
+
     useEffect(() => {
         if (userId) {
             dispatch(getFollowers(userId));
@@ -140,14 +149,16 @@ const MyProfile = () => {
             await dispatch(createPost({
                 content: postContent,
                 media: base64Media.length ? base64Media : undefined,
+                tags: [selectedTag],
             })).unwrap();
 
             await dispatch(fetchUserPosts(userId!));
             setPostContent("");
             setMediaFiles([]);
             setIsExpanded(false);
+            toast.success("Post created successfully!");
         } catch (err) {
-            alert("Posting failed: " + err);
+            toast.error("Posting failed: " + err);
         } finally {
             setIsPosting(false); // 🔴 Kết thúc loading
         }
@@ -366,11 +377,43 @@ const MyProfile = () => {
                                             multiple
                                         />
                                     </>
-                                    <div className="flex items-center gap-2 bg-zinc-700 hover:bg-zinc-600 px-3 py-2 rounded-lg text-white cursor-pointer ">
+                                    {/* <div className="flex items-center gap-2 bg-zinc-700 hover:bg-zinc-600 px-3 py-2 rounded-lg text-white cursor-pointer ">
                                         <div className="w-3 h-3 bg-pink-500 rounded-full"></div>
                                         <span>Beauty</span>
                                         <ChevronDown size={16} />
+                                    </div> */}
+                                    <div className="relative inline-block text-left">
+                                        <button
+                                            onClick={() => setShowTagDropdown(!showTagDropdown)}
+                                            className="flex items-center gap-2 bg-zinc-700 hover:bg-zinc-600 px-3 py-2 rounded-lg text-white cursor-pointer"
+                                        >
+                                            <div className={`w-3 h-3 ${tagOptions.find(t => t.label === selectedTag)?.color} rounded-full`}></div>
+                                            <span>{selectedTag}</span>
+                                            <ChevronDown size={16} />
+                                        </button>
+
+                                        {showTagDropdown && (
+                                            <div className="absolute z-10 mt-2 w-40 rounded-md shadow-lg bg-zinc-800 ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                                <ul className="py-1 text-white">
+                                                    {tagOptions.map((tag) => (
+                                                        <li
+                                                            key={tag.label}
+                                                            onClick={() => {
+                                                                setSelectedTag(tag.label);
+                                                                setShowTagDropdown(false);
+                                                            }}
+                                                            className="flex items-center gap-2 px-4 py-2 hover:bg-zinc-700 cursor-pointer"
+                                                        >
+                                                            <div className={`w-3 h-3 ${tag.color} rounded-full`}></div>
+                                                            <span>{tag.label}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
                                     </div>
+
+
                                 </div>
                                 <button
                                     className={`px-5 py-2 rounded-3xl transition ${postContent.trim() && !isPosting
@@ -389,13 +432,29 @@ const MyProfile = () => {
 
                 {activeTab === "Posts" && (
                     <div className="max-h-[60vh] overflow-y-auto scrollbar-dark px-4">
-                        <Posts
-                            posts={userPosts}
-                            username={username}
-                            avatar={userDetail?.avatar ?? "default-avatar-url"}
-                            commentCounts={commentCounts}
-                            onHoldLike={handleHoldLike}
-                        />
+                        {userPosts.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center text-zinc-400 py-10">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.121 17.804A7.5 7.5 0 0112 3a7.5 7.5 0 016.879 14.804M15 12l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <p className="text-lg">No posts found!</p>
+                            </div>
+                        ) : (
+                            <Posts
+                                posts={userPosts}
+                                username={username}
+                                avatar={userDetail?.avatar ?? "default-avatar-url"}
+                                commentCounts={commentCounts}
+                                onHoldLike={handleHoldLike}
+                            />
+                        )}
+                    </div>
+                )}
+
+
+                {activeTab === "Media" && (
+                    <div className="max-h-[60vh] overflow-y-auto scrollbar-dark px-4">
+                        <Media />
                     </div>
                 )}
                 {likeModalOpen && (
@@ -416,7 +475,7 @@ const MyProfile = () => {
                                 <ul className="space-y-3">
 
                                     {likedUsers.map((user, idx) => (
-                                
+
                                         <li
                                             key={idx}
                                             onClick={(e) => {

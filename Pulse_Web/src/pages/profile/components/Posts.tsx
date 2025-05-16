@@ -1,19 +1,17 @@
 // File: Posts.tsx
 import { useEffect, useRef, useState } from "react";
-import { Heart, MessageCircle, Bookmark, MoreHorizontal, X, ChevronDown, Image } from "lucide-react";
+import { Heart, MessageCircle, Bookmark, MoreHorizontal, X, ChevronDown, Image, Share2 } from "lucide-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import ImageModal from "./ImageModal";
 import { AppDispatch, RootState } from "../../../redux/store";
 import { useDispatch, useSelector } from "react-redux";
 import { deletePost, fetchUserPosts, editPost } from "../../../redux/slice/postProfileSlice";
-import { likePost, unlikePost, fetchLikeCounts } from "../../../redux/slice/likeSlice";
+import { likePost, unlikePost } from "../../../redux/slice/likeSlice";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
-import {
-  getCommentCountsByPosts,
-} from "../../../redux/slice/commentSilce";
+import ShareModal from "../../../components/ShareModal";
+import toast from "react-hot-toast";
 dayjs.extend(relativeTime);
 
 interface Post {
@@ -27,18 +25,16 @@ interface Post {
   username?: string;
   avatar?: string;
   userId: string;
+  sharedPost?: {
+    _id: string;
+    content: string;
+    media?: string[];
+    username: string;
+    avatar: string;
+  };
 }
 
-const Posts = ({ posts, username, avatar, commentCounts , onHoldLike }: { posts: Post[]; username: string; avatar: string; commentCounts: Record<string, number>; onHoldLike?: (postId: string) => void; }) => {
-  const dispatch = useDispatch<AppDispatch>();
-
-  useEffect(() => {
-    if (posts.length > 0) {
-      const postIds = posts.map((p) => p._id);
-      dispatch(fetchLikeCounts(postIds));
-      dispatch(getCommentCountsByPosts(postIds));
-    }
-  }, [dispatch, posts]);
+const Posts = ({ posts, username, avatar, commentCounts, onHoldLike }: { posts: Post[]; username: string; avatar: string; commentCounts: Record<string, number>; onHoldLike?: (postId: string) => void; }) => {
 
   return (
     <div className="divide-zinc-800">
@@ -56,6 +52,7 @@ const Posts = ({ posts, username, avatar, commentCounts , onHoldLike }: { posts:
           tags={post.tags || []}
           onHoldLike={onHoldLike} // ✅ THÊM DÒNG NÀY
           createdAt={post.createdAt}
+          sharedPost={post.sharedPost}
         />
       ))}
     </div>
@@ -74,6 +71,7 @@ const PostCard = ({
   media,
   tags,
   onHoldLike, // ✅ THÊM VÀO ĐÂY
+  sharedPost,
 }: {
   postId: string;
   user: string;
@@ -86,6 +84,14 @@ const PostCard = ({
   media: string[];
   tags: string[];
   onHoldLike?: (postId: string) => void; // ✅ THÊM VÀO ĐÂY
+  sharedPost?: {
+    _id: string;
+    content: string;
+    media?: string[];
+    username: string;
+    avatar: string;
+  };
+
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
@@ -103,8 +109,27 @@ const PostCard = ({
   const [editContent, setEditContent] = useState(content);
   const [editMediaFiles, setEditMediaFiles] = useState<string[]>(media || []);
   const [isSaving, setIsSaving] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const navigate = useNavigate();
   const URL_NOTI = import.meta.env.VITE_API_URL_NOTI
+  const isOwner = userId === postUserId;
+  const tagOptions = ["Beauty", "Food", "Photography", "Travel"];
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
+
+  // const tagColors: Record<string, string> = {
+  //   Beauty: "bg-pink-500",
+  //   Food: "bg-yellow-400",
+  //   Photography: "bg-blue-400",
+  //   Travel: "bg-green-400",
+  // };
+
+  useEffect(() => {
+    if (isEditing) {
+      setSelectedTags([...tags]);
+    }
+  }, [isEditing]);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -122,20 +147,21 @@ const PostCard = ({
       await dispatch(deletePost(postId)).unwrap();
       if (userId) await dispatch(fetchUserPosts(userId));
       if (userId) await dispatch(fetchUserPosts(userId));
+      toast.success("Post deleted successfully!");
     } catch (err) {
-      alert("Delete post failed: " + err);
+      toast.error("Delete post failed: " + err);
     }
   };
 
-    const userLoginId = useSelector((state: RootState) => state.auth.user?._id);
-    // console.log("userLoginId", userLoginId);
-    const userShowId = postUserId;
-    // console.log("userShowId", userShowId);
+  const userLoginId = useSelector((state: RootState) => state.auth.user?._id);
+  // console.log("userLoginId", userLoginId);
+  const userShowId = postUserId;
+  // console.log("userShowId", userShowId);
   const handleSendNotification = async () => {
     try {
       const senderId = userLoginId;
       const receiverIds: string[] = [userShowId];
-      
+
       await axios.post(`${URL_NOTI}/noti/create`, {
         type: "like",
         senderId,
@@ -144,9 +170,9 @@ const PostCard = ({
         postId: postId,
         commentContent: "",
       });
-  
+
       // alert('Gửi thông báo thành công!');
-     
+
     } catch (err) {
       console.error('Gửi thông báo thất bại', err);
       alert('Gửi thông báo thất bại!');
@@ -159,14 +185,14 @@ const PostCard = ({
     if (isLiked) {
       dispatch(unlikePost(postId));
     } else {
-     
-      if(userLoginId !== userShowId) {
-        handleSendNotification(); 
+
+      if (userLoginId !== userShowId) {
+        handleSendNotification();
       }
       dispatch(likePost(postId));
-    
+
     }
-  
+
   };
 
 
@@ -178,11 +204,13 @@ const PostCard = ({
           postId,
           content: editContent,
           media: editMediaFiles,
+          tags: selectedTags,
         })
       ).unwrap();
       setIsEditing(false);
+      toast.success("Post updated successfully!");
     } catch (error) {
-      alert("Update post failed!");
+      toast.error("Update post failed!");
     }
   };
   const convertFileToBase64 = (file: File): Promise<string> => {
@@ -193,6 +221,8 @@ const PostCard = ({
       reader.onerror = (error) => reject(error);
     });
   };
+
+
   return (
     <div className="p-4 hover:bg-zinc-900/50">
       <div className="flex items-start gap-3">
@@ -223,7 +253,7 @@ const PostCard = ({
                 <MoreHorizontal size={20} />
               </button>
 
-              {showMenu && (
+              {/* {showMenu && (
                 <div
                   ref={menuRef}
                   className="absolute right-0 mt-2 w-36 bg-zinc-800 shadow-lg rounded-lg z-50 py-2"
@@ -246,7 +276,36 @@ const PostCard = ({
 
                   </button>
                 </div>
+              )} */}
+              {showMenu && isOwner && (
+                <div
+                  ref={menuRef}
+                  className="absolute right-0 mt-2 w-36 bg-zinc-800 shadow-lg rounded-lg z-50 py-2"
+                >
+                  <button
+                    className="flex justify-between items-center w-full px-4 py-2 hover:bg-zinc-700 text-white cursor-pointer"
+                    onClick={() => {
+                      setIsEditing(true);
+                      setShowMenu(false);
+                    }}
+                  >
+                    Edit
+                    <svg className="w-4 h-4 text-zinc-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM21.41 6.34a1.25 1.25 0 000-1.77l-2.98-2.98a1.25 1.25 0 00-1.77 0l-1.83 1.83 4.75 4.75 1.83-1.83z" />
+                    </svg>
+                  </button>
+                  <button
+                    className="flex justify-between items-center w-full px-4 py-2 hover:bg-zinc-700 text-red-400 cursor-pointer"
+                    onClick={handleDeletePost}
+                  >
+                    Delete
+                    <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12zm3-9h2v7H9V10zm4 0h2v7h-2v-7zm5-5h-3.5l-1-1h-5l-1 1H5v2h14V5z" />
+                    </svg>
+                  </button>
+                </div>
               )}
+
             </div>
           </div>
 
@@ -325,11 +384,46 @@ const PostCard = ({
                       <Image size={20} />
                     </label>
                   </>
-                  <div className="flex items-center gap-2 bg-zinc-700 hover:bg-zinc-600 px-3 py-2 rounded-lg text-white cursor-pointer">
+                  {/* <div className="flex items-center gap-2 bg-zinc-700 hover:bg-zinc-600 px-3 py-2 rounded-lg text-white cursor-pointer">
                     <div className="w-3 h-3 bg-pink-500 rounded-full"></div>
                     <span>Beauty</span>
                     <ChevronDown size={16} />
+                  </div> */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      className="flex items-center gap-2 bg-zinc-700 hover:bg-zinc-600 px-3 py-2 rounded-lg text-white cursor-pointer"
+                      onClick={() => setIsTagDropdownOpen(prev => !prev)}
+                    >
+                      <div className="w-3 h-3 bg-pink-500 rounded-full"></div>
+                      <span>{selectedTags[0] || "Select tag"}</span>
+                      <ChevronDown size={16} />
+                    </button>
+
+                    {isTagDropdownOpen && (
+                      <div className="absolute z-50 mt-2 w-40 bg-zinc-800 rounded-lg shadow-lg py-1">
+                        {tagOptions.map((tag) => (
+                          <div
+                            key={tag}
+                            className={`px-4 py-2 hover:bg-zinc-700 cursor-pointer text-white ${selectedTags.includes(tag) ? "bg-zinc-700" : ""}`}
+                            onClick={() => {
+                              setSelectedTags([tag]);
+                              setIsTagDropdownOpen(false);
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${tag === "Beauty" ? "bg-pink-500" :
+                                tag === "Food" ? "bg-yellow-400" :
+                                  tag === "Photography" ? "bg-blue-400" :
+                                    tag === "Travel" ? "bg-green-400" : "bg-gray-400"}`} />
+                              <span>{tag}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
+
                 </div>
 
                 <div className="flex gap-2">
@@ -398,23 +492,62 @@ const PostCard = ({
                   })}
                 </div>
               )}
+
+              {sharedPost && (
+                <div
+                  onClick={() => navigate(`/home/post/${sharedPost._id}`)}
+                  className="mt-4 p-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-sm hover:shadow-md transition cursor-pointer"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <img
+                      src={sharedPost.avatar}
+                      className="w-8 h-8 rounded-full object-cover border border-white"
+                      alt="Shared Avatar"
+                    />
+                    <span className="text-sm font-semibold text-white truncate max-w-[70%]">
+                      {sharedPost.username}
+                    </span>
+                  </div>
+                  <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                    {sharedPost.content}
+                  </p>
+                  {sharedPost.media?.[0] && (
+                    <div className="mt-3">
+                      <img
+                        src={sharedPost.media[0]}
+                        className="w-full object-cover rounded-xl border border-zinc-700"
+                        alt="Shared media"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
             </>
 
           )}
 
-          {tags.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2 text-sm text-green-400">
+          {/* {tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2 text-sm text-white">
               {tags.map((tag, i) => (
-                <span key={i}>#{tag}</span>
+                <span
+                  key={i}
+                  className="flex items-center gap-1 px-2 py-1 rounded-full"
+                >
+                  <div className={`w-2 h-2 ${tagColors[tag] || "bg-gray-400"} rounded-full`} />
+                  <span>{tag}</span>
+                </span>
               ))}
             </div>
-          )}
-           {onHoldLike && (
+          )} */}
+
+
+          {onHoldLike && (
             <p
               onClick={() => onHoldLike(postId)}
               className="text-xs text-zinc-400 cursor-pointer hover:underline mb-1"
             >
-              Xem danh sách người đã like
+              View list of people who liked
             </p>
           )}
 
@@ -441,6 +574,14 @@ const PostCard = ({
             <button className="text-zinc-500 cursor-pointer">
               <Bookmark size={20} />
             </button>
+
+            <button
+              className="text-zinc-500 cursor-pointer"
+              onClick={() => setIsShareOpen(true)}
+            >
+              <Share2 size={20} />
+            </button>
+
           </div>
         </div>
       </div>
@@ -459,6 +600,13 @@ const PostCard = ({
           createdAt={createdAt}
         />
       </div>
+      {isShareOpen && (
+        <ShareModal
+          sharedPost={{ _id: postId, content, media, username: user, avatar }}
+          onClose={() => setIsShareOpen(false)}
+        />
+      )}
+
     </div>
   );
 };

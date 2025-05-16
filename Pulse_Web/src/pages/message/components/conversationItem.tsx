@@ -1,5 +1,9 @@
 import React from 'react';
-import { Conversation } from '../../../redux/slice/types'; 
+import { Conversation } from '../../../redux/slice/types';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../redux/store';
+
+
 
 // interface Conversation {
 //   _id: string;
@@ -43,6 +47,15 @@ interface ConversationItemProps {
 }
 
 const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, onSelectConversation, isSelected }) => {
+
+  const onlineUsers = useSelector((state: RootState) => state.chat.onlineUsers);
+  const currentUserId = useSelector((state: RootState) => state.auth.user?._id);
+
+  const isOnline = conversation.members.some(
+    (m) => m.userId !== currentUserId && onlineUsers.includes(m.userId)
+  );
+  console.log('isOnline', isOnline);
+
   return (
     <div
       className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer relative 
@@ -52,9 +65,9 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, onSel
       {/* Avatar */}
       <div className="relative">
         <img src={conversation.avatar} alt={conversation.groupName} className="w-10 h-10 rounded-full" />
-        
+
         {/* ✅ Icon online nằm trên cùng bên trái */}
-        {conversation.isOnline && (
+        {isOnline && (
           <div className="absolute top-0 left-0 w-3 h-3 bg-green-500 rounded-full border border-gray-700"></div>
         )}
       </div>

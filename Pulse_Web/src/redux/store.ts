@@ -8,6 +8,9 @@ import followReducer from './slice/followSlice';
 import likesReducer from './slice/likeSlice';
 import notificationReducer from './slice/notificationSlice';
 import commentsReducer from './slice/commentSilce';
+
+import callReducer from './slice/callSlice';
+import incomingCallReducer from './slice/incomingCallSlice';
 export const store = configureStore({
   reducer: {
     auth: authReducer, 
@@ -18,6 +21,8 @@ export const store = configureStore({
     likes: likesReducer,
     comments: commentsReducer,
     notification: notificationReducer,
+    call: callReducer,
+    incomingCall: incomingCallReducer,
   },
 });
 

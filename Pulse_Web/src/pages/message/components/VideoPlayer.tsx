@@ -23,12 +23,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ user }) => {
     user.audioTrack?.play();
   }, [user]);
 
-  return (  
-    <div className="relative rounded-xl overflow-hidden bg-gray-300 aspect-video w-full">
-      <div ref={ref} className="w-full h-full object-cover" />
-      <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded-md text-xs flex items-center gap-1">
-        <span className="text-white/80">{user.uid}</span>
-      </div>
+  return (
+    <div className="relative rounded-2xl bg-black overflow-hidden aspect-video shadow-xl border border-zinc-700">
+      <div ref={ref} className="w-full h-full" />
     </div>
   );
+  
+  
 };

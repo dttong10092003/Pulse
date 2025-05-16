@@ -11,7 +11,14 @@ interface Post {
   userId: string;
   createdAt: string;
   username: string;
-  avatar: string;   
+  avatar: string;
+  sharedPost?: {
+    _id: string;
+    content: string;
+    media?: string[];
+    username: string;
+    avatar: string;
+  };   
 }
 
 interface PostState {
@@ -43,7 +50,7 @@ export const fetchUserPosts = createAsyncThunk(
 export const createPost = createAsyncThunk(
   "postProfile/createPost",
   async (
-    data: { content: string; media?: string[]; tags?: string[] },
+    data: { content: string; media?: string[]; tags?: string[]; sharedPostId?: string },
     { getState, rejectWithValue }
   ) => {
     try {
@@ -65,6 +72,7 @@ export const createPost = createAsyncThunk(
     }
   }
 );
+
 
 export const deletePost = createAsyncThunk(
   "postProfile/deletePost",
@@ -97,7 +105,12 @@ export const fetchAllPosts = createAsyncThunk(
 export const editPost = createAsyncThunk(
   "postProfile/editPost",
   async (
-    data: { postId: string; content?: string; media?: string[] },
+    data: {
+      postId: string;
+      content?: string;
+      media?: string[];
+      tags?: string[]; // ✅ thêm dòng này
+    },
     { getState, rejectWithValue }
   ) => {
     try {
@@ -116,12 +129,13 @@ export const editPost = createAsyncThunk(
         }
       );
 
-      return res.data.post; // return post mới sau khi edit
+      return res.data.post;
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || err.message);
     }
   }
 );
+
 
 
 const postProfileSlice = createSlice({

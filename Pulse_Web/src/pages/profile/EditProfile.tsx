@@ -7,6 +7,7 @@ import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../redux/store';
 import { updateUserDetail, getUserDetails } from '../../redux/slice/userSlice';
 import { getUserProfile } from '../../redux/slice/authSlice';
+import toast from "react-hot-toast";
 interface ProfileFormData {
     phoneNumber: string;
     email: string;
@@ -97,12 +98,12 @@ export default function EditProfile() {
                 }
                 dispatch(getUserDetails(userDetail.userId))
                     .then(() => {
-                        alert("Profile saved successfully!");
+                        toast.success("Profile saved successfully!");
                     });
             })
             .catch((err) => {
                 console.error("Update failed:", err);
-                alert("Failed to update profile.");
+                toast.error("Failed to update profile.");
             });
     };
 

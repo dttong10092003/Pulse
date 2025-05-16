@@ -79,31 +79,21 @@ const ImageModal = ({
   }, [isOpen, postId, dispatch]);
 
   useEffect(() => {
-    if (!commentSocket.connected) commentSocket.connect();
-
-    if (postId) {
-      const eventName = `receive-comment-${postId}`;
-      let receivedFirstComment = false;
-
-      const handler = () => {
-        // Nếu vừa tạo comment trong vòng vài giây, không gọi lại để tránh đè
-        if (receivedFirstComment) return;
-        receivedFirstComment = true;
-
-        setTimeout(() => {
-          receivedFirstComment = false;
-        }, 1000); // sau 1 giây mới cho phép gọi lại
-
-        dispatch(getCommentsByPost(postId));
-      };
-
-      commentSocket.on(eventName, handler);
-      return () => {
-        commentSocket.off(eventName, handler);
-      };
+    if (!commentSocket.connected) {
+      commentSocket.connect();
     }
+  
+    const eventName = `receive-comment-${postId}`;
+    const handler = () => {
+      dispatch(getCommentsByPost(postId));
+    };
+    commentSocket.on(eventName, handler);
+  
+    return () => {
+      commentSocket.off(eventName, handler);
+    };
   }, [dispatch, postId]);
-
+  
   const handleToggleLike = () => {
     if (!postId) return;
     isLiked ? dispatch(unlikePost(postId)) : dispatch(likePost(postId));
