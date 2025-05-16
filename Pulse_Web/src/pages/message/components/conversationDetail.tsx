@@ -799,7 +799,16 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                           alt="pinned-img"
                           className="w-8 h-8 object-cover rounded-md"
                         />
-                      ) : msg.type === 'file' || msg.type === 'audio' || msg.type === 'video' ? (
+                      ) : msg.type === 'audio' ? (
+                        <>
+                          <img
+                            src={fileIcons.sound}
+                            alt="audio-icon"
+                            className="w-6 h-6 object-contain"
+                          />
+                          <span className="truncate">Voice message</span>
+                        </>
+                      ) : msg.type === 'file' || msg.type === 'video' ? (
                         <>
                           <img
                             src={getFileIcon(msg.fileName || getFileNameFromUrl(msg.content))}
@@ -810,7 +819,6 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                         </>
                       ) : (
                         <>
-
                           <span className="truncate">{msg.content}</span>
                         </>
                       )}
@@ -932,7 +940,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
                   {
                     // Kiểm tra nếu tin nhắn trong 24 giờ qua
-                  
+
                     new Date(msg.timestamp).getTime() > Date.now() - 86400000
                       ? formatDistanceToNow(new Date(msg.timestamp), {
                         addSuffix: true,
@@ -981,29 +989,33 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                 </>
               )}
 
-              {!showMenu.isPinned && (
-                <div
-                  onClick={() => handlePinMessage(showMenu._id!)}
-                  className="cursor-pointer p-1 hover:bg-gray-700"
-                >
-                  Pin Message
-                </div>
-              )}
-              {showMenu.isPinned && (
-                <div
-                  onClick={() => handleUnpinMessage(showMenu._id!)}
-                  className="cursor-pointer p-1 hover:bg-gray-700"
-                >
-                  Unpin Message
-                </div>
-              )}
+              {showMenu.type !== 'call' && (
+                <>
+                  {!showMenu.isPinned && (
+                    <div
+                      onClick={() => handlePinMessage(showMenu._id!)}
+                      className="cursor-pointer p-1 hover:bg-gray-700"
+                    >
+                      Pin Message
+                    </div>
+                  )}
+                  {showMenu.isPinned && (
+                    <div
+                      onClick={() => handleUnpinMessage(showMenu._id!)}
+                      className="cursor-pointer p-1 hover:bg-gray-700"
+                    >
+                      Unpin Message
+                    </div>
+                  )}
 
-              <div
-                onClick={() => handleForwardMessage(showMenu)}
-                className="cursor-pointer p-1 hover:bg-gray-700"
-              >
-                Forward Message
-              </div>
+                  <div
+                    onClick={() => handleForwardMessage(showMenu)}
+                    className="cursor-pointer p-1 hover:bg-gray-700"
+                  >
+                    Forward Message
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
