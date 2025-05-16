@@ -601,6 +601,7 @@ const PostCard = ({
           fullView
           postId={postId}
           createdAt={createdAt}
+          idUserShow={postUserId}
         />
       </div>
       {isShareOpen && (

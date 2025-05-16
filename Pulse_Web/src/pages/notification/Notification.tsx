@@ -11,7 +11,7 @@ import { getUserDetails } from '../../redux/slice/userSlice';
 import { FaRegCommentDots, FaHeart, FaUserPlus, FaRegEnvelope } from 'react-icons/fa';
 
 import { useNavigate } from "react-router-dom";
-const tabs = ['all', 'message', 'like', 'comment', 'follow'] as const;
+const tabs = ['all',  'like', 'comment', 'follow'] as const;
 
 const Notification = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -21,7 +21,7 @@ const Notification = () => {
   const userDetailId = userDetail?._id || '';
 
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'all' | 'message' | 'like' | 'comment' | 'follow'>('all');
+  const [activeTab, setActiveTab] = useState<'all'  | 'like' | 'comment' | 'follow'>('all');
   const [error, setError] = useState<string | null>(null);
   const [userMap, setUserMap] = useState<Record<string, any>>({});
   const [postMap, setPostMap] = useState<Record<string, any>>({}); // ✅
