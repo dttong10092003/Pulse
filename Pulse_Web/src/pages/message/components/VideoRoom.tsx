@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import AgoraRTC, {
   IAgoraRTCClient,
   ICameraVideoTrack,
@@ -14,7 +14,7 @@ interface ExtendedUser {
 
 const APP_ID = '660ae1f6941a4d9fa5714e4233cef2c5';
 const TOKEN =
-  '007eJxTYFj6pHTKxvpVv6e3rGB+vDFVbqbDyQM3c9NzxfaFnLloEZCmwGBmZpCYaphmZmlimGiSYpmWaGpuaJJqYmRsnJyaZpRs+mq+UkZDICPDVuFOFkYGCATxmRnKU7IYGADTsiDM';
+  '007eJxTYNi2sUjfjlXi7HHj86un7OKZtOTxytnem0rtfnz0MDKd6/hBgcHMzCAx1TDNzNLEMNEkxTIt0dTc0CTVxMjYODk1zSjZVIRbPaMhkJHhztxDjIwMEAjiMzOUp2QxMAAATyMfTA==';
 const CHANNEL = 'wdj';
 
 AgoraRTC.setLogLevel(4);
@@ -100,7 +100,10 @@ const createAgoraClient = ({
 export const VideoRoom: React.FC = () => {
   const [users, setUsers] = useState<ExtendedUser[]>([]);
   const uidState = useState<string | number | null>(null);
-const setUid = uidState[1];
+  const setUid = uidState[1];
+  const [callDuration, setCallDuration] = useState<number>(0); // tính bằng giây
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
 
   useEffect(() => {
     const onVideoTrack = (user: ExtendedUser) => {
@@ -116,9 +119,22 @@ const setUid = uidState[1];
       onUserDisconnected,
     });
 
+    // const setup = async () => {
+    //   const { tracks, uid } = await connect();
+    //   setUid(uid);
+    //   setUsers((prevUsers) => [
+    //     ...prevUsers,
+    //     {
+    //       uid,
+    //       audioTrack: tracks[0],
+    //       videoTrack: tracks[1],
+    //     },
+    //   ]);
+    // };
     const setup = async () => {
       const { tracks, uid } = await connect();
       setUid(uid);
+
       setUsers((prevUsers) => [
         ...prevUsers,
         {
@@ -127,12 +143,22 @@ const setUid = uidState[1];
           videoTrack: tracks[1],
         },
       ]);
+
+      // ✅ Bắt đầu đếm giây mỗi 1s
+      intervalRef.current = setInterval(() => {
+        setCallDuration((prev) => prev + 1);
+      }, 1000);
     };
+
 
     const cleanup = async () => {
       await disconnect();
       setUid(null);
       setUsers([]);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
 
     agoraCommandQueue = agoraCommandQueue.then(setup);
@@ -143,6 +169,9 @@ const setUid = uidState[1];
 
   return (
     <div className="flex flex-col items-center justify-center w-full min-h-screen bg-[#1a1a1a]">
+      <div className="text-white text-lg font-semibold mb-4">
+        🕒 Duration: {Math.floor(callDuration / 60)} m {callDuration % 60} s
+      </div>
       <div className="w-full max-w-screen-lg p-4 grid gap-4 sm:grid-cols-1 md:grid-cols-2">
         {users.map((user) => (
           <VideoPlayer key={user.uid} user={user} />
@@ -150,5 +179,5 @@ const setUid = uidState[1];
       </div>
     </div>
   );
-  
+
 };

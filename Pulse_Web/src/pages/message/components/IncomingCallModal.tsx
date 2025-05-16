@@ -20,7 +20,6 @@ const IncomingCallModal: React.FC<{ setInVideoCall: (v: boolean) => void }> = ({
     };
 
 
-
     useEffect(() => {
         if (call.visible) {
             audioRef.current = new Audio(RINGTONE_URL);
@@ -29,8 +28,12 @@ const IncomingCallModal: React.FC<{ setInVideoCall: (v: boolean) => void }> = ({
                 console.warn("🔇 Autoplay blocked:", err);
             });
         }
-
+        const autoDecline = setTimeout(() => {
+            console.log("⏳ Tự động từ chối cuộc gọi sau 20s");
+            handleDecline();
+        }, 20000); // 20 giây
         return () => {
+              clearTimeout(autoDecline);
             if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current.currentTime = 0;
@@ -48,7 +51,8 @@ const IncomingCallModal: React.FC<{ setInVideoCall: (v: boolean) => void }> = ({
                 calleeName: `${userDetails.firstname || ''} ${userDetails.lastname || ''}`,
                 calleeAvatar: userDetails.avatar || '',
                 toUserId: call.fromUserId,
-                fromUserId: currentUser?._id || '',
+                // fromUserId: currentUser?._id || '',
+                fromUserId: call.fromUserId,
                 fromName: call.fromName,
                 fromAvatar: call.fromAvatar,
                 isGroup: call.isGroup,

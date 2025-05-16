@@ -4,7 +4,7 @@ import { ClipLoader } from 'react-spinners'; // Import spinner từ react-spinne
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Home from './pages/Home';
-
+import AdminWrapper from './pages/admin/AdminWrapper';
 import UserInfo from './pages/userInfo/UserInfo';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
@@ -46,7 +46,7 @@ const App = () => {
           <Route path="/userinfo" element={<UserInfo />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-
+          <Route path="/admin" element={<AdminWrapper />} />
           {/* ✅ GIỮ cái này để chặn chưa login */}
           <Route
             path="/home/*"

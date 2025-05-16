@@ -56,6 +56,13 @@ const notificationSlice = createSlice({
         return n;
       });
     },
+    removeNotificationByPostId(state, action: PayloadAction<{ postId: string, type: string }>) {
+      state.notifications = state.notifications.filter(
+        (n) => !(n.postId === action.payload.postId && n.type === action.payload.type)
+      );
+      // Cập nhật lại unreadCount
+      state.unreadCount = state.notifications.filter(n => !n.isRead).length;
+    }
   },
 });
 
@@ -64,6 +71,7 @@ export const {
   addNotification,
   markAllAsReadRedux,
   markOneAsReadRedux,
+  removeNotificationByPostId,
 } = notificationSlice.actions;
 
 export default notificationSlice.reducer;

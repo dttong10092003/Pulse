@@ -17,7 +17,9 @@ import PostDetail from "./profile/components/PostDetail";
 const Home = () => {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
-  const isHiddenRightSidebar = location.pathname === "/home/message" || location.pathname === "/home/setting";
+  const isHiddenRightSidebar = ["/message", "/setting", "/admin"].some(path =>
+    location.pathname.startsWith(`/home${path}`)
+  );  
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {

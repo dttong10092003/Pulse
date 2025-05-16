@@ -36,6 +36,8 @@ const Message: React.FC = () => {
   const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
   const [inVideoCall, setInVideoCall] = useState(false);
   const userDetail = useSelector((state: RootState) => state.auth.userDetail);
+  const call = useSelector((state: RootState) => state.call);
+  const [callStartTime, setCallStartTime] = useState<Date | null>(null);
 
 
   useEffect(() => {
@@ -126,7 +128,7 @@ const Message: React.FC = () => {
         />
 
       </div>
-      <CallModal setInVideoCall={setInVideoCall} />
+      <CallModal setInVideoCall={setInVideoCall} setCallStartTime={setCallStartTime} />
       <IncomingCallModal setInVideoCall={setInVideoCall} />
 
       {inVideoCall && (
@@ -140,25 +142,40 @@ const Message: React.FC = () => {
             <button
               onClick={() => {
                 if (selectedConversation && userDetail) {
-                  const endCallMessage: Message = {
-                    conversationId: selectedConversation._id,
-                    senderId: userDetail.userId,
-                    name: `${userDetail.firstname} ${userDetail.lastname}`,
-                    content: "📞 Cuộc gọi đã kết thúc",
-                    type: "text", // ✅ vẫn là text
-                    timestamp: new Date().toISOString(),
-                    isDeleted: false,
-                    isSentByUser: true, // vì là tin do người dùng gửi
-                    isPinned: false,
-                    senderAvatar: userDetail.avatar,
-                  };
+                  const isCaller = userDetail.userId === call.fromUserId;
 
-                  socket.emit('sendMessage', endCallMessage);
+                  if (isCaller) {
+                    let durationText = '';
+                    if (callStartTime) {
+                      const durationMs = new Date().getTime() - callStartTime.getTime();
+                      const totalSeconds = Math.floor(durationMs / 1000);
+                      const minutes = Math.floor(totalSeconds / 60);
+                      const seconds = totalSeconds % 60;
+                      durationText = ` – ⌛ ${minutes}m${seconds}s`;
+                    }
+
+                    const endCallMessage: Message = {
+                      conversationId: selectedConversation._id,
+                      senderId: userDetail.userId,
+                      name: `${userDetail.firstname} ${userDetail.lastname}`,
+                      content: `📞 The call has ended ${durationText}`,
+                      type: "text",
+                      timestamp: new Date().toISOString(),
+                      isDeleted: false,
+                      isSentByUser: true,
+                      isPinned: false,
+                      senderAvatar: userDetail.avatar,
+                    };
+
+                    socket.emit('sendMessage', endCallMessage);
+                  }
                 }
 
-
                 setInVideoCall(false);
+                setCallStartTime(null); // reset thời gian sau khi tắt
               }}
+
+
 
               className="bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-lg transition flex items-center justify-center"
             >
