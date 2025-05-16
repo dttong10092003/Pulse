@@ -11,6 +11,7 @@ import { likePost, unlikePost } from "../../../redux/slice/likeSlice";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
+
 dayjs.extend(relativeTime);
 
 interface Post {
@@ -149,10 +150,7 @@ const PostCard = ({
     if (isLiked) {
       dispatch(unlikePost(postId));
     } else {
-
-      if (userLoginId !== userShowId) {
         handleSendNotification();
-      }
       dispatch(likePost(postId));
 
     }
@@ -429,7 +427,7 @@ const PostCard = ({
             </div>
           )} */}
 
-          {onHoldLike && (
+          {onHoldLike && likes > 0 && (
             <p
               onClick={() => onHoldLike(postId)}
               className="text-xs text-zinc-400 cursor-pointer hover:underline mb-1"
@@ -477,6 +475,7 @@ const PostCard = ({
           fullView
           postId={postId}
           createdAt={createdAt}
+            idUserShow={postUserId}
         />
       </div>
     </div>

@@ -90,6 +90,7 @@ const Media = () => {
                 avatar={modalAvatar}
                 postId={modalPostId}
                 createdAt={modalCreatedAt}
+                idUserShow=""
             />
         </div>
     );
