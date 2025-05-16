@@ -9,10 +9,13 @@ import { fetchLikeCounts, fetchUserLikedPosts } from "../redux/slice/likeSlice";
 import { getCommentCountsByPosts } from "../redux/slice/commentSilce"
 import commentSocket from "../utils/socketComment";
 import toast from "react-hot-toast";
-
+import { useNavigate } from "react-router-dom";
+import { getUserDetails } from "../redux/slice/userSlice";
+import api from "../services/api";
 const MainContent = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { posts, loading } = useSelector((state: RootState) => state.postProfile);
+    const navigate = useNavigate();
     const userDetail = useSelector((state: RootState) => state.auth.userDetail);
     const [postContent, setPostContent] = useState("");
     const [isExpanded, setIsExpanded] = useState(false);
@@ -30,6 +33,39 @@ const MainContent = () => {
         { label: "Photography", color: "bg-blue-400" },
         { label: "Travel", color: "bg-green-400" },
     ];
+
+    const [likeModalOpen, setLikeModalOpen] = useState(false);
+    const [likedUsers, setLikedUsers] = useState<any[]>([]);
+    const [isLoadingLikes, setIsLoadingLikes] = useState(false);
+
+    const handleHoldLike = async (postId: string) => {
+        try {
+            setIsLoadingLikes(true);
+            const res = await api.get(`/likes/${postId}`); // giống MyProfile
+            const likeList = res.data;
+
+            const userDetails: any[] = [];
+            for (const like of likeList) {
+                try {
+                    const user = await dispatch(getUserDetails(like.userId)).unwrap();
+                    userDetails.push({
+                        ...user,
+                        timestamp: like.timestamp
+                    });
+                } catch (err) {
+                    console.error("❌ Lỗi khi lấy user từ userId:", like.userId, err);
+                }
+            }
+
+            setLikedUsers(userDetails);
+            setLikeModalOpen(true);
+        } catch (err) {
+            console.error("❌ Lỗi khi lấy danh sách người đã like:", err);
+        } finally {
+            setIsLoadingLikes(false);
+        }
+    };
+
     useEffect(() => {
         dispatch(fetchAllPosts());
     }, [dispatch]);
@@ -272,15 +308,54 @@ const MainContent = () => {
                     filteredPosts.map((post) => (
                         <Posts
                             key={post._id}
-                            posts={[post]}  
+                            posts={[post]}
                             username={post.username || "Anomymous"}
                             avatar={post.avatar || "https://picsum.photos/200"}
                             commentCounts={commentCounts}
+                            onHoldLike={handleHoldLike}
                         />
                     ))
                 )}
 
             </div>
+            {likeModalOpen && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setLikeModalOpen(false)}>
+                    <div className="bg-zinc-900 p-6 rounded-lg w-96 max-h-[70vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
+                        <h2 className="text-xl font-semibold mb-4 text-white text-center">
+                            People liked the post ({likedUsers.length})
+                        </h2>
+                        <button className="absolute top-4 right-4 text-white cursor-pointer" onClick={() => setLikeModalOpen(false)}>
+                            <X size={24} />
+                        </button>
+
+                        {isLoadingLikes ? (
+                            <p className="text-center text-zinc-400">Loading list...</p>
+                        ) : likedUsers.length === 0 ? (
+                            <p className="text-center text-zinc-400">No one has liked this post yet.</p>
+                        ) : (
+                            <ul className="space-y-3">
+                                {likedUsers.map((user, idx) => (
+                                    <li
+                                        key={idx}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate(`/home/user-info/${user._id}`);
+                                        }}
+                                        className="flex items-center gap-3 p-2 hover:bg-zinc-800 rounded cursor-pointer"
+                                    >
+                                        <img
+                                            src={user.avatar || "https://i.pravatar.cc/100"}
+                                            className="w-8 h-8 rounded-full object-cover"
+                                        />
+                                        <span className="text-white">{user.firstname} {user.lastname}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </div>
+            )}
+
         </main>
     );
 };

@@ -461,16 +461,16 @@ const MyProfile = () => {
                     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setLikeModalOpen(false)}>
                         <div className="bg-zinc-900 p-6 rounded-lg w-96 max-h-[70vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
                             <h2 className="text-xl font-semibold mb-4 text-white text-center">
-                                Người đã like bài viết ({likedUsers.length})
+                                People who liked the post ({likedUsers.length})
                             </h2>
-                            <button className="absolute top-4 right-4 text-white" onClick={() => setLikeModalOpen(false)}>
+                            <button className="absolute top-4 right-4 text-white cursor-pointer" onClick={() => setLikeModalOpen(false)}>
                                 <X size={24} />
                             </button>
 
                             {isLoadingLikes ? (
-                                <p className="text-center text-zinc-400">Đang tải danh sách...</p>
+                                <p className="text-center text-zinc-400">Loading list...</p>
                             ) : likedUsers.length === 0 ? (
-                                <p className="text-center text-zinc-400">Chưa có ai like bài viết này.</p>
+                                <p className="text-center text-zinc-400">No one has liked this post yet.</p>
                             ) : (
                                 <ul className="space-y-3">
 

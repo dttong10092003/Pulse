@@ -8,7 +8,8 @@ import {
   removeMemberFromConversation, updateAdminInConversation, removeConversation, addMemberToConversation,
   updateGroupAvatar, updateGroupName,
   unhideConversation, deleteConversation,
-  updateMessagePinned
+  updateMessagePinned,
+  setOnlineUsers
 } from '../redux/slice/chatSlice';
 import { Message, Member } from '../redux/slice/types';
 import { toast } from 'react-toastify';
@@ -20,6 +21,46 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   const hasConnected = useRef(false);
   const conversationsRef = useRef(conversations);
+
+  useEffect(() => {
+    if (!user?._id) return;
+
+    const sendOnline = () => socket.emit("userOnline", user._id);
+    sendOnline(); // gửi lần đầu
+
+    const interval = setInterval(sendOnline, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user?._id]);
+
+
+  useEffect(() => {
+    if (!user?._id || conversations.length === 0) return;
+
+    const sendCheckOnline = () => {
+      const memberSet = new Set<string>();
+      conversations.forEach((conv) => {
+        conv.members.forEach((m) => {
+          if (m.userId !== user._id) {
+            memberSet.add(m.userId);
+          }
+        });
+      });
+
+      const memberIds = Array.from(memberSet);
+      if (socket.connected) {
+        socket.emit("checkOnlineUsers", memberIds, (onlineIds: string[]) => {
+          console.log('Online userssssssssssssss:', onlineIds);
+          dispatch(setOnlineUsers(onlineIds));
+        });
+      }
+    };
+
+    sendCheckOnline(); // gửi lần đầu
+    const interval = setInterval(sendCheckOnline, 45 * 1000);
+
+    return () => clearInterval(interval);
+  }, [conversations, user?._id, dispatch]);
+
 
   // Cập nhật conversationsRef mỗi lần conversations thay đổi
   useEffect(() => {
@@ -161,6 +202,11 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
       dispatch(updateMessagePinned({ conversationId, messageId, pinned: false }));
     });
 
+    socket.on("rateLimitExceeded", (data) => {
+      toast.error(data.message ||
+        "You are sending messages too quickly. Please slow down.", {toastId: "rate-limit"});
+    });
+
 
     return () => {
       socket.off('receiveMessage', handleReceiveMessage);
@@ -176,6 +222,7 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
       socket.off('groupDisbanded');
       socket.off('messagePinned');
       socket.off('messageUnpinned');
+      socket.off("rateLimitExceeded");
       socket.disconnect();
       hasConnected.current = false;
     };
