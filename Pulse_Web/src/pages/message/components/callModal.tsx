@@ -3,14 +3,32 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../../redux/store';
 import { acceptedCall, closeCall, endCall, rejectedCall, startCall } from '../../../redux/slice/callSlice';
 import socketCall from '../../../utils/socketCall';
+import socket from '../../../utils/socket';
+
+interface Message {
+  conversationId: string;
+  senderId: string;
+  name: string;
+  content: string;
+  type: string;
+  timestamp: string;
+  isDeleted: boolean;
+  isSentByUser: boolean;
+  isPinned: boolean;
+  senderAvatar: string;
+}
 interface CallModalProps {
   setInVideoCall: (v: boolean) => void;
+  setCallStartTime: React.Dispatch<React.SetStateAction<Date | null>>;
 }
-const CallModal: React.FC<CallModalProps> = ({ setInVideoCall }) => {
+const CallModal: React.FC<CallModalProps> = ({ setInVideoCall, setCallStartTime }) => {
 
   const dispatch = useDispatch();
   const call = useSelector((state: RootState) => state.call);
+  const currentUser = useSelector((state: RootState) => state.auth.user); // Add this line to get currentUser from Redux (adjust path if needed)
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
+  const userDetail = useSelector((state: RootState) => state.auth.userDetail);
 
 
   useEffect(() => {
@@ -19,6 +37,7 @@ const CallModal: React.FC<CallModalProps> = ({ setInVideoCall }) => {
 
         dispatch(acceptedCall());
         setInVideoCall(true);
+        setCallStartTime(new Date());
       } catch (err) {
         console.error("Failed to join Agora:", err);
       }
@@ -58,12 +77,40 @@ const CallModal: React.FC<CallModalProps> = ({ setInVideoCall }) => {
 
     let timeout: NodeJS.Timeout;
 
+    // if (call.isCalling && !call.isOngoing) {
+    //   timeout = setTimeout(() => {
+    //     dispatch(endCall());
+    //   }, 20000); // 10s mới tắt nếu chưa nhận
+    // }
     if (call.isCalling && !call.isOngoing) {
       timeout = setTimeout(() => {
+        // Nếu người kia không accept sau 20 giây → gọi là cuộc gọi nhỡ
         dispatch(endCall());
-      }, 20000); // 10s mới tắt nếu chưa nhận
-    }
+        socketCall.emit("callTimeout", {
+          toUserId: call.toUserId,
+          fromUserId: call.fromUserId,
+        });
+        console.log(" Timeout → Gửi callTimeout tới", call.toUserId);
 
+
+        if (call.fromUserId && call.toUserId && call.fromUserId === currentUser?._id) {
+          const missedCallMessage: Message = {
+            conversationId: selectedConversation?._id || '',
+            senderId: currentUser._id,
+            name: `${userDetail?.firstname || ''} ${userDetail?.lastname || ''}`,
+            content: '📞 You missed the call',
+            type: 'text',
+            timestamp: new Date().toISOString(),
+            isDeleted: false,
+            isSentByUser: true,
+            isPinned: false,
+            senderAvatar: userDetail?.avatar || '',
+          };
+
+          socket.emit('sendMessage', missedCallMessage);
+        }
+      }, 20000);
+    }
     return () => {
       if (timeout) clearTimeout(timeout);
 

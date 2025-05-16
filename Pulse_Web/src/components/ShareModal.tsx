@@ -4,7 +4,8 @@ import { useDispatch } from "react-redux";
 import { AppDispatch } from "../redux/store";
 import { createPost, fetchAllPosts } from "../redux/slice/postProfileSlice";
 import toast from "react-hot-toast";
-
+import { useParams } from "react-router-dom";
+import { fetchUserPosts } from "../redux/slice/postProfileSlice";
 interface ShareModalProps {
   onClose: () => void;
   sharedPost: {
@@ -20,25 +21,28 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, sharedPost }) => {
   const [content, setContent] = useState("");
   const dispatch = useDispatch<AppDispatch>();
   // const userId = useSelector((state: RootState) => state.auth.user?._id);
+  const { id } = useParams();
+  const handleShare = async () => {
+    try {
+      await dispatch(
+        createPost({
+          content,
+          sharedPostId: sharedPost._id,
+          tags: ["Share"],
+        })
+      ).unwrap();
+      await dispatch(fetchAllPosts());
+      if (id) {
+        await dispatch(fetchUserPosts(id)); //cập nhật lại bài viết của user đang được xem
+      }
 
-const handleShare = async () => {
-  try {
-    await dispatch(
-      createPost({
-        content,
-        sharedPostId: sharedPost._id,
-        tags: ["Share"],
-      })
-    ).unwrap();
-    await dispatch(fetchAllPosts());
-    // await dispatch(fetchUserPosts(userId!));
 
-    toast.success("Share successfully!");
-    onClose();
-  } catch (err) {
-    toast.error("Share failure: " + err);
-  }
-};
+      toast.success("Share successfully!");
+      onClose();
+    } catch (err) {
+      toast.error("Share failure: " + err);
+    }
+  };
 
 
   return (
