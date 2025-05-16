@@ -167,6 +167,20 @@ export const getTopUsersExcludingFollowed = createAsyncThunk(
   }
 );
 
+export const getAllUsers = createAsyncThunk(
+  'user/getAllUsers',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${USER_SERVICE_URL}/all`); // Gọi API /users
+      return response.data; // Trả về danh sách người dùng
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || error.message);
+      }
+      return rejectWithValue('Failed to fetch all users');
+    }
+  }
+);
 
 // User slice
 const userSlice = createSlice({
@@ -256,6 +270,18 @@ const userSlice = createSlice({
         state.top10Users = action.payload;
       })
       .addCase(getTopUsersExcludingFollowed.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(getAllUsers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getAllUsers.fulfilled, (state, action: PayloadAction<any[]>) => {
+        state.loading = false;
+        state.top10Users = action.payload; // Dùng chung biến để hiển thị
+      })
+      .addCase(getAllUsers.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
