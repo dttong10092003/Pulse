@@ -31,7 +31,9 @@ const incomingCallSlice = createSlice({
     ) => {
       return { ...action.payload, visible: true };
     },
-    hideIncomingCall: () => initialState,
+    hideIncomingCall: (state) => {
+      state.visible = false; // ⛳ QUAN TRỌNG: đảm bảo có dòng này
+    },
   },
 });
 
