@@ -5,6 +5,7 @@ import { Posts, Featured, Media } from "./components";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../redux/store";
 import { io } from "socket.io-client";  // Kết nối WebSocket
+import socketMess from '../../utils/socket'; // Kết nối WebSocket
 // import { createNotification } from "../../redux/slice/notificationSlice"; // Import action createNotification
 const URL_NOTI = import.meta.env.VITE_API_URL_NOTI; // Địa chỉ WebSocket
 const socket = io(URL_NOTI);
@@ -23,10 +24,12 @@ import { getFollowingsByUserId } from "../../redux/slice/followSlice";
 import axios from "axios";
 import api from "../../services/api";
 import { getUserDetails } from "../../redux/slice/userSlice";
+import { setSelectedConversation } from "../../redux/slice/chatSlice";
 const UserInfo_Follow = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { id } = useParams<{ id: string }>();
+  const conversations = useSelector((state: RootState) => state.chat.conversations);
   const userDetail = useSelector((state: RootState) => state.user.userDetails);
   const currentUser = useSelector((state: RootState) => state.auth.user?._id);
   // const user = useSelector((state: RootState) => state.user);
@@ -45,6 +48,46 @@ const UserInfo_Follow = () => {
   const [likeModalOpen, setLikeModalOpen] = useState(false);
   const [likedUsers, setLikedUsers] = useState<any[]>([]);
   const [isLoadingLikes, setIsLoadingLikes] = useState(false);
+
+  const handleMessageClick = () => {
+    if (!profileUser || !currentUser || !userDetail) return;
+
+    const userA = {
+      userId: currentUser,
+      name: `${userDetail.firstname} ${userDetail.lastname}`,
+      avatar: userDetail.avatar || "",
+    };
+
+    const userB = {
+      userId: profileUser.userId,
+      name: `${profileUser.firstname} ${profileUser.lastname}`,
+      avatar: profileUser.avatar || '',
+    };
+
+    const membersIds = [userA.userId, userB.userId].sort();
+
+    const existingConversation = conversations.find(convo =>
+      !convo.isGroup &&
+      convo.members.every(member => membersIds.includes(member.userId))
+    );
+
+    if (existingConversation) {
+      dispatch(setSelectedConversation(existingConversation));
+      navigate("/home/message");
+    } else {
+      const conversationData = {
+        members: [
+          { userId: userA.userId, name: userA.name, avatar: userA.avatar },
+          { userId: userB.userId, name: userB.name, avatar: userB.avatar }
+        ],
+        isGroup: false,
+      };
+      socketMess.emit("createPrivateConversation", conversationData);
+      // đợi server phản hồi, socket 'newConversation' sẽ cập nhật Redux
+      navigate("/home/message");
+
+    }
+  };
 
 
   const handleHoldLike = async (postId: string) => {
@@ -249,9 +292,24 @@ const UserInfo_Follow = () => {
             <h2 className="text-2xl font-bold">{fullName}</h2>
             <p className="text-zinc-400 mt-2">{userDetail.bio}</p>
           </div>
-          <button className="text-white px-4 py-2 bg-zinc-700 rounded-full hover:bg-zinc-800 cursor-pointer" onClick={handleFollowToggle}>
+          {/* <button className="text-white px-4 py-2 bg-zinc-700 rounded-full hover:bg-zinc-800 cursor-pointer" onClick={handleFollowToggle}>
             {isFollowing ? "Unfollow" : "Follow"}
-          </button>
+          </button> */}
+          <div className="flex gap-3">
+            <button
+              className="text-white px-4 py-2 bg-blue-600 rounded-full hover:bg-blue-700 cursor-pointer"
+              onClick={handleMessageClick}
+            >
+              Message
+            </button>
+
+            <button
+              className="text-white px-4 py-2 bg-zinc-700 rounded-full hover:bg-zinc-800 cursor-pointer"
+              onClick={handleFollowToggle}
+            >
+              {isFollowing ? "Unfollow" : "Follow"}
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 flex items-center justify-between w-full text-zinc-400">
