@@ -128,7 +128,7 @@ const Sidebar = () => {
 
     return (
         <aside
-            className={`fixed top-0 left-0 h-screen ${showSidebar ? 'w-72' : 'w-20'} bg-[#1F1F1F] text-white p-3 flex flex-col justify-between border-r border-zinc-800 transition-all duration-300`}
+            className={`fixed top-0 left-0 h-screen ${showSidebar ? 'w-72' : 'w-20'} bg-[#1F1F1F] text-white p-6 flex flex-col justify-between border-r border-zinc-800 transition-all duration-300`}
         >
             <div>
                 <a href="/home" className={`text-[#00FF7F] ${showSidebar ? 'text-3xl' : 'text-sm'} font-bold`}>

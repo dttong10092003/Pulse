@@ -19,7 +19,7 @@ const Login = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { loading } = useSelector((state: RootState) => state.auth);
 
-  const [form, setForm] = useState({ username: 'hachi11', password: 'hachi11' });
+  const [form, setForm] = useState({ username:"", password:""});
   const [errorText, setErrorText] = useState("");
   const [isBtnEnable, setIsBtnEnable] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -87,8 +87,12 @@ const Login = () => {
       .then((res) => {
         // Token đã được lưu vào localStorage trong reducer
         // console.log("Login successful, token:", res.token);
-
+        if (res.user.isAdmin) {
+          navigate('/admin');
+          return; // ✅ không cần gọi getUserProfile nữa
+        }
         // Gọi API để lấy thông tin chi tiết người dùng
+        
         dispatch(getUserProfile(res.token))
           .unwrap()
           .then(async (profileRes) => {
