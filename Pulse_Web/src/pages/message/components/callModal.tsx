@@ -47,7 +47,7 @@ const CallModal: React.FC<CallModalProps> = ({ setInVideoCall, setCallStartTime 
     return () => {
       socketCall.off('callAccepted');
     };
-  }, [dispatch, call.isVideo]);
+  }, [dispatch, call.isVideo, setInVideoCall, setCallStartTime]);
 
 
 
@@ -62,7 +62,7 @@ const CallModal: React.FC<CallModalProps> = ({ setInVideoCall, setCallStartTime 
     return () => {
       socketCall.off("callDeclined");
     };
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     if (call.isCalling) {
@@ -99,7 +99,7 @@ const CallModal: React.FC<CallModalProps> = ({ setInVideoCall, setCallStartTime 
             senderId: currentUser._id,
             name: `${userDetail?.firstname || ''} ${userDetail?.lastname || ''}`,
             content: '📞 You missed the call',
-            type: 'text',
+            type: 'call',
             timestamp: new Date().toISOString(),
             isDeleted: false,
             isSentByUser: true,
@@ -119,7 +119,18 @@ const CallModal: React.FC<CallModalProps> = ({ setInVideoCall, setCallStartTime 
         audioRef.current.currentTime = 0;
       }
     };
-  }, [call.isCalling, call.isOngoing]); // 👈 nhớ thêm call.isOngoing vào dependency
+  }, [
+    call.isCalling,
+    call.isOngoing,
+    call.fromUserId,
+    call.toUserId,
+    currentUser?._id,
+    dispatch,
+    selectedConversation?._id,
+    userDetail?.avatar,
+    userDetail?.firstname,
+    userDetail?.lastname
+  ]); // 👈 nhớ thêm call.isOngoing vào dependency
 
 
   if (!call.isVisible && !call.isOngoing) return null;
