@@ -124,27 +124,88 @@ const Notification = () => {
 
   // };
 
-  const handleReadOne = async (noti: typeof notifications[number]) => {
-    try {
+ const handleReadOne = async (noti: typeof notifications[number]) => {
+  try {
+    if (noti.type === 'like' && noti.postId) {
+      // 🔁 Tìm tất cả noti like cùng postId, chưa đọc
+      const related = notifications.filter(
+        (n) => n.type === 'like' && n.postId === noti.postId && !n.isRead
+      );
+
+      // 🔁 Gọi từng API read-one
+      await Promise.all(related.map(n =>
+        api.patch(`/noti/read-one/${n._id}`, { userId: userDetailId })
+      ));
+
+      // ✅ Dispatch mark từng cái
+      related.forEach(n =>
+        dispatch(markOneAsReadRedux(n._id))
+      );
+
+      // 👉 Navigate đến bài viết
+        navigate(`/home/user-info/${noti.receiverId}`);
+    } else {
+      // Các loại noti khác
       await api.patch(`/noti/read-one/${noti._id}`, { userId: userDetailId });
       dispatch(markOneAsReadRedux(noti._id));
 
-      // Điều hướng tùy loại thông báo
-      if (noti.type === 'like' || noti.type === 'follow') {
+      if (noti.type === 'follow') {
         navigate(`/home/user-info/${noti.senderId}`);
       } else if (noti.type === 'comment' && noti.postId) {
-        navigate(`/home/posts/${noti.postId}`);
+          navigate(`/home/user-info/${noti.receiverId}`);
       }
-      // message thì không navigate
-    } catch (err) {
-      console.error("❌ handleReadOne error:", err);
     }
-  };
+  } catch (err) {
+    console.error("❌ handleReadOne error:", err);
+  }
+};
 
 
-  const filtered = activeTab === 'all'
-    ? notifications
-    : notifications.filter(n => n.type === activeTab);
+
+
+
+
+
+  type NotificationWithCount = typeof notifications[number] & { likeCount?: number };
+
+  let filtered: NotificationWithCount[] = [];
+
+  // 🔁 Gom tất cả thông báo LIKE theo postId
+  const likeMap = new Map<string, NotificationWithCount[]>();
+
+  notifications.forEach(noti => {
+    if (noti.type === 'like' && noti.postId) {
+      if (!likeMap.has(noti.postId)) {
+        likeMap.set(noti.postId, []);
+      }
+      likeMap.get(noti.postId)!.push(noti);
+    }
+  });
+
+  // 🧠 Gộp mỗi bài viết lại 1 noti, và tính likeCount
+  const gopLike = Array.from(likeMap.entries()).map(([, notis]) => {
+    const sorted = [...notis].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const newest = sorted[0];
+    return {
+      ...newest,
+      likeCount: sorted.length
+    };
+  });
+
+  // 📦 Tạo danh sách filtered tuỳ theo tab
+  if (activeTab === 'like') {
+    filtered = gopLike;
+  } else if (activeTab === 'all') {
+    // các noti khác + các noti like đã gộp
+    filtered = [
+      ...notifications.filter(n => n.type !== 'like'),
+      ...gopLike
+    ];
+  } else {
+    // các noti khác cùng loại
+    filtered = notifications.filter(n => n.type === activeTab);
+  }
+
 
   return (
     <div className="w-full h-screen bg-zinc-900 text-white p-6 text-lg">
@@ -196,44 +257,56 @@ const Notification = () => {
                       {sender ? `${sender.firstname} ${sender.lastname}` : "Đang tải..."}
                     </span>
                     <span className="truncate">
-                      {noti.type === 'like' ? (
-                        <>
-                          đã thích bài viết{' '}
-                          <span className="font-semibold text-blue-400">
-                            {postMap[noti.postId!]?.content || '...'}
-                          </span>
-                          {postMap[noti.postId!]?.likesCount > 1 && (
+                      {
+                        noti.type === 'like' && postMap[noti.postId!] ? (
+                          noti.likeCount && noti.likeCount <= 1 ? (
                             <>
-                              {' '}cùng với{' '}
-                              <span className="font-semibold text-yellow-300">
-                                {postMap[noti.postId!]?.likesCount - 1}
-                              </span>{' '}
-                              người khác
+                              đã thích bài viết{' '}
+                              <span className="font-semibold text-blue-400">
+                                {postMap[noti.postId!]?.content || '...'}
+                              </span>
                             </>
-                          )}
-                        </>
-                      ) : noti.type === 'follow' ? (
+                          ) : (
+                            <>
+                              và{' '}
+                              <span className="font-semibold text-yellow-300">
+                                {noti.likeCount! - 1}
+                              </span>{' '}
+                              người khác đã thích bài viết{' '}
+                              <span className="font-semibold text-blue-400">
+                                {postMap[noti.postId!]?.content || '...'}
+                              </span>
+                            </>
+                          )
 
-                        <>đã bắt đầu theo dõi bạn</>
-                      ) : noti.type === 'message' ? (
-                        <>
-                          đã gửi tin nhắn: "
-                          <span className="italic text-zinc-300">
-                            {noti.messageContent || '...'}
-                          </span>
-                          "
-                        </>
-                      ) : noti.type === 'comment' ? (
-                        <>
-                          đã bình luận: "
-                          <span className="italic text-purple-300">
-                            {noti.commentContent || '...'}
-                          </span>
-                          "
-                        </>
-                      ) : (
-                        <>thông báo không xác định</>
-                      )}
+                        ) : noti.type === 'follow' ? (
+
+                          <>đã bắt đầu theo dõi bạn</>
+                        ) : noti.type === 'message' ? (
+                          <>
+                            đã gửi tin nhắn: "
+                            <span className="italic text-zinc-300">
+                              {noti.messageContent || '...'}
+                            </span>
+                            "
+                          </>
+                        ) :
+                          noti.type === 'comment' ? (
+                            <>
+                              đã bình luận: "
+                              <span className="italic text-purple-300">
+                                {noti.commentContent || '...'}
+                              </span>
+                              " trong bài viết{' '}
+                              <span className="font-semibold text-blue-400">
+                                {postMap[noti.postId!]?.content || '...'}
+                              </span>{' '}
+                              của bạn
+                            </>
+                          ) : (
+                            <>thông báo không xác định</>
+                          )
+                      }
                     </span>
                   </div>
                 </div>

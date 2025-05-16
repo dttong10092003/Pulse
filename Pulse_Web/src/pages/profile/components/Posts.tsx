@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ShareModal from "../../../components/ShareModal";
 import toast from "react-hot-toast";
+
 dayjs.extend(relativeTime);
 
 interface Post {
@@ -187,7 +188,9 @@ const PostCard = ({
     } else {
 
       if (userLoginId !== userShowId) {
+   
         handleSendNotification();
+       
       }
       dispatch(likePost(postId));
 

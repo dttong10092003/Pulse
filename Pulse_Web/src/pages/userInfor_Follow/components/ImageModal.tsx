@@ -22,6 +22,8 @@ import { likePost, unlikePost } from "../../../redux/slice/likeSlice";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { Image as ImageIcon } from "lucide-react";
+import axios from "axios";
+
 dayjs.extend(relativeTime);
 interface Props {
   isOpen: boolean;
@@ -34,6 +36,7 @@ interface Props {
   fullView?: boolean;
   postId: string;
   createdAt: string;
+  idUserShow: string;
 }
 
 const ImageModal = ({
@@ -46,6 +49,7 @@ const ImageModal = ({
   content,
   postId,
   createdAt,
+  idUserShow,
 }: Props) => {
   const [index, setIndex] = useState(startIndex);
   const [commentText, setCommentText] = useState("");
@@ -59,7 +63,7 @@ const ImageModal = ({
   const isLiked = likedPostIds.includes(postId);
   const [expandedComments, setExpandedComments] = useState<{ [key: string]: boolean }>({});
   const inputRef = useRef<HTMLInputElement>(null);
-
+  const URL_NOTI = import.meta.env.VITE_API_URL_NOTI; // Địa chỉ WebSocket
   useEffect(() => {
     setIndex(startIndex);
 
@@ -103,6 +107,38 @@ const ImageModal = ({
     setExpandedComments((prev) => ({ ...prev, [commentId]: !prev[commentId] }));
   };
 
+  const userLoginId =authUser?.userId;
+  const userShowId = idUserShow;
+
+   const handleSendNotification = async () => {
+    try {
+      const senderId = userLoginId;
+      const receiverIds: string[] = [userShowId];
+      if(userLoginId === userShowId)  return;
+      if (commentText.trim() === "") return;
+
+      await axios.post(`${URL_NOTI}/noti/create`, {
+        type: "comment",
+        senderId,
+        receiverIds,
+        messageContent: "",
+        postId: postId,
+        commentContent: commentText,
+      });
+
+      // alert('Gửi thông báo thành công!');
+
+    } catch (err) {
+      console.error('Gửi thông báo thất bại', err);
+      alert('Gửi thông báo thất bại!');
+    }
+  };
+  // console.log("-------------------------");
+  // console.log("postId : ", postId);
+  // console.log(" user loginId : ", authUser?.userId);
+  // console.log("user showId : ", idUserShow);
+  // console.log("----------------------------");
+  
   const handleSubmitComment = async () => {
     if (!postId || !commentText.trim()) return;
 
@@ -111,6 +147,7 @@ const ImageModal = ({
         await dispatch(addReply({ commentId: replyingToCommentId, text: commentText.trim() }));
         setExpandedComments((prev) => ({ ...prev, [replyingToCommentId]: true }));
         setReplyingToCommentId(null);
+         
       } else {
         if (!authUser) return;
         await dispatch(createComment({
@@ -119,6 +156,8 @@ const ImageModal = ({
         }));
       }
       await dispatch(getCommentCountsByPosts([postId]));
+      handleSendNotification();
+
 
       setCommentText("");
     } catch (err) {

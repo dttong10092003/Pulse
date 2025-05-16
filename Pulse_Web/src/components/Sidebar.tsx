@@ -23,7 +23,7 @@ const Sidebar = () => {
     // const userDetailLogin = useSelector((state: RootState) => state.auth.userDetail); 
     // const userLoginID =   userDetailLogin?.userId || "";
     const userLoginID = useSelector((state: RootState) => state.auth.user?._id) || "";
-    console.log("userLoginID : ", userLoginID);
+ 
 
     // cũ 
     // useEffect(() => {
@@ -75,7 +75,7 @@ const Sidebar = () => {
             try {
                 const res = await api.get(`/noti/get-all?userId=${userLoginID}`);
                 dispatch(setAllNotifications(res.data));
-                console.log("📥 Lấy thông báo ban đầu:", res.data);
+                // console.log("📥 Lấy thông báo ban đầu:", res.data);
             } catch (err) {
                 console.error("Lỗi lấy thông báo ban đầu:", err);
             }
