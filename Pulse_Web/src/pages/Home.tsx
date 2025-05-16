@@ -8,7 +8,6 @@ import Explore from "./explore/Explore";
 import Setting from "./setting/AccountSettings";
 import Notification from "./notification/Notification";
 import UserInfo_Follow from "./userInfor_Follow/UserInfo_Follow";
-import Admin from "./admin/AdminPage";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { getUserProfile } from '../redux/slice/authSlice';
