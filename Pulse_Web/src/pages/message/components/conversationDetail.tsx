@@ -746,6 +746,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
                   {
                     // Kiểm tra nếu tin nhắn trong 24 giờ qua
+                  
                     new Date(msg.timestamp).getTime() > Date.now() - 86400000
                       ? formatDistanceToNow(new Date(msg.timestamp), {
                         addSuffix: true,
