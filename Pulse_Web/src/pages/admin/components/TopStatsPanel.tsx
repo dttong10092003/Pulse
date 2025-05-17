@@ -9,33 +9,35 @@ const TopStatsPanel = () => {
   const loadingTopStats = useSelector((state: RootState) => state.postProfile.loadingTopStats);
 
   useEffect(() => {
-    dispatch(fetchTopStats());
-  }, []);
+    if (!topStats) {
+      dispatch(fetchTopStats());
+    }
+  }, [dispatch, topStats]);
 
   const renderTable = (
     title: string,
     data: { id: string; user: string; content: string; metric: number }[],
     metricLabel: string
   ) => (
-    <div className="bg-white rounded-2xl p-4 shadow mb-6">
-      <h3 className="text-lg font-semibold mb-3 text-blue-600">{title}</h3>
+    <div className="bg-white rounded-2xl p-3 shadow mb-3">
+      <h3 className="text-lg font-semibold mb-2 text-blue-600">{title}</h3>
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left text-gray-700">
           <thead className="text-xs text-gray-500 uppercase bg-gray-100">
-            <tr>
-              <th className="px-4 py-2">STT</th>
-              <th className="px-4 py-2">User</th>
-              <th className="px-4 py-2">Content</th>
-              <th className="px-4 py-2">{metricLabel}</th>
+            <tr className="h-5.7">
+              <th className="w-[10%]">STT</th>
+              <th className="w-[30%]">User</th>
+              <th className="w-[55%]">Content</th>
+              <th className="w-[5%]">{metricLabel}</th>
             </tr>
           </thead>
           <tbody>
             {data.map((post, index) => (
-              <tr key={post.id} className="border-b">
-                <td className="px-4 py-2">{index + 1}</td>
-                <td className="px-4 py-2">{post.user}</td>
-                <td className="px-4 py-2 truncate max-w-[250px]">{post.content}</td>
-                <td className="px-4 py-2 font-medium text-right">{post.metric}</td>
+              <tr key={`${post.id}-${index}`} className="border-b" style={{ height: '25px' }}>
+                <td className="w-[10%]">{index + 1}</td>
+                <td className="w-[30%]">{post.user}</td>
+                <td className="w-[55%] truncate max-w-[250px]">{post.content}</td>
+                <td className="w-[5%] font-medium text-right">{post.metric}</td>
               </tr>
             ))}
           </tbody>
@@ -44,7 +46,7 @@ const TopStatsPanel = () => {
     </div>
   );
 
-  if (loadingTopStats || !topStats){
+  if (loadingTopStats || !topStats) {
     return (
       <div className="text-white bg-zinc-900 p-6 rounded-xl shadow">
         ⏳ Loading top stats...
@@ -53,14 +55,12 @@ const TopStatsPanel = () => {
   }
 
   return (
-    <div className="text-white space-y-6">
-      <h2 className="text-xl font-bold mb-4">📊 Top Posts Stats</h2>
-
+    <div className="text-white mt-1">
       {renderTable(
         "🔥 Most Liked Posts",
         topStats.topLikedPosts.map(p => ({
           id: p._id,
-          user: p.username,
+          user: p.user,
           content: p.content,
           metric: p.likes || 0
         })),
@@ -71,7 +71,7 @@ const TopStatsPanel = () => {
         "💬 Most Commented Posts",
         topStats.topCommentedPosts.map(p => ({
           id: p._id,
-          user: p.username,
+          user: p.user,
           content: p.content,
           metric: p.comments || 0
         })),
@@ -82,7 +82,7 @@ const TopStatsPanel = () => {
         "🔄 Most Shared Posts",
         topStats.topSharedPosts.map(p => ({
           id: p._id,
-          user: p.username,
+          user: p.user,
           content: p.content,
           metric: p.shares || 0
         })),
