@@ -104,6 +104,7 @@ const UserInfo_Follow = () => {
           const user = await dispatch(getUserDetails(like.userId)).unwrap();
           userDetails.push({
             ...user,
+            _id: user.userId || user._id,
             timestamp: like.timestamp
           });
         } catch (err) {
@@ -447,7 +448,11 @@ const UserInfo_Follow = () => {
                 {likedUsers.map((user, idx) => (
                   <li
                     key={idx}
-                    onClick={() => navigate(`/home/user-info/${user._id}`)}
+                    onClick={() => {
+                      setLikeModalOpen(false);
+                      navigate(`/home/user-info/${user.userId || user._id}`);
+                    }}
+
                     className="flex items-center gap-3 p-2 hover:bg-zinc-800 rounded cursor-pointer"
                   >
                     <img
