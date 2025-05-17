@@ -959,67 +959,79 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
       {/* Menu context */}
       {showMenu && (
-        <div
-          className="absolute bg-gray-800 text-white p-2 rounded-lg shadow-lg"
-          style={{ top: menuPosition.top, left: menuPosition.left, zIndex: 999 }}
-        >
-          {showMenu.isDeleted ? (
-            <div
-              onClick={() => handleDeleteMessage(showMenu._id!)}
-              className="cursor-pointer p-1 hover:bg-gray-700"
-            >
-              Delete Message
-            </div>
-          ) : (
-            <>
-              {showMenu.senderId === currentUserId && (
-                <>
-                  <div
-                    onClick={() => handleDeleteMessage(showMenu._id!)}
-                    className="cursor-pointer p-1 hover:bg-gray-700"
-                  >
-                    Delete Message
-                  </div>
-                  <div
-                    onClick={() => handleRevokeMessage(showMenu._id!)}
-                    className="cursor-pointer p-1 hover:bg-gray-700"
-                  >
-                    Revoke Message
-                  </div>
-                </>
-              )}
+        // ❌ Không hiển thị nếu là tin nhắn gọi của người khác hoặc đã thu hồi và không phải của mình
+        ((showMenu.senderId !== currentUserId && showMenu.type === 'call') ||
+          (showMenu.isDeleted && showMenu.senderId !== currentUserId)) ? null : (
 
-              {showMenu.type !== 'call' && (
-                <>
-                  {!showMenu.isPinned && (
+          <div
+            className="absolute bg-gray-800 text-white p-2 rounded-lg shadow-lg"
+            style={{ top: menuPosition.top, left: menuPosition.left, zIndex: 999 }}
+          >
+            {/* Nếu đã thu hồi */}
+            {showMenu.isDeleted ? (
+              showMenu.senderId === currentUserId && (
+                <div
+                  onClick={() => handleDeleteMessage(showMenu._id!)}
+                  className="cursor-pointer p-1 hover:bg-gray-700"
+                >
+                  Delete Message
+                </div>
+              )
+            ) : (
+              <>
+                {/* Nếu là tin nhắn của mình */}
+                {showMenu.senderId === currentUserId && (
+                  <>
                     <div
-                      onClick={() => handlePinMessage(showMenu._id!)}
+                      onClick={() => handleDeleteMessage(showMenu._id!)}
                       className="cursor-pointer p-1 hover:bg-gray-700"
                     >
-                      Pin Message
+                      Delete Message
                     </div>
-                  )}
-                  {showMenu.isPinned && (
+
                     <div
-                      onClick={() => handleUnpinMessage(showMenu._id!)}
+                      onClick={() => handleRevokeMessage(showMenu._id!)}
                       className="cursor-pointer p-1 hover:bg-gray-700"
                     >
-                      Unpin Message
+                      Revoke Message
                     </div>
-                  )}
+                  </>
+                )}
 
-                  <div
-                    onClick={() => handleForwardMessage(showMenu)}
-                    className="cursor-pointer p-1 hover:bg-gray-700"
-                  >
-                    Forward Message
-                  </div>
-                </>
-              )}
-            </>
-          )}
-        </div>
+                {/* Nếu không phải loại gọi */}
+                {showMenu.type !== 'call' && (
+                  <>
+                    {!showMenu.isPinned ? (
+                      <div
+                        onClick={() => handlePinMessage(showMenu._id!)}
+                        className="cursor-pointer p-1 hover:bg-gray-700"
+                      >
+                        Pin Message
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => handleUnpinMessage(showMenu._id!)}
+                        className="cursor-pointer p-1 hover:bg-gray-700"
+                      >
+                        Unpin Message
+                      </div>
+                    )}
+
+                    <div
+                      onClick={() => handleForwardMessage(showMenu)}
+                      className="cursor-pointer p-1 hover:bg-gray-700"
+                    >
+                      Forward Message
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        )
       )}
+
+
 
       {/* Right Sidebar */}
       {showSidebar && (

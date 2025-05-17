@@ -6,7 +6,7 @@ import { AppDispatch, RootState } from '../../../redux/store';
 import socket from '../../../utils/socket';
 import { Message } from '../../../redux/slice/types';
 import { fileIcons } from '../../../assets';
-import { incrementUnreadCount } from '../../../redux/slice/chatSlice';
+import { incrementUnreadCount, transcribeAudio } from '../../../redux/slice/chatSlice';
 import { useReactMediaRecorder } from 'react-media-recorder';
 import { toast } from 'react-toastify';
 
@@ -70,6 +70,34 @@ const ChatInput: React.FC = () => {
     setIsRecording(false);
     clearBlobUrl();
   };
+
+  const handleTranscribe = async () => {
+    if (!audioBlob) {
+      toast.error("No audio available to transcribe");
+      return;
+    }
+
+    // Tạo file từ blob
+    const audioFile = new File([audioBlob], "voice-message.wav", { type: "audio/wav" });
+
+    // Chuyển file thành base64
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(audioFile);
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+    });
+
+    try {
+      const result = await dispatch(transcribeAudio(base64)).unwrap();
+      setMessage(result); // Gán văn bản chuyển đổi vào ô nhập tin nhắn
+      toast.success("Voice transcribed to text");
+    } catch (err) {
+      console.error("Error transcribing audio:", err);
+      toast.error("Failed to transcribe audio");
+    }
+  };
+
 
 
 
@@ -306,6 +334,14 @@ const ChatInput: React.FC = () => {
             </button>
 
             <button
+              onClick={handleTranscribe}
+              disabled={!audioBlob}
+              className={`px-4 py-2 rounded ${audioBlob ? 'bg-blue-600 hover:bg-blue-500 cursor-pointer' : 'bg-gray-500 cursor-not-allowed'}`}
+            >
+              📝 To Text
+            </button>
+
+            <button
               onClick={() => {
                 stopRecording();
                 setAudioBlob(null);
@@ -321,7 +357,7 @@ const ChatInput: React.FC = () => {
 
           {/* 👉 THÊM audio preview ở đây */}
           {audioBlob && (
-            <audio controls src={URL.createObjectURL(audioBlob)} className="w-full max-w-[52%] h-[100%] rounded" />
+            <audio controls src={URL.createObjectURL(audioBlob)} className="w-full max-w-[39%] h-[100%] rounded" />
           )}
         </div>
       )}
