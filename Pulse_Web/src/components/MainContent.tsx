@@ -50,6 +50,7 @@ const MainContent = () => {
                     const user = await dispatch(getUserDetails(like.userId)).unwrap();
                     userDetails.push({
                         ...user,
+                        _id: user.userId || user._id,
                         timestamp: like.timestamp
                     });
                 } catch (err) {
@@ -339,7 +340,8 @@ const MainContent = () => {
                                         key={idx}
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            navigate(`/home/user-info/${user._id}`);
+                                            setLikeModalOpen(false);
+                                            navigate(`/home/user-info/${user.userId || user._id}`);
                                         }}
                                         className="flex items-center gap-3 p-2 hover:bg-zinc-800 rounded cursor-pointer"
                                     >

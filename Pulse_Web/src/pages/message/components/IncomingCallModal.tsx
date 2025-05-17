@@ -27,19 +27,23 @@ const IncomingCallModal: React.FC<{ setInVideoCall: (v: boolean) => void }> = ({
             audioRef.current.play().catch((err) => {
                 console.warn("🔇 Autoplay blocked:", err);
             });
+
+            // ⏱ Thêm timeout 21s → tự ẩn modal nếu chưa Accept/Decline
+            const autoClose = setTimeout(() => {
+                console.log("⏳ Người nhận không phản hồi sau 21s → tự tắt modal");
+                dispatch(hideIncomingCall());
+            }, 21000);
+
+            return () => {
+                clearTimeout(autoClose);
+                if (audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current.currentTime = 0;
+                }
+            };
         }
-        const autoDecline = setTimeout(() => {
-            console.log("⏳ Tự động từ chối cuộc gọi sau 20s");
-            handleDecline();
-        }, 20000); // 20 giây
-        return () => {
-              clearTimeout(autoDecline);
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.currentTime = 0;
-            }
-        };
-    }, [call.visible]);
+    }, [call.visible, dispatch]);
+
 
 
     const handleAccept = async () => {
