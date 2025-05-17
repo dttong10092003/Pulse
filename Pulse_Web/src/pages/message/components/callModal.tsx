@@ -51,75 +51,99 @@ const CallModal: React.FC<CallModalProps> = ({ setInVideoCall, setCallStartTime 
 
 
 
+  // useEffect(() => {
+  //   socketCall.on("callDeclined", ({ fromName }) => {
+  //     console.log(`${fromName} declined the call`);
+
+  //     dispatch(rejectedCall());
+  //     dispatch(endCall());
+  //   });
+
+  //   return () => {
+  //     socketCall.off("callDeclined");
+  //   };
+  // }, []);
   useEffect(() => {
     socketCall.on("callDeclined", ({ fromName }) => {
       console.log(`${fromName} declined the call`);
 
       dispatch(rejectedCall());
       dispatch(endCall());
+
+      // ✅ Gửi message "You missed the call" nếu mình là người gọi
+      if (call.fromUserId === currentUser?._id && selectedConversation && userDetail) {
+        const missedCallMessage: Message = {
+          conversationId: selectedConversation._id,
+          senderId: currentUser._id,
+          name: `${userDetail.firstname || ''} ${userDetail.lastname || ''}`,
+          content: '📞 You missed the call',
+          type: 'call',
+          timestamp: new Date().toISOString(),
+          isDeleted: false,
+          isSentByUser: true,
+          isPinned: false,
+          senderAvatar: userDetail.avatar || '',
+        };
+
+        socket.emit('sendMessage', missedCallMessage);
+      }
     });
 
     return () => {
       socketCall.off("callDeclined");
     };
-  }, []);
+  }, [dispatch, selectedConversation, currentUser, userDetail, call.fromUserId]);
+
 
   useEffect(() => {
-    if (call.isCalling) {
-      // 🔊 Phát tiếng chuông từ Cloudinary
+    if (call.isCalling && !call.isOngoing) {
+      // 🔊 Phát tiếng chuông
       audioRef.current = new Audio('https://res.cloudinary.com/df2amyjzw/video/upload/v1744890393/audiochuong_qdwihw.mp3');
       audioRef.current.loop = true;
 
       audioRef.current.play().catch((err) => {
         console.warn('Cannot autoplay ringtone:', err);
       });
-    }
 
-    let timeout: NodeJS.Timeout;
+      const timeout = setTimeout(() => {
+        console.log("⏰ Cuộc gọi không được trả lời sau 20s → gửi tin nhắn missed call");
 
-    // if (call.isCalling && !call.isOngoing) {
-    //   timeout = setTimeout(() => {
-    //     dispatch(endCall());
-    //   }, 20000); // 10s mới tắt nếu chưa nhận
-    // }
-    if (call.isCalling && !call.isOngoing) {
-      timeout = setTimeout(() => {
-        // Nếu người kia không accept sau 20 giây → gọi là cuộc gọi nhỡ
+        // 👉 Gửi tin nhắn "You missed the call" nếu là người gọi
+        if (call.fromUserId === currentUser?._id && selectedConversation && userDetail) {
+          const missedCallMessage: Message = {
+            conversationId: selectedConversation._id,
+            senderId: currentUser._id,
+            name: `${userDetail.firstname || ''} ${userDetail.lastname || ''}`,
+            content: '📞 You missed the call',
+            type: 'call',
+            timestamp: new Date().toISOString(),
+            isDeleted: false,
+            isSentByUser: true,
+            isPinned: false,
+            senderAvatar: userDetail.avatar || '',
+          };
+
+          socket.emit('sendMessage', missedCallMessage);
+        }
+
         dispatch(endCall());
         socketCall.emit("callTimeout", {
           toUserId: call.toUserId,
           fromUserId: call.fromUserId,
         });
-        console.log(" Timeout → Gửi callTimeout tới", call.toUserId);
 
+      }, 20000); // ⏱ 20 giây
 
-        if (call.fromUserId && call.toUserId && call.fromUserId === currentUser?._id) {
-          const missedCallMessage: Message = {
-            conversationId: selectedConversation?._id || '',
-            senderId: currentUser._id,
-            name: `${userDetail?.firstname || ''} ${userDetail?.lastname || ''}`,
-            content: '📞 You missed the call',
-            type: 'text',
-            timestamp: new Date().toISOString(),
-            isDeleted: false,
-            isSentByUser: true,
-            isPinned: false,
-            senderAvatar: userDetail?.avatar || '',
-          };
-
-          socket.emit('sendMessage', missedCallMessage);
+      return () => {
+        clearTimeout(timeout);
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
         }
-      }, 20000);
+      };
     }
-    return () => {
-      if (timeout) clearTimeout(timeout);
+  }, [call.isCalling, call.isOngoing]);
 
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-    };
-  }, [call.isCalling, call.isOngoing]); // 👈 nhớ thêm call.isOngoing vào dependency
 
 
   if (!call.isVisible && !call.isOngoing) return null;
