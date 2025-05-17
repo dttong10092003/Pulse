@@ -560,6 +560,30 @@ export const incrementUnreadCount = createAsyncThunk(
   }
 );
 
+// 🎙️ 18️⃣ Chuyển giọng nói thành văn bản
+export const transcribeAudio = createAsyncThunk(
+  'chat/transcribeAudio',
+  async (audioUrl: string, { getState, rejectWithValue }) => {
+    const token = (getState() as RootState).auth?.token;
+    if (!token) {
+      return rejectWithValue('No token found');
+    }
+
+    try {
+      const response = await axios.post(
+        `${CHAT_SERVICE_URL}/transcription/transcribe`,  // Backend xử lý Deepgram
+        { audioUrl },
+        { headers: { Authorization: `${token}` } }
+      );
+      return response.data.transcript; // Trả về văn bản
+    } catch (error) {
+      console.error('Error transcribing audio:', error);
+      return rejectWithValue('Failed to transcribe audio');
+    }
+  }
+);
+
+
 
 const chatSlice = createSlice({
   name: 'chat',
@@ -796,6 +820,19 @@ const chatSlice = createSlice({
 
   },
   extraReducers: (builder) => {
+    builder
+      .addCase(transcribeAudio.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(transcribeAudio.fulfilled, (state, action: PayloadAction<string>) => {
+        state.loading = false;
+        console.log('Transcripted text:', action.payload);
+      })
+      .addCase(transcribeAudio.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
     builder
       .addCase(deleteConversation.pending, (state) => {
         state.loading = true;
