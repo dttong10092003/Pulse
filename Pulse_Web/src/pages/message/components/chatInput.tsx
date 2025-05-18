@@ -20,6 +20,8 @@ const ChatInput: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
 
+  const [isTranscribing, setIsTranscribing] = useState(false);
+
   const userDetail = useSelector((state: RootState) => state.auth.userDetail);
   const selectedConversation = useSelector((state: RootState) => state.chat.selectedConversation);
 
@@ -77,6 +79,8 @@ const ChatInput: React.FC = () => {
       return;
     }
 
+    setIsTranscribing(true);
+
     // Tạo file từ blob
     const audioFile = new File([audioBlob], "voice-message.wav", { type: "audio/wav" });
 
@@ -95,6 +99,8 @@ const ChatInput: React.FC = () => {
     } catch (err) {
       console.error("Error transcribing audio:", err);
       toast.error("Failed to transcribe audio");
+    } finally {
+      setIsTranscribing(false);
     }
   };
 
@@ -229,35 +235,6 @@ const ChatInput: React.FC = () => {
     setSelectedFiles([]); // Xóa tất cả ảnh
   };
 
-  // Xử lý khi người dùng chọn file
-  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const files = e.target.files ? Array.from(e.target.files) : [];
-  //   setSelectedFiles(files);
-  //   const previews: string[] = [];
-  //   files.forEach((file) => {
-  //     const reader = new FileReader();
-  //     reader.onloadend = () => {
-  //       previews.push(reader.result as string);
-  //       if (previews.length === files.length) {
-  //         setFilePreviews(previews); // Set previews once all files are read
-  //       }
-  //     };
-  //     reader.readAsDataURL(file); // Convert files to base64 for preview
-  //   });
-  // };
-
-  // const clearFile = (index: number) => {
-  //   const updatedFiles = selectedFiles.filter((_, i) => i !== index);
-  //   const updatedPreviews = filePreviews.filter((_, i) => i !== index);
-  //   setSelectedFiles(updatedFiles);
-  //   setFilePreviews(updatedPreviews);
-  // };
-
-  // const clearAllFiles = () => {
-  //   setSelectedFiles([]);
-  //   setFilePreviews([]);
-  // };
-
   const isImageFile = (file: File) => {
     return file.type.startsWith("image/");
   };
@@ -335,10 +312,24 @@ const ChatInput: React.FC = () => {
 
             <button
               onClick={handleTranscribe}
-              disabled={!audioBlob}
-              className={`px-4 py-2 rounded ${audioBlob ? 'bg-blue-600 hover:bg-blue-500 cursor-pointer' : 'bg-gray-500 cursor-not-allowed'}`}
+              disabled={!audioBlob || isTranscribing}
+              className={`px-4 py-2 rounded ${audioBlob && !isTranscribing ? 'bg-blue-600 hover:bg-blue-500 cursor-pointer' : 'bg-gray-500 cursor-not-allowed'}`}
             >
-              📝 To Text
+              {isTranscribing ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4" fill="none" />
+                    <path
+                      className="opacity-75"
+                      fill="white"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    />
+                  </svg>
+                  Processing...
+                </span>
+              ) : (
+                <>📝 To Text</>
+              )}
             </button>
 
             <button
@@ -357,7 +348,7 @@ const ChatInput: React.FC = () => {
 
           {/* 👉 THÊM audio preview ở đây */}
           {audioBlob && (
-            <audio controls src={URL.createObjectURL(audioBlob)} className="w-full max-w-[39%] h-[100%] rounded" />
+            <audio controls src={URL.createObjectURL(audioBlob)} className="w-full max-w-[34%] h-[100%] rounded" />
           )}
         </div>
       )}

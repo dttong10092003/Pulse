@@ -3,6 +3,8 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
 
 const URI_API = import.meta.env.VITE_API_URL + '/posts';
+// const URI_API = "http://localhost:3000/posts";
+
 interface Post {
   _id: string;
   content: string;
@@ -20,20 +22,55 @@ interface Post {
     avatar: string;
   };   
 }
-
+export interface PostStatistics {
+  totalPosts: number;
+  todayPosts: number;
+  reportedPosts: number;
+  hiddenPosts: number;
+  postTrend: { date: string; count: number }[];
+  recentPosts: {
+    _id: string;
+    content: string;
+    createdAt: string;
+    username: string;
+    status: "active" | "reported" | "hidden";
+  }[];
+}
+interface TopPost {
+  _id: string;
+  user: string;
+  content: string;
+  likes?: number;
+  comments?: number;
+  shares?: number;
+}
 interface PostState {
   posts: Post[];
   count: number;
   loading: boolean;
   error: string | null;
+  statistics: PostStatistics | null;
+  loadingStatistics: boolean;
+  loadingTopStats: boolean;
+  topStats: {
+    topLikedPosts: TopPost[];
+    topCommentedPosts: TopPost[];
+    topSharedPosts: TopPost[];
+  } | null;
 }
+
 
 const initialState: PostState = {
   posts: [],
   count: 0,
   loading: false,
   error: null,
+  statistics: null,
+  loadingStatistics: false,
+  loadingTopStats: false,
+  topStats: null,
 };
+
 
 export const fetchUserPosts = createAsyncThunk(
   "postProfile/fetchUserPosts",
@@ -136,7 +173,28 @@ export const editPost = createAsyncThunk(
   }
 );
 
-
+export const fetchPostStatistics = createAsyncThunk(
+  "postProfile/fetchPostStatistics",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axios.get(`${URI_API}/admin/statistics`);
+      return res.data as PostStatistics;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+export const fetchTopStats = createAsyncThunk(
+  "postProfile/fetchTopStats",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axios.get(`${URI_API}/admin/top-stats`);
+      return res.data;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
 
 const postProfileSlice = createSlice({
   name: "postProfile",
@@ -184,6 +242,29 @@ const postProfileSlice = createSlice({
           state.posts[index] = action.payload; // Cập nhật lại bài post đã chỉnh sửa
         }
       })
+      .addCase(fetchPostStatistics.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPostStatistics.fulfilled, (state, action: PayloadAction<PostStatistics>) => {
+        state.loading = false;
+        state.statistics = action.payload;
+      })
+      .addCase(fetchPostStatistics.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(fetchTopStats.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchTopStats.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.topStats = action.payload;
+      })
+      .addCase(fetchTopStats.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })      
 ;      
   },
 });

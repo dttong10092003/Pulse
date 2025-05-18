@@ -122,8 +122,8 @@ const AdminPage = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8 bg-zinc-900">
-        <h1 className="text-3xl font-bold mb-6 capitalize">
+      <main className="flex-1 p-3 bg-zinc-900">
+        <h1 className="text-3xl font-bold mb-3 capitalize">
           {activeTab} Management
         </h1>
         <div className="bg-zinc-800 p-6 rounded-xl shadow-md">
