@@ -8,6 +8,7 @@ import { RootState, AppDispatch } from '../../redux/store';
 import { useDispatch, useSelector } from 'react-redux';
 import api from "../../services/api";
 import { setAllNotifications } from "../../redux/slice/notificationSlice";
+import { fetchAllUsers } from "../../redux/slice/adminUserSlice";
 
 
 interface GoogleRegisterError {
@@ -19,7 +20,7 @@ const Login = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { loading } = useSelector((state: RootState) => state.auth);
 
-  const [form, setForm] = useState({ username:"", password:""});
+  const [form, setForm] = useState({ username:"tinh111", password:"tinh111"});
   
   const [errorText, setErrorText] = useState("");
   const [isBtnEnable, setIsBtnEnable] = useState(false);
@@ -89,6 +90,7 @@ const Login = () => {
         // Token đã được lưu vào localStorage trong reducer
         // console.log("Login successful, token:", res.token);
         if (res.user.isAdmin) {
+           dispatch(fetchAllUsers());
           navigate('/admin');
           return; // ✅ không cần gọi getUserProfile nữa
         }

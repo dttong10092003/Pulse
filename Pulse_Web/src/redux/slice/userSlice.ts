@@ -10,6 +10,10 @@ interface User {
   name: string;
   username: string;
   avatar: string;
+  firstname: string;
+  lastname: string;
+  reportCount?: number;
+  isBanned?: boolean;
 }
 
 // Define the type for the user state
@@ -126,7 +130,7 @@ export const getTop10Users = createAsyncThunk(
   "user/getTop10Users",
   async (excludeUserId: string, { rejectWithValue }) => {
     try {
-      const url = `${USER_SERVICE_URL}/top10-users?excludeUserId=${excludeUserId}`;
+      const url = `${USER_SERVICE_URL}/all?excludeUserId=${excludeUserId}`;
       const response = await fetch(url);
       const data = await response.json();
       return data;
