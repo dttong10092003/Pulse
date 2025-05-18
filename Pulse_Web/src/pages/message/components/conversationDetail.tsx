@@ -932,12 +932,6 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                   className={`text-xs text-gray-400 mt-1 ${msg.isSentByUser ? "text-right" : ""
                     }`}
                 >
-                  {/* {
-                    new Date(msg.timestamp).getTime() > Date.now() - 86400000
-                      ? formatDistanceToNow(new Date(msg.timestamp), { addSuffix: true })
-                      : format(new Date(msg.timestamp), 'MMM dd, yyyy')  // Định dạng ngày tháng
-                  } */}
-
                   {
                     // Kiểm tra nếu tin nhắn trong 24 giờ qua
 
@@ -1054,22 +1048,6 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
           {/* Conversation Info */}
           <div className="p-4 border-b border-gray-700">
-            {/* <div className="flex flex-col items-center mb-4">
-              <img
-                src={selectedConversation.avatar}
-                alt={selectedConversation.groupName}
-                className="w-20 h-20 rounded-full mb-2"
-              />
-              <h2 className="text-white font-bold text-lg">
-                {selectedConversation.groupName}
-              </h2>
-              {selectedConversation.isGroup && (
-                <p className="text-gray-400 text-sm">
-                  Group · {selectedConversation.messages?.length} message
-                </p>
-              )}
-            </div> */}
-
             <div className="flex flex-col items-center mb-4 relative">
               <div className="relative group">
                 <img
@@ -1399,24 +1377,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
           }}
         />
       )}
-      {/* {inVideoCall && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center">
-     
-          <div className="flex-1 w-full overflow-auto px-6 py-4">
-            <VideoRoom />
-          </div>
-
-          <div className="w-full flex justify-center gap-6 pb-6">
-            <button
-              onClick={() => setInVideoCall(false)}
-              className="bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-lg transition flex items-center justify-center"
-            >
-              <PhoneOff size={24} />
-            </button>
-          </div>
-
-        </div>
-      )} */}
+      
     </div>
   );
 };
