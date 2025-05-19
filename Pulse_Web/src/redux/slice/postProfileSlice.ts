@@ -2,8 +2,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const URI_API = import.meta.env.VITE_API_URL + '/posts';
-// const URI_API = "http://localhost:3000/posts";
+// const URI_API = import.meta.env.VITE_API_URL + '/posts';
+const URI_API = "http://localhost:3000/posts";
 
 interface Post {
   _id: string;
