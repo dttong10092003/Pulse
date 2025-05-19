@@ -40,7 +40,6 @@ const initialState: AuthState = {
   resetStatus: 'idle',
   resetMessage: null,
   userDetail: null,
-
 };
 
 // Define the type for user login data

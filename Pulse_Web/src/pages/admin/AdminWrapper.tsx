@@ -6,14 +6,22 @@ import { useNavigate } from 'react-router-dom';
 import AdminPage from './AdminPage';
 
 const AdminWrapper = () => {
-    const user = useSelector((state: RootState) => state.auth.user); // ✅ Lấy từ auth-service
+    const user = useSelector((state: RootState) => state.auth.user);
+    const authReady = useSelector((state: RootState) => state.auth.token);
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!user?.isAdmin) {
-            navigate('/home'); // ❌ Không phải admin thì đẩy về home
+        if (authReady) {
+            if (!user?.isAdmin) {
+                navigate("/home");
+            }
         }
-    }, [user, navigate]);
+    }, [user, authReady, navigate]);
+
+    if (!authReady) {
+        return <div className="text-white p-10">Loading...</div>;
+    }
+
 
     return (
         <div className="min-h-screen bg-zinc-900 text-white">
