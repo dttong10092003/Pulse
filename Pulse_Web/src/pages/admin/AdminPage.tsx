@@ -14,7 +14,7 @@ import { logout } from "../../redux/slice/authSlice";
 import { getUserProfile } from "../../redux/slice/authSlice";
 import AdminUsers from "./components/AdminUsers";
 import AdminPosts from "./components/AdminPosts";
-import AdminReports from "./components/AdminReports";
+import AdminMessage from "./components/AdminMessage";
 import AdminSystem from "./components/AdminSystem";
 
 const AdminPage = () => {
@@ -29,7 +29,7 @@ const AdminPage = () => {
   const tabs = [
     { key: "users", label: "Users", icon: <Users size={18} /> },
     { key: "posts", label: "Posts", icon: <FileText size={18} /> },
-    { key: "reports", label: "Reports", icon: <ShieldCheck size={18} /> },
+    { key: "Message", label: "Message", icon: <ShieldCheck size={18} /> },
     { key: "system", label: "System", icon: <Settings size={18} /> },
   ];
 
@@ -39,8 +39,8 @@ const AdminPage = () => {
         return <AdminUsers />;
       case "posts":
         return <AdminPosts />;
-      case "reports":
-        return <AdminReports />;
+      case "Message":
+        return <AdminMessage />;
       case "system":
         return <AdminSystem />;
       default:

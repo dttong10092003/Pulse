@@ -7,6 +7,8 @@ import UserDetailWithFilter from "./conponents_user/UserDetailWithFilter";
 import UserStatsCard from "./conponents_user/UserStatsCard";
 import UserList from "./conponents_user/UserList";
 import UserTabs from "./conponents_user/UserTabs";
+import TopDetail from "./conponents_user/TopDetail";
+import MonthlyUserBarChart from "./conponents_user/MonthlyUserBarChart";
 
 const AdminUsers = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -14,7 +16,8 @@ const AdminUsers = () => {
 
   const [activeTab, setActiveTab] = useState<"overview" | "topDetail">("overview");
   const [filteredUsers, setFilteredUsers] = useState(users);
-
+  
+  
   useEffect(() => {
     dispatch(getAllUsers());
   }, [dispatch]);
@@ -27,9 +30,10 @@ const AdminUsers = () => {
 
   return (
     <div className="grid grid-cols-10 gap-4 w-full bg-gray-550 h-[calc(90vh-64px)] overflow-hidden">
-      
+
       {/* Bên trái: tabs, stats, danh sách user */}
-    <main className="col-span-7 flex flex-col h-full">
+   <main className={`${activeTab === "overview" ? "col-span-7" : "col-span-10"} flex flex-col h-full overflow-y-auto`}>
+
         <UserTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
         {activeTab === "overview" ? (
@@ -43,8 +47,9 @@ const AdminUsers = () => {
             <UserList users={filteredUsers} />
           </>
         ) : (
-          <div className="text-white text-lg font-semibold px-6 py-8">
-            Đây là phần Top Detail
+          <div className="col-span-10 px-4">
+            <TopDetail />
+            <MonthlyUserBarChart />
           </div>
         )}
       </main>

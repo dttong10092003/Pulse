@@ -188,9 +188,9 @@ const PostCard = ({
     } else {
 
       if (userLoginId !== userShowId) {
-   
+
         handleSendNotification();
-       
+
       }
       dispatch(likePost(postId));
 
@@ -387,11 +387,6 @@ const PostCard = ({
                       <Image size={20} />
                     </label>
                   </>
-                  {/* <div className="flex items-center gap-2 bg-zinc-700 hover:bg-zinc-600 px-3 py-2 rounded-lg text-white cursor-pointer">
-                    <div className="w-3 h-3 bg-pink-500 rounded-full"></div>
-                    <span>Beauty</span>
-                    <ChevronDown size={16} />
-                  </div> */}
                   <div className="relative">
                     <button
                       type="button"
@@ -472,12 +467,11 @@ const PostCard = ({
                       >
                         {isVideo ? (
                           <video
-                            className="w-full h-[300px] object-cover pointer-events-none"
-                            preload="metadata"
-                            muted
-                          >
-                            <source src={url} type="video/mp4" />
-                          </video>
+                            src={url}
+                            controls
+                            className="w-full rounded-lg"
+                            style={{ aspectRatio: "16/9" }}
+                          />
                         ) : (
                           <img
                             src={url}
@@ -495,6 +489,7 @@ const PostCard = ({
                   })}
                 </div>
               )}
+
 
               {sharedPost && (
                 <div

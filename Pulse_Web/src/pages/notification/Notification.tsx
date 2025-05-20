@@ -230,11 +230,11 @@ const Notification = () => {
       </div>
 
       {loading ? (
-        <div className="text-center text-gray-400 mt-10 animate-pulse">Đang tải thông báo...</div>
+        <div className="text-center text-gray-400 mt-10 animate-pulse">Loading Notification...</div>
       ) : error ? (
         <div className="text-center text-red-500 mt-10">Error: {error}</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center text-gray-400 mt-10 italic">Không có thông báo.</div>
+        <div className="text-center text-gray-400 mt-10 italic">No notification received.</div>
       ) : (
         <div className="space-y-4">
           {filtered.map(noti => {
@@ -261,7 +261,7 @@ const Notification = () => {
                         noti.type === 'like' && postMap[noti.postId!] ? (
                           noti.likeCount && noti.likeCount <= 1 ? (
                             <>
-                              đã thích bài viết{' '}
+                             liked your post{' '}
                               <span className="font-semibold text-blue-400">
                                 {postMap[noti.postId!]?.content || '...'}
                               </span>
@@ -272,7 +272,7 @@ const Notification = () => {
                               <span className="font-semibold text-yellow-300">
                                 {noti.likeCount! - 1}
                               </span>{' '}
-                              người khác đã thích bài viết{' '}
+                             others liked your post{' '}
                               <span className="font-semibold text-blue-400">
                                 {postMap[noti.postId!]?.content || '...'}
                               </span>
@@ -281,10 +281,10 @@ const Notification = () => {
 
                         ) : noti.type === 'follow' ? (
 
-                          <>đã bắt đầu theo dõi bạn</>
+                          <>started following you</>
                         ) : noti.type === 'message' ? (
                           <>
-                            đã gửi tin nhắn: "
+                           sent you a message: "
                             <span className="italic text-zinc-300">
                               {noti.messageContent || '...'}
                             </span>
@@ -293,25 +293,25 @@ const Notification = () => {
                         ) :
                           noti.type === 'comment' ? (
                             <>
-                              đã bình luận: "
+                             commented: "
                               <span className="italic text-purple-300">
                                 {noti.commentContent || '...'}
                               </span>
-                              " trong bài viết{' '}
+                              " on your post{' '}
                               <span className="font-semibold text-blue-400">
                                 {postMap[noti.postId!]?.content || '...'}
                               </span>{' '}
-                              của bạn
+                             
                             </>
                           ) : (
-                            <>thông báo không xác định</>
+                            <>Unknown notification</>
                           )
                       }
                     </span>
                   </div>
                 </div>
                 <div className={`text-sm italic shrink-0 ml-4 ${noti.isRead ? 'text-zinc-400' : 'text-white font-semibold'}`}>
-                  {noti.isRead ? 'Đã đọc' : 'Chưa đọc'}
+                  {noti.isRead ? 'Read' : 'Unread'}
                 </div>
               </div>
             );

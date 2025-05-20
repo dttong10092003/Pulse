@@ -411,12 +411,11 @@ const PostCard = ({
                       >
                         {isVideo ? (
                           <video
-                            className="w-full h-[300px] object-cover pointer-events-none"
-                            preload="metadata"
-                            muted
-                          >
-                            <source src={url} type="video/mp4" />
-                          </video>
+                            src={url}
+                            controls
+                            className="w-full rounded-lg"
+                            style={{ aspectRatio: "16/9" }}
+                          />
                         ) : (
                           <img
                             src={url}
@@ -434,6 +433,7 @@ const PostCard = ({
                   })}
                 </div>
               )}
+
               {sharedPost && (
                 <div
                   onClick={() => navigate(`/home/post/${sharedPost._id}`)}
