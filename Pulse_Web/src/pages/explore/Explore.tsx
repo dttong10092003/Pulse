@@ -26,6 +26,8 @@ const Explore: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState<string>("");
 
     const categories: string[] = ["All", "Beauty", "Food", "Photography", "Travel"];
+    const likeCounts = useSelector((state: RootState) => state.likes.likeCounts);
+    const commentCounts = useSelector((state: RootState) => state.comments.commentCounts);
 
     useEffect(() => {
         dispatch(fetchAllPosts());
@@ -33,11 +35,13 @@ const Explore: React.FC = () => {
 
     const filteredPosts = (posts as PostRedux[])
         .filter(post => !post.sharedPostId) // Bỏ bài chia sẻ
+        .filter(post => post.media && post.media.length > 0) // ✅ Chỉ lấy bài có ảnh/video
         .filter(post => {
             const matchesCategory = activeCategory === "All" || post.tags?.includes(activeCategory);
             const matchesSearch = post.content?.toLowerCase().includes(searchTerm.toLowerCase()) || post.username?.toLowerCase().includes(searchTerm.toLowerCase());
             return matchesCategory && matchesSearch;
         });
+
 
     return (
         <main className="flex-1 bg-[#1F1F1F] text-white p-4 min-h-screen">
@@ -66,16 +70,23 @@ const Explore: React.FC = () => {
                 )}
 
                 {!loading && filteredPosts.map((post, index) => {
-                    const hasImage = !!post.media?.[0];
+                    const mediaUrl = post.media?.[0] || "";
+                    const isVideo = /\.(mp4|webm|ogg)$/i.test(mediaUrl);
+
+
                     return (
                         <PostCard
                             key={index}
                             post={{
-                                ...(hasImage && { image: post.media?.[0] }),
+                                 _id: post._id,
+                                mediaUrl,
+                                isVideo,
                                 title: post.content,
                                 user: post.username || "Anonymous",
                                 avatar: post.avatar || "https://i.pravatar.cc/300",
-                                category: post.tags?.[0] || "Beauty"
+                                category: post.tags?.[0] || "Beauty",
+                                likes: likeCounts[post._id] || 0,
+                                comments: commentCounts[post._id] || 0,
                             }}
                         />
                     );

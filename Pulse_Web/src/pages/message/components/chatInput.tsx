@@ -342,7 +342,7 @@ const ChatInput: React.FC = () => {
               }}
               className="bg-red-600 px-4 py-2 rounded hover:bg-red-500 cursor-pointer"
             >
-              ❌ Cancle
+              ❌ Cancel
             </button>
           </div>
 
@@ -361,7 +361,7 @@ const ChatInput: React.FC = () => {
         </label>
 
         {/* Voice icon mở panel */}
-        <button onClick={() => setIsVoicePanelOpen(prev => !prev)} className="ml-2 text-white">
+        <button onClick={() => setIsVoicePanelOpen(prev => !prev)} className="ml-2 text-white cursor-pointer">
           <Mic size={20} />
         </button>
 
