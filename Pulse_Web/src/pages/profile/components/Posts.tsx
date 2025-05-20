@@ -387,11 +387,6 @@ const PostCard = ({
                       <Image size={20} />
                     </label>
                   </>
-                  {/* <div className="flex items-center gap-2 bg-zinc-700 hover:bg-zinc-600 px-3 py-2 rounded-lg text-white cursor-pointer">
-                    <div className="w-3 h-3 bg-pink-500 rounded-full"></div>
-                    <span>Beauty</span>
-                    <ChevronDown size={16} />
-                  </div> */}
                   <div className="relative">
                     <button
                       type="button"
