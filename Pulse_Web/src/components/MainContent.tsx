@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { getUserDetails } from "../redux/slice/userSlice";
 import api from "../services/api";
+import { checkNSFW } from "../utils/nsfwChecker";
 const MainContent = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { posts, loading } = useSelector((state: RootState) => state.postProfile);
@@ -119,6 +120,7 @@ const MainContent = () => {
         });
     };
 
+
     const handleCreatePost = async () => {
         try {
             const token = localStorage.getItem("token");
@@ -128,6 +130,23 @@ const MainContent = () => {
             }
 
             setIsPosting(true);
+            // ✅ Convert và kiểm tra NSFW
+            for (const file of mediaFiles) {
+                if (file.type.startsWith("image/")) {
+                    const base64 = await convertToBase64(file);
+                    const img = new window.Image();
+                    img.src = base64;
+
+                    await new Promise((resolve) => (img.onload = resolve));
+
+                    const isNSFW = await checkNSFW(img);
+                    if (isNSFW) {
+                        toast.error("Image contains sensitive content (NSFW). Cannot post.");
+                        setIsPosting(false);
+                        return;
+                    }
+                }
+            }
             const base64Media = await Promise.all(mediaFiles.map(convertToBase64));
             console.log("asdd");
 
