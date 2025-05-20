@@ -14,8 +14,8 @@ import { logout } from "../../redux/slice/authSlice";
 import { getUserProfile } from "../../redux/slice/authSlice";
 import AdminUsers from "./components/AdminUsers";
 import AdminPosts from "./components/AdminPosts";
-import AdminMessage from "./components/AdminMessage";
 import AdminSystem from "./components/AdminSystem";
+import AdminReports from "./components/AdminReports";
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState("users");
@@ -40,7 +40,7 @@ const AdminPage = () => {
       case "posts":
         return <AdminPosts />;
       case "Message":
-        return <AdminMessage />;
+        return <AdminReports />;
       case "system":
         return <AdminSystem />;
       default:

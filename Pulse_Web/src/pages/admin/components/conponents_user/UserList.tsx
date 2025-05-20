@@ -22,12 +22,12 @@ const UserList = ({ users }: Props) => {
             <tr>
               <th className="px-4 py-3 text-center text-white">STT</th>
               <th className="px-4 py-3 text-center text-white">Username</th>
-              <th className="px-4 py-3 text-center text-white">Họ tên</th>
-              <th className="px-4 py-3 text-center text-white">SĐT</th>
+              <th className="px-4 py-3 text-center text-white">Name</th>
+              <th className="px-4 py-3 text-center text-white">Phone</th>
               <th className="px-4 py-3 text-center text-white">Email</th>
-              <th className="px-4 py-3 text-center text-white">Ngày tạo</th>
-              <th className="px-4 py-3 text-center text-white">Số report</th>
-              <th className="px-4 py-3 text-center text-white">Trạng thái</th>
+              <th className="px-4 py-3 text-center text-white">Date Created</th>
+              <th className="px-4 py-3 text-center text-white">Report</th>
+              <th className="px-4 py-3 text-center text-white">Active</th>
             </tr>
           </thead>
           <tbody>
@@ -53,7 +53,7 @@ const UserList = ({ users }: Props) => {
                     {new Date(user.createdAt).toLocaleDateString("vi-VN")}
                   </td>
                   <td className="px-4 py-2 text-center">
-                    <span className="inline-block min-w-[20px]">{user.isCountReport ?? 0}</span>
+                    <span className="inline-block min-w-[20px]">{user.isCountReport ?? 0}/3</span>
                   </td>
                   <td className="px-4 py-2 text-center">
                     <span
@@ -61,9 +61,9 @@ const UserList = ({ users }: Props) => {
                         ? "bg-green-500 text-white hover:bg-green-600"
                         : "bg-red-500 text-white hover:bg-red-600"
                         }`}
-                      title={user.isActive ? "Tài khoản đang hoạt động" : "Tài khoản đã bị khóa"}
+                      title={user.isActive ? " Active Accounts" : "Blocked Accounts"}
                     >
-                      {user.isActive ? "Hoạt động" : "Bị khóa"}
+                      {user.isActive ? "Nomal" : "Blocked"}
                     </span>
                   </td>
                 </tr>

@@ -9,11 +9,11 @@ const BanStatusPieChart = () => {
   const banned = users.filter((u) => !u.isActive).length;
 
   const data = [
-    { name: "Hoạt động", value: active },
-    { name: "Bị khóa", value: banned },
+    { name: "Normal", value: active },
+    { name: "Blocked", value: banned },
   ];
 
-  return <PieCard title="🚫 Trạng thái tài khoản" data={data} colors={["#22c55e", "#ef4444"]} />;
+  return <PieCard title="Account Status" data={data} colors={["#22c55e", "#ef4444"]} />;
 };
 
 export default BanStatusPieChart;

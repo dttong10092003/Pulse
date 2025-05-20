@@ -2,6 +2,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../../../redux/store";
 import { useState, useEffect } from "react";
 import { User } from "../../../../redux/slice/adminUserSlice";
+import { Mail, PhoneCall, CalendarDays, User as UserIcon, Shield, AlertTriangle, UserCheck, UserX, CalendarCheck } from "lucide-react";
 
 interface Props {
   originalUsers: User[];
@@ -61,20 +62,20 @@ const UserDetailWithFilter = ({ originalUsers, setFilteredUsers }: Props) => {
       <div className="bg-zinc-600 h-full rounded-lg shadow-md p-6 text-white flex flex-col ">
 
         <h2 className="text-xl font-bold mb-6 text-center text-indigo-400">
-          🔍 Bộ lọc người dùng
+          🔍 User Filter
         </h2>
 
         <div className="space-y-4">
           <input
             className="w-full px-4 py-2 rounded-lg bg-zinc-700 border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="🔠 Tìm theo tên"
+            placeholder="🔠 Search by Name"
             value={nameQuery}
             onChange={(e) => setNameQuery(e.target.value)}
           />
 
           <input
             className="w-full px-4 py-2 rounded-lg bg-zinc-700 border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="📱 Tìm theo số điện thoại"
+            placeholder="📱 Search by Phone Number"
             value={phoneQuery}
             onChange={(e) => setPhoneQuery(e.target.value)}
           />
@@ -85,9 +86,9 @@ const UserDetailWithFilter = ({ originalUsers, setFilteredUsers }: Props) => {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
-              <option value="">⚙️ Trạng thái</option>
-              <option value="active">✅ Hoạt động</option>
-              <option value="inactive">⛔ Bị khóa</option>
+              <option value="">⚙️ Account Status</option>
+              <option value="active">✅ Nomal</option>
+              <option value="inactive">⛔ Blocked</option>
             </select>
 
             <select
@@ -95,7 +96,7 @@ const UserDetailWithFilter = ({ originalUsers, setFilteredUsers }: Props) => {
               value={reportFilter}
               onChange={(e) => setReportFilter(e.target.value)}
             >
-              <option value="">🚨 Số report</option>
+              <option value="">🚨Report Count</option>
               <option value=">1">{`>`} 1</option>
               <option value=">2">{`>`} 2</option>
               <option value="=3">= 3</option>
@@ -131,37 +132,31 @@ const UserDetailWithFilter = ({ originalUsers, setFilteredUsers }: Props) => {
         <p className="text-sm text-zinc-400 mb-6">@{selectedUser?.username}</p>
 
         <div className="w-full space-y-3 text-sm">
-          <DetailItem label="📧 Email" value={selectedUser?.email || "Chưa cập nhật"} />
-          <DetailItem label="📱 Số điện thoại" value={selectedUser?.phone || "Chưa cập nhật"} />
-          <DetailItem label="🎂 Ngày sinh" value={formatDate(selectedUser?.dob)} />
-          <DetailItem label="👤 Giới tính" value={selectedUser?.gender === "male" ? "Nam" : "Nữ"} />
+          <DetailItem icon={<Mail size={16} />} label="Email" value={selectedUser?.email || "Not updated"} />
+          <DetailItem icon={<PhoneCall size={16} />} label="Phone Number" value={selectedUser?.phone || "Not updated"} />
+          <DetailItem icon={<CalendarDays size={16} />} label="Date of Birth" value={formatDate(selectedUser?.dob)} />
+          <DetailItem icon={<UserIcon size={16} />} label="Gender" value={selectedUser?.gender === "male" ? "Male" : "Female"} />
           <DetailItem
-            label="🟢 Trạng thái"
+            icon={selectedUser?.isActive ? <UserCheck size={16} /> : <UserX size={16} />}
+            label="Status"
             value={
               <span
-                className={`px-2 py-1 rounded-full text-xs font-bold ${selectedUser?.isActive ? "bg-green-500" : "bg-red-500"
-                  } text-white`}
+                className={`px-2 py-1 rounded-full text-xs font-bold ${selectedUser?.isActive ? "bg-green-500" : "bg-red-500"} text-white`}
               >
-                {selectedUser?.isActive ? "Hoạt động" : "Bị khóa"}
+                {selectedUser?.isActive ? "Active" : "Blocked"}
               </span>
             }
           />
-          <DetailItem label="🛡️ Vai trò" value={selectedUser?.isAdmin ? "Admin" : "Người dùng"} />
-          <DetailItem
-            label="🗓️ Ngày tạo"
-            value={formatDate(selectedUser?.createdAt)}
-          />
-          <DetailItem
-            label="🚨 Lượt báo cáo"
-            value={selectedUser?.isCountReport ?? 0}
-          />
+          <DetailItem icon={<Shield size={16} />} label="Role" value={selectedUser?.isAdmin ? "Admin" : "User"} />
+          <DetailItem icon={<CalendarCheck size={16} />} label="Created At" value={formatDate(selectedUser?.createdAt)} />
+          <DetailItem icon={<AlertTriangle size={16} />} label="Reports" value={selectedUser?.isCountReport ?? 0} />
         </div>
 
         <button
           onClick={() => setMode("filter")}
           className="mt-6 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm font-semibold"
         >
-          ← Quay về bộ lọc
+          Back to Filter
         </button>
       </div>
     </div>
@@ -170,9 +165,10 @@ const UserDetailWithFilter = ({ originalUsers, setFilteredUsers }: Props) => {
 
 };
 
-const DetailItem = ({ label, value }: { label: string; value: string | number | JSX.Element }) => (
-  <div className="flex justify-between border-b border-zinc-700 pb-1">
-    <span className="text-zinc-400 font-medium">{label}</span>
+const DetailItem = ({ icon, label, value }: { icon?: JSX.Element; label: string; value: string | number | JSX.Element }) => (
+  <div className="flex justify-between border-b border-zinc-700 pb-1 items-center">
+    {icon && <span className="mr-2 text-zinc-400">{icon}</span>}
+    <span className="text-zinc-400 font-medium flex-1">{label}</span>
     <span className="text-white">{value}</span>
   </div>
 );

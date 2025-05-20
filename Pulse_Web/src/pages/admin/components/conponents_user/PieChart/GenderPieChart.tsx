@@ -9,11 +9,11 @@ const GenderPieChart = () => {
   const female = users.filter((u) => u.gender === "female").length;
 
   const data = [
-    { name: "Nam", value: male },
-    { name: "Nữ", value: female },
+    { name: "female", value: male },
+    { name: "male", value: female },
   ];
 
-  return <PieCard title="👨‍🦱 Tỉ lệ giới tính" data={data} colors={["#8884d8", "#ff6384"]} />;
+  return <PieCard title="Gender Ratio" data={data} colors={["#8884d8", "#ff6384"]} />;
 };
 
 export default GenderPieChart;

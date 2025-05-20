@@ -29,7 +29,7 @@ const MonthlyUserBarChart = () => {
 
     return (
         <div className="bg-zinc-900 rounded-lg p-4 shadow-md text-white mt-6">
-            <h3 className="text-lg font-semibold mb-3">📅 Số lượng đăng ký theo tháng (5 tháng gần nhất)</h3>
+            <h3 className="text-lg font-semibold mb-3">📅 User Sign-ups Over the Last 5 Months</h3>
             <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" />
