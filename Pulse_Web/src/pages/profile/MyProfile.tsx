@@ -10,6 +10,7 @@ import { getFollowers, getFollowings } from "../../redux/slice/followSlice";
 import api from "../../services/api";
 import { getUserDetails } from "../../redux/slice/userSlice";
 import toast from "react-hot-toast";
+import { checkNSFW } from "../../utils/nsfwChecker";
 
 const MyProfile = () => {
     const navigate = useNavigate();
@@ -56,7 +57,7 @@ const MyProfile = () => {
                     const user = await dispatch(getUserDetails(like.userId)).unwrap();
                     userDetails.push({
                         ...user,
-                         _id: user.userId || user._id,
+                        _id: user.userId || user._id,
                         timestamp: like.timestamp
                     });
                 } catch (err) {
@@ -142,7 +143,22 @@ const MyProfile = () => {
             }
 
             setIsPosting(true); // 🟢 Bắt đầu loading
+            for (const file of mediaFiles) {
+                if (file.type.startsWith("image/")) {
+                    const base64 = await convertToBase64(file);
+                    const img = new window.Image();
+                    img.src = base64;
 
+                    await new Promise((resolve) => (img.onload = resolve));
+
+                    const isNSFW = await checkNSFW(img);
+                    if (isNSFW) {
+                        toast.error("Image contains sensitive content (NSFW). Cannot post.");
+                        setIsPosting(false);
+                        return;
+                    }
+                }
+            }
             const base64Media = await Promise.all(
                 mediaFiles.map((file) => convertToBase64(file))
             );
