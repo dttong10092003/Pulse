@@ -12,7 +12,7 @@ import commentsReducer from './slice/commentSilce';
 import callReducer from './slice/callSlice';
 import incomingCallReducer from './slice/incomingCallSlice';
 import adminUserReducer from './slice/adminUserSlice';
-import messageReducer from './slice/messageSlice';
+
 export const store = configureStore({
   reducer: {
     auth: authReducer, 
@@ -26,7 +26,7 @@ export const store = configureStore({
     call: callReducer,
     incomingCall: incomingCallReducer,
     adminUsers: adminUserReducer,
-    messages: messageReducer,
+    
   },
 });
 

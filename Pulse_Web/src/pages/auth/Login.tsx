@@ -9,7 +9,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import api from "../../services/api";
 import { setAllNotifications } from "../../redux/slice/notificationSlice";
 import { fetchAllUsers } from "../../redux/slice/adminUserSlice";
-import { fetchAllMessages } from "../../redux/slice/messageSlice";
+
 
 
 interface GoogleRegisterError {
@@ -92,7 +92,7 @@ const Login = () => {
         // console.log("Login successful, token:", res.token);
         if (res.user.isAdmin) {
            dispatch(fetchAllUsers());
-            dispatch(fetchAllMessages());
+         
           navigate('/admin');
           return; // ✅ không cần gọi getUserProfile nữa
         }
