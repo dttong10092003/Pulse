@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "../../../redux/store";
 import { fetchPostStatistics } from "../../../redux/slice/postProfileSlice";
-import OverviewPanel from "./OverviewPanel";
-import TopStatsPanel from "./TopStatsPanel";
+import OverviewPanel from "./components_post/OverviewPanel";
+import TopStatsPanel from "./components_post/TopStatsPanel";
 
 const AdminPosts = () => {
   const dispatch = useDispatch<AppDispatch>();

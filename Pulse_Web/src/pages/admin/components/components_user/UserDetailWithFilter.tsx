@@ -107,7 +107,7 @@ const UserDetailWithFilter = ({ originalUsers, setFilteredUsers }: Props) => {
             onClick={clearFilters}
             className="w-full py-2 mt-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold tracking-wide"
           >
-            🧹 Xóa bộ lọc
+            🧹 Delete filter
           </button>
         </div>
       </div>
