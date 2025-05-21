@@ -39,7 +39,7 @@ const AdminPage = () => {
         return <AdminUsers />;
       case "posts":
         return <AdminPosts />;
-      case "Message":
+      case "Reports":
         return <AdminReports />;
       case "system":
         return <AdminSystem />;

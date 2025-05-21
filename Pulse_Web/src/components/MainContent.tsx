@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { getUserDetails } from "../redux/slice/userSlice";
 import api from "../services/api";
 import { checkNSFW } from "../utils/nsfwChecker";
+import axios from "axios";
 const MainContent = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { posts, loading } = useSelector((state: RootState) => state.postProfile);
@@ -39,6 +40,8 @@ const MainContent = () => {
     const [likedUsers, setLikedUsers] = useState<any[]>([]);
     const [isLoadingLikes, setIsLoadingLikes] = useState(false);
 
+    const userId = userDetail?.userId;
+    console.log("userid------", userId);
     const handleHoldLike = async (postId: string) => {
         try {
             setIsLoadingLikes(true);
@@ -129,40 +132,68 @@ const MainContent = () => {
                 return;
             }
 
-            setIsPosting(true);
-            // ✅ Convert và kiểm tra NSFW
-            for (const file of mediaFiles) {
-                if (file.type.startsWith("image/")) {
-                    const base64 = await convertToBase64(file);
-                    const img = new window.Image();
-                    img.src = base64;
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/ban-status/${userId}`);
+                const { isActive, dateOpenBan } = response.data;
 
-                    await new Promise((resolve) => (img.onload = resolve));
+                console.log("✅ User status:", { isActive, dateOpenBan });
 
-                    const isNSFW = await checkNSFW(img);
-                    if (isNSFW) {
-                        toast.error("Image contains sensitive content (NSFW). Cannot post.");
-                        setIsPosting(false);
-                        return;
-                    }
+                // 👉 Bạn có thể xử lý logic tùy vào trạng thái
+                if (!isActive && dateOpenBan) {
+                    const unlockTime = new Date(dateOpenBan);
+                    const day = String(unlockTime.getDate()).padStart(2, '0');
+                    const month = String(unlockTime.getMonth() + 1).padStart(2, '0'); // Lưu ý: getMonth() trả về 0–11
+                    const year = unlockTime.getFullYear();
+
+                    const formattedDate = `${day}/${month}/${year}`;
+                    console.log(`🔒 User bị ban đến: ${formattedDate}`);
+                    alert(`Your posting privileges have been temporarily suspended due to violations of our community guidelines. You will regain access on ${formattedDate}`);
                 }
+                else {
+
+
+                    setIsPosting(true);
+                    // ✅ Convert và kiểm tra NSFW
+                    for (const file of mediaFiles) {
+                        if (file.type.startsWith("image/")) {
+                            const base64 = await convertToBase64(file);
+                            const img = new window.Image();
+                            img.src = base64;
+
+                            await new Promise((resolve) => (img.onload = resolve));
+
+                            const isNSFW = await checkNSFW(img);
+                            if (isNSFW) {
+                                toast.error("Image contains sensitive content (NSFW). Cannot post.");
+                                setIsPosting(false);
+                                return;
+                            }
+                        }
+                    }
+                    const base64Media = await Promise.all(mediaFiles.map(convertToBase64));
+                    console.log("asdd");
+
+                    await dispatch(createPost({
+                        content: postContent,
+                        media: base64Media.length ? base64Media : undefined,
+                        tags: [selectedTag],
+                    })).unwrap();
+                    console.log("Post created successfullyzzz");
+
+                    await dispatch(fetchAllPosts());
+                    setPostContent("");
+                    setMediaFiles([]);
+                    setIsExpanded(false);
+                    toast.success("Posting successful!");
+                    console.log("Post created successfullyttttttttttttt");
+
+
+                }
+            } catch (err) {
+                console.error("❌ Lỗi khi lấy trạng thái ban của user:");
             }
-            const base64Media = await Promise.all(mediaFiles.map(convertToBase64));
-            console.log("asdd");
 
-            await dispatch(createPost({
-                content: postContent,
-                media: base64Media.length ? base64Media : undefined,
-                tags: [selectedTag],
-            })).unwrap();
-            console.log("Post created successfullyzzz");
 
-            await dispatch(fetchAllPosts());
-            setPostContent("");
-            setMediaFiles([]);
-            setIsExpanded(false);
-            toast.success("Posting successful!");
-            console.log("Post created successfullyttttttttttttt");
 
         } catch (err) {
             toast.error("Posting failed: " + err);

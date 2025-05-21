@@ -11,6 +11,7 @@ import api from "../../services/api";
 import { getUserDetails } from "../../redux/slice/userSlice";
 import toast from "react-hot-toast";
 import { checkNSFW } from "../../utils/nsfwChecker";
+import axios from "axios";
 
 const MyProfile = () => {
     const navigate = useNavigate();
@@ -141,39 +142,67 @@ const MyProfile = () => {
                 alert("You are not logged in!");
                 return;
             }
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/ban-status/${userId}`);
+                const { isActive, dateOpenBan } = response.data;
 
-            setIsPosting(true); // 🟢 Bắt đầu loading
-            for (const file of mediaFiles) {
-                if (file.type.startsWith("image/")) {
-                    const base64 = await convertToBase64(file);
-                    const img = new window.Image();
-                    img.src = base64;
+                console.log("✅ User status:", { isActive, dateOpenBan });
 
-                    await new Promise((resolve) => (img.onload = resolve));
+                // 👉 Bạn có thể xử lý logic tùy vào trạng thái
+                if (!isActive && dateOpenBan) {
+                    const unlockTime = new Date(dateOpenBan);
+                    const day = String(unlockTime.getDate()).padStart(2, '0');
+                    const month = String(unlockTime.getMonth() + 1).padStart(2, '0'); // Lưu ý: getMonth() trả về 0–11
+                    const year = unlockTime.getFullYear();
 
-                    const isNSFW = await checkNSFW(img);
-                    if (isNSFW) {
-                        toast.error("Image contains sensitive content (NSFW). Cannot post.");
-                        setIsPosting(false);
-                        return;
-                    }
+                    const formattedDate = `${day}/${month}/${year}`;
+                    console.log(`🔒 User bị ban đến: ${formattedDate}`);
+                    alert(`Your posting privileges have been temporarily suspended due to violations of our community guidelines. You will regain access on ${formattedDate}`);
                 }
+                else {
+
+
+                    setIsPosting(true); // 🟢 Bắt đầu loading
+                    for (const file of mediaFiles) {
+                        if (file.type.startsWith("image/")) {
+                            const base64 = await convertToBase64(file);
+                            const img = new window.Image();
+                            img.src = base64;
+
+                            await new Promise((resolve) => (img.onload = resolve));
+
+                            const isNSFW = await checkNSFW(img);
+                            if (isNSFW) {
+                                toast.error("Image contains sensitive content (NSFW). Cannot post.");
+                                setIsPosting(false);
+                                return;
+                            }
+                        }
+                    }
+                    const base64Media = await Promise.all(
+                        mediaFiles.map((file) => convertToBase64(file))
+                    );
+
+                    await dispatch(createPost({
+                        content: postContent,
+                        media: base64Media.length ? base64Media : undefined,
+                        tags: [selectedTag],
+                    })).unwrap();
+
+                    await dispatch(fetchUserPosts(userId!));
+                    setPostContent("");
+                    setMediaFiles([]);
+                    setIsExpanded(false);
+                    toast.success("Post created successfully!");
+
+
+                }
+            } catch (err) {
+                console.error("❌ Lỗi khi lấy trạng thái ban của user:");
             }
-            const base64Media = await Promise.all(
-                mediaFiles.map((file) => convertToBase64(file))
-            );
 
-            await dispatch(createPost({
-                content: postContent,
-                media: base64Media.length ? base64Media : undefined,
-                tags: [selectedTag],
-            })).unwrap();
 
-            await dispatch(fetchUserPosts(userId!));
-            setPostContent("");
-            setMediaFiles([]);
-            setIsExpanded(false);
-            toast.success("Post created successfully!");
+
         } catch (err) {
             toast.error("Posting failed: " + err);
         } finally {
