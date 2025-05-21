@@ -157,7 +157,8 @@ const MyProfile = () => {
 
                     const formattedDate = `${day}/${month}/${year}`;
                     console.log(`🔒 User bị ban đến: ${formattedDate}`);
-                    alert(`Your posting privileges have been temporarily suspended due to violations of our community guidelines. You will regain access on ${formattedDate}`);
+                    toast.error(
+                        `Posting privileges suspended due to guideline violations. Access restores on ${formattedDate}`, { duration: 3000 });
                 }
                 else {
 
