@@ -318,7 +318,7 @@ const ImageModal = ({
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Viết bình luận..."
+                  placeholder="Comment..."
                   className="flex-1 px-4 py-2 bg-zinc-800 text-white rounded-full outline-none text-sm"
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}

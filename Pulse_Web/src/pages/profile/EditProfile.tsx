@@ -67,13 +67,10 @@ export default function EditProfile() {
         }));
     };
 
-    // const handleSave = () => {
-    //     console.log("Saving profile:", formData);
-    //     alert("Profile saved successfully!");
-    // };
     const handleSave = () => {
         if (!userDetail?._id) {
-            alert("User ID not found.");
+            toast.error(
+                "User ID not found.");
             return;
         }
 

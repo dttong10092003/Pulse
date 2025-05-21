@@ -1,4 +1,4 @@
-import { Home, Bell, MessageSquare, Bookmark, User, LayoutDashboard, MoreHorizontal, Settings, LogOut } from "lucide-react";
+import { Home, Bell, MessageSquare, User, LayoutDashboard, MoreHorizontal, Settings, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from 'react-redux';
@@ -19,53 +19,7 @@ const Sidebar = () => {
 
     const unreadCount = useSelector((state: RootState) => state.notification.unreadCount);
 
-
-    // const userDetailLogin = useSelector((state: RootState) => state.auth.userDetail); 
-    // const userLoginID =   userDetailLogin?.userId || "";
     const userLoginID = useSelector((state: RootState) => state.auth.user?._id) || "";
- 
-
-    // cũ 
-    // useEffect(() => {
-    //     const fetchNoti = async () => {
-    //       if (userLoginID) {
-    //         try {
-    //           const res = await api.get(`/noti/get-all?userId=${userLoginID}`);
-    //           dispatch(setAllNotifications(res.data));
-    //           console.log("📥 Lấy thông báo ban đầu:", res.data);
-    //         } catch (err) {
-    //           console.error("Lỗi lấy thông báo ban đầu:", err);
-    //         }
-    //       }
-    //     };
-
-    //     if (userLoginID) {
-    //       socket.emit('register', userLoginID);
-    //     }
-
-    //     socket.on('new_notification', (data) => {
-    //       if (data.receiverId === userLoginID) {
-    //         console.log("📥 Nhận thông báo mới:", data);
-
-    //         // Kiểm tra notification đã tồn tại chưa
-    //         const state = store.getState(); // lấy state từ store.ts
-    //         const existing = state.notification.notifications.find(
-    //           (n) => n._id === data._id
-    //         );
-
-    //         if (!existing) {
-    //           dispatch(addNotification(data));
-    //         } else {
-
-    //           fetchNoti();
-    //         }
-    //       }
-    //     });
-
-    //     return () => {
-    //       socket.off('new_notification');
-    //     };
-    //   }, [userLoginID, dispatch]);
 
 
     useEffect(() => {
@@ -104,7 +58,7 @@ const Sidebar = () => {
 
     const getInitialActiveItem = () => {
         const item = localStorage.getItem("activeItem");
-        const validItems = ["Home", "Notifications", "Messages", "Bookmarks", "My Profile", "Explore"];
+        const validItems = ["Home", "Notifications", "Messages", "My Profile", "Explore"];
         return validItems.includes(item || "") ? item : "Home";
     };
 
@@ -138,7 +92,6 @@ const Sidebar = () => {
                     <SidebarItem icon={<Home size={24} />} label="Home" active={activeItem === "Home"} navigate={() => handleNavigation("Home", "/home")} showSidebar={showSidebar} />
                     <SidebarItem icon={<Bell size={24} />} label="Notifications" active={activeItem === "Notifications"} navigate={() => handleNavigation("Notifications", "/home/notifications")} showSidebar={showSidebar} unreadCount={unreadCount} />
                     <SidebarItem icon={<MessageSquare size={24} />} label="Messages" active={activeItem === "Messages"} navigate={() => handleNavigation("Messages", "/home/message")} showSidebar={showSidebar} />
-                    <SidebarItem icon={<Bookmark size={24} />} label="Bookmarks" active={activeItem === "Bookmarks"} navigate={() => handleNavigation("Bookmarks", "/home/bookmarks")} showSidebar={showSidebar} />
                     <SidebarItem icon={<User size={24} />} label="My Profile" active={activeItem === "My Profile"} navigate={() => handleNavigation("My Profile", "/home/my-profile")} showSidebar={showSidebar} />
                     <SidebarItem icon={<LayoutDashboard size={24} />} label="Explore" active={activeItem === "Explore"} navigate={() => handleNavigation("Explore", "/home/explore")} showSidebar={showSidebar} />
                 </nav>
