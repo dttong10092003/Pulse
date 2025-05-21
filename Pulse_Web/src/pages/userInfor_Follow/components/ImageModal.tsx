@@ -23,6 +23,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { Image as ImageIcon } from "lucide-react";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 dayjs.extend(relativeTime);
 interface Props {
@@ -64,6 +65,8 @@ const ImageModal = ({
   const [expandedComments, setExpandedComments] = useState<{ [key: string]: boolean }>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const URL_NOTI = import.meta.env.VITE_API_URL_NOTI; // Địa chỉ WebSocket
+  const [lastCommentTime, setLastCommentTime] = useState<number>(0);
+
   useEffect(() => {
     setIndex(startIndex);
 
@@ -130,7 +133,7 @@ const ImageModal = ({
 
     } catch (err) {
       console.error('Gửi thông báo thất bại', err);
-      alert('Gửi thông báo thất bại!');
+      toast.error("⛔ Failed to send notification!");
     }
   };
   // console.log("-------------------------");
@@ -141,6 +144,14 @@ const ImageModal = ({
 
   const handleSubmitComment = async () => {
     if (!postId || !commentText.trim()) return;
+
+    const now = Date.now();
+    const timeSinceLast = now - lastCommentTime;
+
+    if (timeSinceLast < 5000) {
+      toast.error("You are commenting too quickly. Please wait a few seconds.",{ duration: 3000 });
+      return;
+    }
 
     try {
       if (replyingToCommentId) {
@@ -160,6 +171,7 @@ const ImageModal = ({
 
 
       setCommentText("");
+      setLastCommentTime(now);
     } catch (err) {
       console.error("❌ Failed to send comment/reply:", err);
     }
@@ -325,7 +337,7 @@ const ImageModal = ({
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Viết bình luận..."
+                  placeholder="Comment..."
                   className="flex-1 px-4 py-2 bg-zinc-800 text-white rounded-full outline-none text-sm"
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
@@ -492,7 +504,7 @@ const ImageModal = ({
                   <input
                     ref={inputRef}
                     type="text"
-                    placeholder="Viết bình luận..."
+                    placeholder="Comment..."
                     className="flex-1 px-4 py-2 bg-zinc-800 text-white rounded-full outline-none text-sm"
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
