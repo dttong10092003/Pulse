@@ -147,7 +147,7 @@ const MainContent = () => {
 
                     const formattedDate = `${day}/${month}/${year}`;
                     console.log(`🔒 User bị ban đến: ${formattedDate}`);
-                    alert(`Your posting privileges have been temporarily suspended due to violations of our community guidelines. You will regain access on ${formattedDate}`);
+                    alert(`Your posting privileges have been temporarily suspended due to violations of our community guidelines.\n You will regain access on ${formattedDate}`);
                 }
                 else {
 
