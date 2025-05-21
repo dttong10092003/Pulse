@@ -3,7 +3,6 @@ import {
   Users,
   FileText,
   ShieldCheck,
-  Settings,
   LogOut,
   MoreHorizontal,
 } from "lucide-react";
@@ -14,11 +13,10 @@ import { logout } from "../../redux/slice/authSlice";
 import { getUserProfile } from "../../redux/slice/authSlice";
 import AdminUsers from "./components/AdminUsers";
 import AdminPosts from "./components/AdminPosts";
-import AdminSystem from "./components/AdminSystem";
 import AdminReports from "./components/AdminReports";
 import "../../global.css"
 const AdminPage = () => {
-  const [activeTab, setActiveTab] = useState("users");
+  const [activeTab, setActiveTab] = useState("Users");
   const [showMenu, setShowMenu] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
@@ -27,22 +25,19 @@ const AdminPage = () => {
   const token = useSelector((state: RootState) => state.auth.token);
 
   const tabs = [
-    { key: "users", label: "Users", icon: <Users size={18} /> },
-    { key: "posts", label: "Posts", icon: <FileText size={18} /> },
-    { key: "Message", label: "Message", icon: <ShieldCheck size={18} /> },
-    { key: "system", label: "System", icon: <Settings size={18} /> },
+    { key: "Users", label: "Users", icon: <Users size={18} /> },
+    { key: "Posts", label: "Posts", icon: <FileText size={18} /> },
+    { key: "Reports", label: "Reports", icon: <ShieldCheck size={18} /> },
   ];
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case "users":
+      case "Users":
         return <AdminUsers />;
-      case "posts":
+      case "Posts":
         return <AdminPosts />;
       case "Reports":
         return <AdminReports />;
-      case "system":
-        return <AdminSystem />;
       default:
         return null;
     }

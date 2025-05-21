@@ -13,7 +13,7 @@ const UserList = ({ users }: Props) => {
    <div className="bg-zinc-900 rounded-xl shadow-md flex-1 overflow-y-auto ">
 
       <h3 className="text-red-700 text-lg font-semibold text-center p-3">
-        DANH SÁCH NGƯỜI DÙNG
+        LISTS USERS
       </h3>
 
       <div className="overflow-y-auto max-h-[calc(80vh-280px)]">

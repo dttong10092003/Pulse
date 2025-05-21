@@ -11,17 +11,13 @@ const AdminWrapper = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (authReady) {
-            if (!user?.isAdmin) {
-                navigate("/home");
-            }
+        if (!authReady) return; // Chưa có token thì chưa kiểm tra
+        if (user === null || user === undefined) return; // Đợi user load xong
+      
+        if (!user?.isAdmin) {
+          navigate("/home");
         }
-    }, [user, authReady, navigate]);
-
-    if (!authReady) {
-        return <div className="text-white p-10">Loading...</div>;
-    }
-
+      }, [user, authReady, navigate]);
 
     return (
         <div className="min-h-screen bg-zinc-900 text-white">

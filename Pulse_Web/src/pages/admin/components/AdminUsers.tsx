@@ -3,12 +3,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { getAllUsers } from "../../../redux/slice/userSlice";
 import { AppDispatch, RootState } from "../../../redux/store";
 
-import UserDetailWithFilter from "./conponents_user/UserDetailWithFilter";
-import UserStatsCard from "./conponents_user/UserStatsCard";
-import UserList from "./conponents_user/UserList";
-import UserTabs from "./conponents_user/UserTabs";
-import TopDetail from "./conponents_user/TopDetail";
-import MonthlyUserBarChart from "./conponents_user/MonthlyUserBarChart";
+import UserDetailWithFilter from "./components_user/UserDetailWithFilter";
+import UserStatsCard from "./components_user/UserStatsCard";
+import UserList from "./components_user/UserList";
+import UserTabs from "./components_user/UserTabs";
+import TopDetail from "./components_user/TopDetail";
+import MonthlyUserBarChart from "./components_user/MonthlyUserBarChart";
 
 const AdminUsers = () => {
   const dispatch = useDispatch<AppDispatch>();
