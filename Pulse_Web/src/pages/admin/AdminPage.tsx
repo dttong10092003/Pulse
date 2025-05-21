@@ -16,7 +16,7 @@ import AdminUsers from "./components/AdminUsers";
 import AdminPosts from "./components/AdminPosts";
 import AdminSystem from "./components/AdminSystem";
 import AdminReports from "./components/AdminReports";
-
+import "../../global.css"
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState("users");
   const [showMenu, setShowMenu] = useState(false);
@@ -66,8 +66,8 @@ const AdminPage = () => {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all text-left cursor-pointer ${activeTab === tab.key
-                    ? "bg-green-600 text-white"
-                    : "hover:bg-zinc-700 text-zinc-300"
+                  ? "bg-green-600 text-white"
+                  : "hover:bg-zinc-700 text-zinc-300"
                   }`}
               >
                 {tab.icon}
@@ -126,7 +126,7 @@ const AdminPage = () => {
         <h1 className="text-3xl font-bold mb-3 capitalize">
           {activeTab} Management
         </h1>
-        <div className="bg-zinc-800 p-6 rounded-xl shadow-md">
+        <div className="h-[calc(105vh-100px)] overflow-y-auto p-6 rounded-xl shadow-md bg-zinc-800 scrollbar-thin scrollbar-thumb-gray-600">
           {renderTabContent()}
         </div>
       </main>
