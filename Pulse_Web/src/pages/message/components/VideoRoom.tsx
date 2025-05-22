@@ -14,7 +14,7 @@ interface ExtendedUser {
 
 const APP_ID = '660ae1f6941a4d9fa5714e4233cef2c5';
 const TOKEN =
-  '007eJxTYIipXr1NZR6jFfO2Oyumv9ueWXPb54vfp7Ohnk+ffy1cv/uzAoOZmUFiqmGamaWJYaJJimVaoqm5oUmqiZGxcXJqmlGyqeQM3YyGQEaGXa+kWBkZIBDEZ2YoT8liYAAABzYh4g==';
+  '007eJxTYCh6xrFWOjughzvw0Ql1n/7aTRtUbkS629vd52HIWWM+fakCg5mZQWKqYZqZpYlhokmKZVqiqbmhSaqJkbFxcmqaUbKpfpZeRkMgI0OTXigTIwMEgvjMDOUpWQwMAH2aHAw=';
 const CHANNEL = 'wdj';
 
 AgoraRTC.setLogLevel(4);
