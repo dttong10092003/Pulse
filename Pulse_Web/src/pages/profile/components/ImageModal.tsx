@@ -141,12 +141,12 @@ const ImageModal = ({
     if (!postId || !commentText.trim()) return;
 
     const now = Date.now();
-        const timeSinceLast = now - lastCommentTime;
-    
-        if (timeSinceLast < 5000) {
-          toast.error("You are commenting too quickly. Please wait a few seconds.",{ duration: 3000 });
-          return;
-        }
+    const timeSinceLast = now - lastCommentTime;
+
+    if (timeSinceLast < 5000) {
+      toast.error("You are commenting too quickly. Please wait a few seconds.", { duration: 3000 });
+      return;
+    }
 
     try {
       if (replyingToCommentId) {
@@ -161,7 +161,7 @@ const ImageModal = ({
         }));
       }
       await dispatch(getCommentCountsByPosts([postId]));
-      
+
       handleSendNotification(); // Gửi thông báo
       setCommentText("");
       setLastCommentTime(now);
@@ -266,6 +266,7 @@ const ImageModal = ({
                           {comment.user?.firstname} {comment.user?.lastname}
                         </p>
                         <p className="text-sm text-zinc-300">{comment.text}</p>
+                        <p className="text-xs text-zinc-400">{dayjs(comment.createdAt).fromNow()}</p>
                       </div>
                       <button
                         onClick={() => {
@@ -295,6 +296,7 @@ const ImageModal = ({
                                   comments.map((c) => `@${c.user?.firstname}${c.user?.lastname}`)
                                 )}
                               </p>
+                              <p className="text-xs text-zinc-400">{dayjs(reply.timestamp).fromNow()}</p>
                             </div>
                           </div>
                           <button
@@ -432,6 +434,7 @@ const ImageModal = ({
                               )
                             )}
                           </p>
+                          <p className="text-xs text-zinc-400">{dayjs(comment.createdAt).fromNow()}</p>
                         </div>
                         <button
                           onClick={() => {
@@ -462,6 +465,7 @@ const ImageModal = ({
                                     comments.map((c) => `@${c.user?.firstname}${c.user?.lastname}`)
                                   )}
                                 </p>
+                                <p className="text-xs text-zinc-400">{dayjs(reply.timestamp).fromNow()}</p>
                               </div>
                             </div>
                             <button
