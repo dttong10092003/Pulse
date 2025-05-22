@@ -273,6 +273,7 @@ const ImageModal = ({
                           {comment.user?.firstname} {comment.user?.lastname}
                         </p>
                         <p className="text-sm text-zinc-300">{comment.text}</p>
+                        <p className="text-xs text-zinc-400">{dayjs(comment.createdAt).fromNow()}</p>
                       </div>
                       <button
                         onClick={() => {
@@ -302,6 +303,7 @@ const ImageModal = ({
                                   comments.map((c) => `@${c.user?.firstname}${c.user?.lastname}`)
                                 )}
                               </p>
+                              <p className="text-xs text-zinc-400">{dayjs(reply.timestamp).fromNow()}</p>
                             </div>
                           </div>
                           <button
@@ -439,6 +441,7 @@ const ImageModal = ({
                               )
                             )}
                           </p>
+                          <p className="text-xs text-zinc-400">{dayjs(comment.createdAt).fromNow()}</p>
                         </div>
                         <button
                           onClick={() => {
@@ -469,6 +472,7 @@ const ImageModal = ({
                                     comments.map((c) => `@${c.user?.firstname}${c.user?.lastname}`)
                                   )}
                                 </p>
+                                <p className="text-xs text-zinc-400">{dayjs(reply.timestamp).fromNow()}</p>
                               </div>
                             </div>
                             <button
