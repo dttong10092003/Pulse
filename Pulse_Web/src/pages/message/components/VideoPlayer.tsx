@@ -24,7 +24,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ user }) => {
   }, [user]);
 
   return (
-    <div className="w-full h-full bg-black relative">
+<div className="w-full aspect-square bg-black relative rounded-xl overflow-hidden shadow-lg">
       <div ref={ref} className="absolute inset-0 w-full h-full" />
     </div>
   );
