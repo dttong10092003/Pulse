@@ -473,7 +473,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     try {
       const parsedUrl = new URL(url);
       const fullName = parsedUrl.pathname.split('/').pop() || 'file';
-      return decodeURIComponent(fullName.split('.')[0]) + '.' + fullName.split('.').pop();
+      return decodeURIComponent(fullName);
     } catch {
       return "file";
     }
