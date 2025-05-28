@@ -128,17 +128,11 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
     socket.on('messageRevoked', ({ messageId, conversationId }) => {
       console.log(`❌ Message ${messageId} was revoked`);
-      // if (senderId !== user._id) {
-      //   dispatch(revokeMessageLocal({ messageId, conversationId }));
-      // }
       dispatch(revokeMessageLocal({ messageId, conversationId }));
     });
 
     socket.on('messageDeleted', ({ messageId, conversationId }) => {
       console.log(`❌ Message ${messageId} was deleted`);
-      // if (senderId !== user._id) {
-      //   dispatch(deleteMessageLocal({ messageId, conversationId }));
-      // }
       dispatch(deleteMessageLocal({ messageId, conversationId }));
     });
 
