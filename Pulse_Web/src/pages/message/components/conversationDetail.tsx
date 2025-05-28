@@ -473,7 +473,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     try {
       const parsedUrl = new URL(url);
       const fullName = parsedUrl.pathname.split('/').pop() || 'file';
-      return decodeURIComponent(fullName.split('.')[0]) + '.' + fullName.split('.').pop();
+      return decodeURIComponent(fullName);
     } catch {
       return "file";
     }
@@ -508,6 +508,11 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
       case 'mp3':
       case 'wav':
         return fileIcons.sound;
+      case 'ppt':
+      case 'pptx':
+        return fileIcons.ppt;
+      case 'txt':
+        return fileIcons.txt;
       default:
         return fileIcons.doc;
     }
@@ -1375,7 +1380,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
           }}
         />
       )}
-      
+
     </div>
   );
 };
