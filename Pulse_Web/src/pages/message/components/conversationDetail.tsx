@@ -508,6 +508,11 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
       case 'mp3':
       case 'wav':
         return fileIcons.sound;
+      case 'ppt':
+      case 'pptx':
+        return fileIcons.ppt;
+      case 'txt':
+        return fileIcons.txt;
       default:
         return fileIcons.doc;
     }
@@ -1375,7 +1380,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
           }}
         />
       )}
-      
+
     </div>
   );
 };

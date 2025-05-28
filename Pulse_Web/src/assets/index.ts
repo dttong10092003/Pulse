@@ -7,6 +7,8 @@ import video from './video.png';
 import xls from './xls.png';
 import zip from './zip.png';
 import sound from './sound.png';
+import txt from './txt.png';
+import ppt from './ppt.png'
 
 export const fileIcons = {
   pdf,
@@ -16,4 +18,6 @@ export const fileIcons = {
   xls,
   zip,
   sound,
+  txt,
+  ppt,
 };
