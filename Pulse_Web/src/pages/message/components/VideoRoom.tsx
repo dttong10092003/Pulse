@@ -16,7 +16,7 @@ interface VideoRoomProps {
 }
 const APP_ID = "660ae1f6941a4d9fa5714e4233cef2c5";
 const TOKEN =
-  "007eJxTYJj1mmcVb2Ok7c9fuTcDml2S1+jeD9dpn7N7flj8gtiHew0VGMzMDBJTDdPMLE0ME01SLNMSTc0NTVJNjIyNk1PTjJJNX5wzzmgIZGRwzU1jYIRCEJ+ZoTwli4EBAGJsH6U=";
+  "007eJxTYJjPf7C2XubDD26JPC7ZC/rW0l4OX3j//dfVDFWx/bSoY5UCg5mZQWKqYZqZpYlhokmKZVqiqbmhSaqJkbFxcmqaUbJpr4ZlRkMgI8NFiXAmRgYIBPGZGcpTshgYAHm6HF8=";
 const CHANNEL = "wdj";
 
 AgoraRTC.setLogLevel(4);
