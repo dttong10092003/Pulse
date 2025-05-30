@@ -6,7 +6,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../redux/store";
 import { io } from "socket.io-client";  // Kết nối WebSocket
 import socketMess from '../../utils/socket'; // Kết nối WebSocket
-// import { createNotification } from "../../redux/slice/notificationSlice"; // Import action createNotification
+import toast from 'react-hot-toast';
+
 const URL_NOTI = import.meta.env.VITE_API_URL_NOTI; // Địa chỉ WebSocket
 const socket = io(URL_NOTI);
 import '../../global.css'
@@ -203,41 +204,58 @@ const UserInfo_Follow = () => {
 
   const handleFollowToggle = async () => {
     if (!userDetail || !currentUser || !id) return;
-
+  
     const payload = {
       followingId: userDetail.userId,
-      followerId: currentUser!,
+      followerId: currentUser,
     };
-
+  
     if (isFollowing) {
-      const confirmUnfollow = window.confirm("Are you sure you want to unfollow this user?");
-      if (!confirmUnfollow) return;
-
-      const result = await dispatch(unfollowUser(payload));
-      if (unfollowUser.fulfilled.match(result)) {
-        alert("Unfollowed successfully");
-        setIsFollowing(false);
-        dispatch(getFollowers(id));
-        dispatch(getFollowings(currentUser));
-        dispatch(getTopUsersExcludingFollowed(currentUser!));
-      } else {
-        alert("Failed to unfollow");
-      }
+      // ❗ Thay confirm bằng custom toast
+      toast.custom((t) => (
+        <div className="bg-[#2a2a2a] text-white p-4 rounded-lg shadow-md w-72">
+          <p className="mb-2">Are you sure you want to unfollow this user?</p>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={async () => {
+                const result = await dispatch(unfollowUser(payload));
+                if (unfollowUser.fulfilled.match(result)) {
+                  toast.success("Unfollowed successfully");
+                  setIsFollowing(false);
+                  dispatch(getFollowers(id));
+                  dispatch(getFollowings(currentUser));
+                  dispatch(getTopUsersExcludingFollowed(currentUser));
+                } else {
+                  toast.error("Failed to unfollow");
+                }
+                toast.dismiss(t.id);
+              }}
+              className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer"
+            >
+              Yes
+            </button>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
+            >
+              No
+            </button>
+          </div>
+        </div>
+      ));
     } else {
       const result = await dispatch(followUser(payload));
       if (followUser.fulfilled.match(result)) {
-        alert("Followed successfully");
+        toast.success("Followed successfully");
         setIsFollowing(true);
         dispatch(getFollowers(id));
         dispatch(getFollowings(currentUser));
-        dispatch(getTopUsersExcludingFollowed(currentUser!));
-
-
-        // Gửi thông báo cho người dùng được follow
+        dispatch(getTopUsersExcludingFollowed(currentUser));
+  
+        // Gửi thông báo cho người được follow
         handleSendNotification();
-
       } else {
-        alert("Failed to follow");
+        toast.error("Failed to follow");
       }
     }
   };
@@ -371,7 +389,7 @@ const UserInfo_Follow = () => {
                   </ul>
                 )
               ) : userFollowings.length === 0 ? (
-                <p className="text-center text-gray-500">Không có following nào.</p>
+                <p className="text-center text-gray-500">Not Followings</p>
               ) : (
                 <ul>
                   {userFollowings.map((following, index) => (
@@ -405,12 +423,6 @@ const UserInfo_Follow = () => {
       </div>
 
       <div className="mt-4">
-        {/* {profileTab === "Posts" && (
-          <div className="max-h-[65vh] overflow-y-auto scrollbar-dark px-2">
-          
-            <Posts posts={userPosts} username={fullName} avatar={avatar} commentCounts={commentCounts}/>
-          </div>
-        )} */}
         {profileTab === "Posts" && (
           <div className="max-h-[65vh] overflow-y-auto scrollbar-dark px-2">
             {userPosts.length === 0 ? (
