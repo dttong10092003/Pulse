@@ -3,7 +3,7 @@ import { ChatInput } from "./index";
 import { format, formatDistanceToNow } from "date-fns";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../../../redux/store";
-import { deleteConversation, deleteMessageLocal, incrementUnreadCount, revokeMessageLocal, setConversationHidden } from "../../../redux/slice/chatSlice";
+import { deleteConversation, incrementUnreadCount, setConversationHidden } from "../../../redux/slice/chatSlice";
 import { Conversation, Member, Message } from '../../../redux/slice/types';
 import socket from '../../../utils/socket';
 import GroupMembersModal from './GroupMembersModal';
@@ -210,7 +210,6 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     if (!selectedConversation?._id) return;
     const conversationId = selectedConversation?._id;
     socket.emit('deleteMessage', { messageId, senderId: currentUserId, conversationId });
-    dispatch(deleteMessageLocal({ messageId, conversationId }));
 
     setShowMenu(null); // Close menu after action
   };
@@ -219,7 +218,6 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     if (!selectedConversation?._id) return;
     const conversationId = selectedConversation?._id;
     socket.emit('revokeMessage', { messageId, senderId: currentUserId, conversationId });
-    dispatch(revokeMessageLocal({ messageId, conversationId }));
 
     setShowMenu(null); // Close menu after action
   };
@@ -475,7 +473,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     try {
       const parsedUrl = new URL(url);
       const fullName = parsedUrl.pathname.split('/').pop() || 'file';
-      return decodeURIComponent(fullName.split('.')[0]) + '.' + fullName.split('.').pop();
+      return decodeURIComponent(fullName);
     } catch {
       return "file";
     }

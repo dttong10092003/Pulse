@@ -12,7 +12,6 @@ import { showIncomingCall } from '../../redux/slice/incomingCallSlice';
 import IncomingCallModal from './components/IncomingCallModal';
 import CallModal from './components/callModal';
 import { VideoRoom } from './components/VideoRoom';
-import { PhoneOff } from "lucide-react";
 
 // Define the Message type
 interface Message {
@@ -135,12 +134,8 @@ const Message: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center">
 
           <div className="flex-1 w-full overflow-auto px-6 py-4">
-            <VideoRoom />
-          </div>
-
-          <div className="w-full flex justify-center gap-6 pb-6">
-            <button
-              onClick={() => {
+            <VideoRoom
+              onLeaveCall={() => {
                 if (selectedConversation && userDetail) {
                   const isCaller = userDetail.userId === call.fromUserId;
 
@@ -172,16 +167,12 @@ const Message: React.FC = () => {
                 }
 
                 setInVideoCall(false);
-                setCallStartTime(null); // reset thời gian sau khi tắt
+                setCallStartTime(null);
               }}
+            />
 
-
-
-              className="bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-lg transition flex items-center justify-center"
-            >
-              <PhoneOff size={24} />
-            </button>
           </div>
+
 
         </div>
       )}

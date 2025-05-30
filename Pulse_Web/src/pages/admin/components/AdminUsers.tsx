@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getAllUsers } from "../../../redux/slice/userSlice";
+// import { getAllUsers } from "../../../redux/slice/userSlice";
 import { AppDispatch, RootState } from "../../../redux/store";
 
 import UserDetailWithFilter from "./components_user/UserDetailWithFilter";
@@ -9,6 +9,7 @@ import UserList from "./components_user/UserList";
 import UserTabs from "./components_user/UserTabs";
 import TopDetail from "./components_user/TopDetail";
 import MonthlyUserBarChart from "./components_user/MonthlyUserBarChart";
+import { fetchAllUsers } from "../../../redux/slice/adminUserSlice";
 
 const AdminUsers = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -19,7 +20,7 @@ const AdminUsers = () => {
 
 
   useEffect(() => {
-    dispatch(getAllUsers());
+    dispatch(fetchAllUsers());
   }, [dispatch]);
 
   useEffect(() => {
